@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { parse as parsePPTX, parseToPPTist } from "../../../src";
+import { pptxParser } from "@/lib/parser/InternalPPTXParser";
 
 export async function POST(request: NextRequest) {
   console.log("🔄 开始处理 PPTX 解析请求...");
@@ -29,6 +29,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    debugger;
     // Convert File to ArrayBuffer
     const fileBuffer = await file.arrayBuffer();
     console.log("📦 文件转换为 ArrayBuffer, 大小:", fileBuffer.byteLength);
@@ -42,15 +43,9 @@ export async function POST(request: NextRequest) {
     console.log("文件名称:", file.name);
     console.log("输出格式:", format);
 
-    // Parse the PPTX file using our library
-    let jsonResult;
-    if (format === "pptist" && parseToPPTist) {
-      console.log("🎨 使用 PPTist 格式解析...");
-      jsonResult = await parseToPPTist(fileBuffer);
-    } else {
-      console.log("📊 使用传统格式解析...");
-      jsonResult = await parsePPTX(fileBuffer);
-    }
+    // Parse the PPTX file using our internal parser
+    console.log("📊 使用内部解析器解析...");
+    const jsonResult = await pptxParser.parseToJSON(fileBuffer);
 
     console.log("✅ 解析完成");
     console.log("解析结果类型:", typeof jsonResult);

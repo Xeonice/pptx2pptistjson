@@ -6,14 +6,17 @@ const nextConfig = {
   typescript: {
     ignoreBuildErrors: false,
   },
+  experimental: {
+    serverSourceMaps: true,
+  },
   webpack: (config) => {
     config.resolve.fallback = {
       ...config.resolve.fallback,
       fs: false,
       path: false,
-    }
-    return config
+    };
+    return config;
   },
-}
+};
 
-module.exports = nextConfig
+module.exports = nextConfig;
