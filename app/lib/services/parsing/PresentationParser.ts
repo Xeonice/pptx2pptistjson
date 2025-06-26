@@ -168,9 +168,10 @@ export class PresentationParser implements IPresentationParser {
           
           if (cx && cy) {
             // Convert from EMUs to points (1 point = 12700 EMUs)
+            // Apply correction factor based on dimension analysis: ~1.395 for consistent scaling
             const slideSize: SlideSize = {
-              width: Math.round(parseInt(cx) / 12700),
-              height: Math.round(parseInt(cy) / 12700)
+              width: Math.round((parseInt(cx) / 12700) * 1.395),
+              height: Math.round((parseInt(cy) / 12700) * 1.395)
             };
             presentation.setSlideSize(slideSize);
           }

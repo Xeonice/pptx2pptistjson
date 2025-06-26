@@ -1,7 +1,0 @@
-{
-  "/_not-found/page": "app/_not-found/page.js",
-  "/api-docs/page": "app/api-docs/page.js",
-  "/api/parse-pptx/route": "app/api/parse-pptx/route.js",
-  "/page": "app/page.js",
-  "/test-position/page": "app/test-position/page.js"
-}

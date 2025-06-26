@@ -9,7 +9,10 @@
 		"start": "next start",
 		"lint": "eslint app --ext .js,.jsx,.ts,.tsx",
 		"type-check": "tsc --noEmit",
-		"export": "next export"
+		"export": "next export",
+		"test": "npx jest",
+		"test:watch": "npx jest --watch",
+		"test:coverage": "npx jest --coverage"
 	},
 	"author": "pipipi_pikachu@163.com",
 	"repository": {
@@ -51,6 +54,7 @@
 		"@rollup/plugin-terser": "^0.1.0",
 		"@rollup/plugin-typescript": "^11.0.0",
 		"@types/formidable": "^3.4.0",
+		"@types/jest": "^30.0.0",
 		"@types/jszip": "^3.4.1",
 		"@types/node": "^20.0.0",
 		"@types/react": "^18.0.0",
@@ -60,9 +64,11 @@
 		"@typescript-eslint/parser": "^5.62.0",
 		"eslint": "^8.27.0",
 		"eslint-config-next": "^14.0.0",
+		"jest": "^30.0.3",
 		"rollup": "^3.3.0",
 		"rollup-plugin-node-builtins": "^2.1.2",
 		"rollup-plugin-node-globals": "^1.4.0",
+		"ts-jest": "^29.4.0",
 		"typescript": "^5.0.0"
 	}
 }

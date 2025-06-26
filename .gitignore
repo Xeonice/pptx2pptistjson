@@ -1,9 +1,12 @@
 # Dependencies
 node_modules/
 
-# Build outputs
-.next/
-dist/
+# testing
+/coverage
+
+# next.js
+/.next
+/dist/
 *.tsbuildinfo
 
 # Environment files
