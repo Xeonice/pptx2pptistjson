@@ -1,6 +1,7 @@
 import { nodeResolve } from '@rollup/plugin-node-resolve'
 import commonjs from '@rollup/plugin-commonjs'
 import { babel } from '@rollup/plugin-babel'
+import typescript from '@rollup/plugin-typescript'
 import eslint from '@rollup/plugin-eslint'
 import terser from '@rollup/plugin-terser'
 import globals from 'rollup-plugin-node-globals'
@@ -13,7 +14,7 @@ const onwarn = warning => {
 }
 
 export default {
-  input: 'src/pptxtojson.js',
+  input: 'src/pptxtojson.ts',
   onwarn,
   output: [
     {
@@ -38,10 +39,20 @@ export default {
       preferBuiltins: false,
     }),
     commonjs(),
-    eslint(),
+    typescript({
+      tsconfig: './tsconfig.lib.json',
+      declaration: true,
+      declarationMap: true,
+      outDir: 'dist',
+    }),
+    // eslint({
+    //   extensions: ['.js', '.ts'],
+    // }),
     babel({
       babelHelpers: 'runtime',
       exclude: ['node_modules/**'],
+      extensions: ['.js', '.ts'],
+      configFile: './.babelrc.lib.cjs',
     }),
     terser(),
     globals(),

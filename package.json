@@ -2,14 +2,20 @@
 	"name": "pptxtojson",
 	"version": "1.5.0",
 	"description": "A javascript tool for parsing .pptx file",
-	"type": "module",
 	"main": "./dist/index.umd.js",
 	"module": "./dist/index.js",
 	"types": "./dist/index.d.ts",
 	"scripts": {
 		"clean:dist": "rimraf dist",
-		"dev": "rollup -c -w",
-		"lint": "eslint src --ext .js,.jsx,.ts,.tsx"
+		"build": "npm run clean:dist && tsc -p tsconfig.lib.json && rollup -c",
+		"build:lib": "npm run build",
+		"dev": "next dev",
+		"dev:lib": "tsc -w & rollup -c -w",
+		"build:next": "next build",
+		"start": "next start",
+		"lint": "eslint src --ext .js,.jsx,.ts,.tsx",
+		"type-check": "tsc --noEmit",
+		"export": "next export"
 	},
 	"author": "pipipi_pikachu@163.com",
 	"repository": {
@@ -27,7 +33,14 @@
 		"registry": "https://registry.npmjs.com"
 	},
 	"dependencies": {
+		"@uiw/react-json-view": "^2.0.0-alpha.32",
+		"form-data": "^4.0.3",
+		"formidable": "^3.5.1",
 		"jszip": "^3.10.1",
+		"next": "^14.0.0",
+		"node-fetch": "^3.3.2",
+		"react": "^18.0.0",
+		"react-dom": "^18.0.0",
 		"tinycolor2": "1.6.0",
 		"txml": "^5.1.1"
 	},
@@ -35,15 +48,27 @@
 		"@babel/core": "^7.20.2",
 		"@babel/plugin-transform-runtime": "^7.19.6",
 		"@babel/preset-env": "^7.20.2",
+		"@babel/preset-typescript": "^7.20.2",
 		"@babel/runtime": "^7.20.1",
 		"@rollup/plugin-babel": "^6.0.2",
 		"@rollup/plugin-commonjs": "^23.0.2",
 		"@rollup/plugin-eslint": "^9.0.1",
 		"@rollup/plugin-node-resolve": "^15.0.1",
 		"@rollup/plugin-terser": "^0.1.0",
+		"@rollup/plugin-typescript": "^11.0.0",
+		"@types/formidable": "^3.4.0",
+		"@types/jszip": "^3.4.1",
+		"@types/node": "^20.0.0",
+		"@types/react": "^18.0.0",
+		"@types/react-dom": "^18.0.0",
+		"@types/tinycolor2": "^1.4.3",
+		"@typescript-eslint/eslint-plugin": "^5.62.0",
+		"@typescript-eslint/parser": "^5.62.0",
 		"eslint": "^8.27.0",
+		"eslint-config-next": "^14.0.0",
 		"rollup": "^3.3.0",
 		"rollup-plugin-node-builtins": "^2.1.2",
-		"rollup-plugin-node-globals": "^1.4.0"
+		"rollup-plugin-node-globals": "^1.4.0",
+		"typescript": "^5.0.0"
 	}
 }

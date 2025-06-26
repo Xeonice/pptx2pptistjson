@@ -1,0 +1,192 @@
+/*!*************************************************************************************************************************************************************************************************************************************************************!*\
+  !*** css ./node_modules/next/dist/build/webpack/loaders/css-loader/src/index.js??ruleSet[1].rules[14].oneOf[12].use[2]!./node_modules/next/dist/build/webpack/loaders/postcss-loader/src/index.js??ruleSet[1].rules[14].oneOf[12].use[3]!./app/globals.css ***!
+  \*************************************************************************************************************************************************************************************************************************************************************/
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html, body {
+  height: 100%;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', sans-serif;
+}
+
+::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+  background-color: #fff;
+}
+
+::-webkit-scrollbar-thumb {
+  background-color: #c1c1c1;
+}
+
+/* JSON Editor Styles */
+.jsoneditor {
+  border: 2px solid #ddd !important;
+  height: 100% !important;
+}
+
+.jsoneditor-menu {
+  background-color: #f8f9fa !important;
+  border-bottom: 1px solid #ddd !important;
+}
+
+.jsoneditor-navigation-bar {
+  display: none !important;
+}
+
+.jsoneditor-outer.has-nav-bar.has-main-menu-bar {
+  margin-top: 0 !important;
+  padding-top: 0 !important;
+}
+
+/* API Docs Styles */
+.docs-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 20px;
+  line-height: 1.6;
+}
+
+.docs-header {
+  text-align: center;
+  margin-bottom: 40px;
+  padding-bottom: 20px;
+  border-bottom: 2px solid #d14424;
+}
+
+.docs-header h1 {
+  color: #d14424;
+  margin: 0 0 10px 0;
+}
+
+.docs-header p {
+  color: #666;
+  margin: 0;
+}
+
+.docs-section {
+  margin-bottom: 40px;
+}
+
+.docs-section h2 {
+  color: #333;
+  border-bottom: 1px solid #eee;
+  padding-bottom: 10px;
+}
+
+.api-endpoint {
+  background: #f8f9fa;
+  border-left: 4px solid #d14424;
+  padding: 20px;
+  margin: 20px 0;
+  border-radius: 4px;
+}
+
+.method-badge {
+  display: inline-block;
+  background: #d14424;
+  color: white;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: bold;
+  margin-right: 10px;
+}
+
+.api-url {
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+  background: #e9ecef;
+  padding: 4px 8px;
+  border-radius: 4px;
+  display: inline-block;
+}
+
+.code-block {
+  background: #2d3748;
+  color: #e2e8f0;
+  padding: 20px;
+  border-radius: 4px;
+  overflow-x: auto;
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+  font-size: 14px;
+  margin: 10px 0;
+}
+
+.parameter-item {
+  background: #fff;
+  border: 1px solid #dee2e6;
+  padding: 10px;
+  margin: 5px 0;
+  border-radius: 4px;
+}
+
+.parameter-name {
+  font-weight: bold;
+  color: #495057;
+}
+
+.parameter-type {
+  color: #6c757d;
+  font-size: 12px;
+}
+
+.back-link {
+  display: inline-block;
+  margin-top: 20px;
+  color: #d14424;
+  text-decoration: none;
+  border: 1px solid #d14424;
+  padding: 10px 20px;
+  border-radius: 4px;
+  transition: all 0.3s ease;
+}
+
+.back-link:hover {
+  background: #d14424;
+  color: white;
+}
+
+/* Copy functionality styles */
+.copy-message {
+  animation: fadeInOut 3s ease-in-out;
+}
+
+@keyframes fadeInOut {
+  0% {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  10%, 90% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+}
+
+/* JSON viewer header enhancement */
+.json-header {
+  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.copy-button {
+  position: relative;
+  overflow: hidden;
+}
+
+.copy-button:hover:not(:disabled) {
+  background-color: #c03d1f !important;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+}
+
+.copy-button:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}

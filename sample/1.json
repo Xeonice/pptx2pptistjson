@@ -1,0 +1,926 @@
+{
+  "slides": [
+    {
+      "id": "38ykymthm9",
+      "tag": "title",
+      "elements": [
+        {
+          "tag": "title",
+          "type": "text",
+          "id": "a3o2ctqfk5",
+          "left": 0,
+          "top": 0,
+          "width": 69.44444444444444,
+          "height": 18.51851851851852,
+          "content": "<div style=\"\"><p style=\"\"><span style=\"color:#b93423ff;--colortype:accent1;font-family:Microsoft Yahei;font-size:24px;font-weight:bold;\">党建宣传策略实战方法论</span></p></div>",
+          "rotate": 0,
+          "defaultFontName": "Microsoft Yahei",
+          "defaultColor": {
+            "color": "#b93423",
+            "colorType": "accent1"
+          },
+          "vertical": false,
+          "lineHeight": 1.15,
+          "wordSpace": 2,
+          "isDefault": false,
+          "fit": "resize"
+        },
+        {
+          "tag": "noEdit",
+          "type": "shape",
+          "id": "nlx356lfj2",
+          "left": 0,
+          "top": 0,
+          "width": 69.44444444444444,
+          "height": 92.59259259259258,
+          "viewBox": [69.44444444444444, 92.59259259259258],
+          "path": "M 6.944444444444445 0 L 62.5 0 Q 69.44444444444444 0 69.44444444444444 6.944444444444445 L 69.44444444444444 85.64814814814814 Q 69.44444444444444 92.59259259259258 62.5 92.59259259259258 L 6.944444444444445 92.59259259259258 Q 0 92.59259259259258 0 85.64814814814814 L 0 6.944444444444445 Q 0 0 6.944444444444445 0 Z",
+          "themeFill": {
+            "color": "#dcaf7a",
+            "colorType": "accent2"
+          },
+          "fixedRatio": false,
+          "rotate": 0,
+          "pathFormula": "roundRect",
+          "keypoint": 0.5,
+          "opacity": 1,
+          "isDefault": false
+        },
+        {
+          "tag": "text",
+          "type": "text",
+          "id": "ejnhccp8nj",
+          "left": 0,
+          "top": 0,
+          "width": 69.44444444444444,
+          "height": 18.51851851851852,
+          "content": "<div style=\"\"><p style=\"\"><span style=\"color:#333333ff;--colortype:dk1;font-family:Microsoft Yahei;font-size:24px;\">选题到传播的全流程解析</span></p></div>",
+          "rotate": 0,
+          "defaultFontName": "Microsoft Yahei",
+          "defaultColor": {
+            "color": "#333333",
+            "colorType": "dk1"
+          },
+          "vertical": false,
+          "lineHeight": 1.15,
+          "wordSpace": 1,
+          "isDefault": false,
+          "fit": "resize"
+        },
+        {
+          "tag": "noEdit",
+          "type": "shape",
+          "id": "r20mjsah12",
+          "left": 0,
+          "top": 0,
+          "width": 69.44444444444444,
+          "height": 92.59259259259258,
+          "viewBox": [69.44444444444444, 92.59259259259258],
+          "path": "M 6.944444444444445 0 L 62.5 0 Q 69.44444444444444 0 69.44444444444444 6.944444444444445 L 69.44444444444444 85.64814814814814 Q 69.44444444444444 92.59259259259258 62.5 92.59259259259258 L 6.944444444444445 92.59259259259258 Q 0 92.59259259259258 0 85.64814814814814 L 0 6.944444444444445 Q 0 0 6.944444444444445 0 Z",
+          "themeFill": {
+            "color": "#dcaf7a",
+            "colorType": "accent2"
+          },
+          "fixedRatio": false,
+          "rotate": 0,
+          "pathFormula": "roundRect",
+          "keypoint": 0.5,
+          "opacity": 1,
+          "isDefault": false
+        },
+        {
+          "tag": "author",
+          "type": "text",
+          "id": "4t3h4gzewy",
+          "left": 0,
+          "top": 0,
+          "width": 69.44444444444444,
+          "height": 18.51851851851852,
+          "content": "<div style=\"\"><p style=\"\"><span style=\"color:#333333ff;--colortype:dk1;font-family:Microsoft Yahei;font-size:24px;\">汇报人:新华日报记者林元沁</span></p></div>",
+          "rotate": 0,
+          "defaultFontName": "Microsoft Yahei",
+          "defaultColor": {
+            "color": "#333333",
+            "colorType": "dk1"
+          },
+          "vertical": false,
+          "lineHeight": 1.15,
+          "wordSpace": 1,
+          "isDefault": false,
+          "fit": "resize"
+        },
+        {
+          "tag": "noEdit",
+          "type": "shape",
+          "id": "fxglcxa97d",
+          "left": 0,
+          "top": 0,
+          "width": 69.44444444444444,
+          "height": 92.59259259259258,
+          "viewBox": [69.44444444444444, 92.59259259259258],
+          "path": "M 6.944444444444445 0 L 62.5 0 Q 69.44444444444444 0 69.44444444444444 6.944444444444445 L 69.44444444444444 85.64814814814814 Q 69.44444444444444 92.59259259259258 62.5 92.59259259259258 L 6.944444444444445 92.59259259259258 Q 0 92.59259259259258 0 85.64814814814814 L 0 6.944444444444445 Q 0 0 6.944444444444445 0 Z",
+          "themeFill": {
+            "color": "#dcaf7a",
+            "colorType": "accent2"
+          },
+          "fixedRatio": false,
+          "rotate": 0,
+          "pathFormula": "roundRect",
+          "keypoint": 0.5,
+          "opacity": 1,
+          "isDefault": false
+        },
+        {
+          "tag": "noEdit",
+          "type": "shape",
+          "id": "r44iy22xf1",
+          "left": 0,
+          "top": 0,
+          "width": 69.44444444444444,
+          "height": 92.59259259259258,
+          "viewBox": [69.44444444444444, 92.59259259259258],
+          "path": "M 6.944444444444445 0 L 62.5 0 Q 69.44444444444444 0 69.44444444444444 6.944444444444445 L 69.44444444444444 85.64814814814814 Q 69.44444444444444 92.59259259259258 62.5 92.59259259259258 L 6.944444444444445 92.59259259259258 Q 0 92.59259259259258 0 85.64814814814814 L 0 6.944444444444445 Q 0 0 6.944444444444445 0 Z",
+          "themeFill": {
+            "color": "#dcaf7a",
+            "colorType": "accent2"
+          },
+          "fixedRatio": false,
+          "rotate": 0,
+          "pathFormula": "roundRect",
+          "keypoint": 0.5,
+          "opacity": 1,
+          "isDefault": false
+        },
+        {
+          "tag": "noEdit",
+          "type": "shape",
+          "id": "90bgnjqcr3",
+          "left": 0,
+          "top": 0,
+          "width": 69.44444444444444,
+          "height": 92.59259259259258,
+          "viewBox": [69.44444444444444, 92.59259259259258],
+          "path": "M 6.944444444444445 0 L 62.5 0 Q 69.44444444444444 0 69.44444444444444 6.944444444444445 L 69.44444444444444 85.64814814814814 Q 69.44444444444444 92.59259259259258 62.5 92.59259259259258 L 6.944444444444445 92.59259259259258 Q 0 92.59259259259258 0 85.64814814814814 L 0 6.944444444444445 Q 0 0 6.944444444444445 0 Z",
+          "themeFill": {
+            "color": "#dcaf7a",
+            "colorType": "accent2"
+          },
+          "fixedRatio": false,
+          "rotate": 0,
+          "pathFormula": "roundRect",
+          "keypoint": 0.5,
+          "opacity": 1,
+          "isDefault": false
+        },
+        {
+          "tag": "noEdit",
+          "type": "shape",
+          "id": "3jxa3zjptl",
+          "left": 0,
+          "top": 0,
+          "width": 69.44444444444444,
+          "height": 92.59259259259258,
+          "viewBox": [69.44444444444444, 92.59259259259258],
+          "path": "M 6.944444444444445 0 L 62.5 0 Q 69.44444444444444 0 69.44444444444444 6.944444444444445 L 69.44444444444444 85.64814814814814 Q 69.44444444444444 92.59259259259258 62.5 92.59259259259258 L 6.944444444444445 92.59259259259258 Q 0 92.59259259259258 0 85.64814814814814 L 0 6.944444444444445 Q 0 0 6.944444444444445 0 Z",
+          "themeFill": {
+            "color": "#dcaf7a",
+            "colorType": "accent2"
+          },
+          "fixedRatio": false,
+          "rotate": 0,
+          "pathFormula": "roundRect",
+          "keypoint": 0.5,
+          "opacity": 1,
+          "isDefault": false
+        }
+      ],
+      "background": {
+        "type": "color",
+        "themeColor": {
+          "color": "#ffffff",
+          "colorType": "lt1"
+        }
+      },
+      "remark": "幻灯片: ppt/slides/slide1.xml",
+      "pageId": "dedzbpx1e1"
+    },
+    {
+      "id": "jqar7zlupl",
+      "tag": "catalogue",
+      "elements": [
+        {
+          "tag": "title",
+          "type": "text",
+          "id": "6u04yv9s7z",
+          "left": 0,
+          "top": 0,
+          "width": 69.44444444444444,
+          "height": 18.51851851851852,
+          "content": "<div style=\"\"><p style=\"\"><span style=\"color:#b93423ff;--colortype:accent1;font-family:Microsoft Yahei;font-size:24px;font-weight:bold;\">CONTENT</span></p></div>",
+          "rotate": 0,
+          "defaultFontName": "Microsoft Yahei",
+          "defaultColor": {
+            "color": "#b93423",
+            "colorType": "accent1"
+          },
+          "vertical": false,
+          "lineHeight": 1.15,
+          "wordSpace": 2,
+          "isDefault": false,
+          "fit": "resize"
+        },
+        {
+          "tag": "noEdit",
+          "type": "shape",
+          "id": "pgqo8f4dfa",
+          "left": 0,
+          "top": 0,
+          "width": 69.44444444444444,
+          "height": 92.59259259259258,
+          "viewBox": [69.44444444444444, 92.59259259259258],
+          "path": "M 6.944444444444445 0 L 62.5 0 Q 69.44444444444444 0 69.44444444444444 6.944444444444445 L 69.44444444444444 85.64814814814814 Q 69.44444444444444 92.59259259259258 62.5 92.59259259259258 L 6.944444444444445 92.59259259259258 Q 0 92.59259259259258 0 85.64814814814814 L 0 6.944444444444445 Q 0 0 6.944444444444445 0 Z",
+          "themeFill": {
+            "color": "#dcaf7a",
+            "colorType": "accent2"
+          },
+          "fixedRatio": false,
+          "rotate": 0,
+          "pathFormula": "roundRect",
+          "keypoint": 0.5,
+          "opacity": 1,
+          "isDefault": false
+        },
+        {
+          "tag": "item_title",
+          "type": "text",
+          "id": "a6fds0c2h9",
+          "left": 0,
+          "top": 0,
+          "width": 69.44444444444444,
+          "height": 18.51851851851852,
+          "content": "<div style=\"\"><p style=\"\"><span style=\"color:#333333ff;--colortype:dk1;font-family:Microsoft Yahei;font-size:24px;\">目录</span></p></div>",
+          "rotate": 0,
+          "defaultFontName": "Microsoft Yahei",
+          "defaultColor": {
+            "color": "#333333",
+            "colorType": "dk1"
+          },
+          "vertical": false,
+          "lineHeight": 1.15,
+          "wordSpace": 1,
+          "isDefault": false,
+          "fit": "resize"
+        },
+        {
+          "tag": "noEdit",
+          "type": "shape",
+          "id": "gvg1ffih0b",
+          "left": 0,
+          "top": 0,
+          "width": 69.44444444444444,
+          "height": 92.59259259259258,
+          "viewBox": [69.44444444444444, 92.59259259259258],
+          "path": "M 6.944444444444445 0 L 62.5 0 Q 69.44444444444444 0 69.44444444444444 6.944444444444445 L 69.44444444444444 85.64814814814814 Q 69.44444444444444 92.59259259259258 62.5 92.59259259259258 L 6.944444444444445 92.59259259259258 Q 0 92.59259259259258 0 85.64814814814814 L 0 6.944444444444445 Q 0 0 6.944444444444445 0 Z",
+          "themeFill": {
+            "color": "#dcaf7a",
+            "colorType": "accent2"
+          },
+          "fixedRatio": false,
+          "rotate": 0,
+          "pathFormula": "roundRect",
+          "keypoint": 0.5,
+          "opacity": 1,
+          "isDefault": false
+        },
+        {
+          "tag": "text",
+          "type": "text",
+          "id": "jlcqkrr87u",
+          "left": 0,
+          "top": 0,
+          "width": 69.44444444444444,
+          "height": 18.51851851851852,
+          "content": "<div style=\"\"><p style=\"\"><span style=\"color:#333333ff;--colortype:dk1;font-family:Microsoft Yahei;font-size:24px;\">党建宣传策略概述</span></p></div>",
+          "rotate": 0,
+          "defaultFontName": "Microsoft Yahei",
+          "defaultColor": {
+            "color": "#333333",
+            "colorType": "dk1"
+          },
+          "vertical": false,
+          "lineHeight": 1.15,
+          "wordSpace": 1,
+          "isDefault": false,
+          "fit": "resize"
+        },
+        {
+          "tag": "noEdit",
+          "type": "shape",
+          "id": "l0k8dcnene",
+          "left": 0,
+          "top": 0,
+          "width": 69.44444444444444,
+          "height": 92.59259259259258,
+          "viewBox": [69.44444444444444, 92.59259259259258],
+          "path": "M 6.944444444444445 0 L 62.5 0 Q 69.44444444444444 0 69.44444444444444 6.944444444444445 L 69.44444444444444 85.64814814814814 Q 69.44444444444444 92.59259259259258 62.5 92.59259259259258 L 6.944444444444445 92.59259259259258 Q 0 92.59259259259258 0 85.64814814814814 L 0 6.944444444444445 Q 0 0 6.944444444444445 0 Z",
+          "themeFill": {
+            "color": "#dcaf7a",
+            "colorType": "accent2"
+          },
+          "fixedRatio": false,
+          "rotate": 0,
+          "pathFormula": "roundRect",
+          "keypoint": 0.5,
+          "opacity": 1,
+          "isDefault": false
+        },
+        {
+          "tag": "item_number",
+          "type": "text",
+          "id": "kuqxp4soea",
+          "left": 0,
+          "top": 0,
+          "width": 69.44444444444444,
+          "height": 18.51851851851852,
+          "content": "<div style=\"\"><p style=\"\"><span style=\"color:#333333ff;--colortype:dk1;font-family:Microsoft Yahei;font-size:24px;\">01</span></p></div>",
+          "rotate": 0,
+          "defaultFontName": "Microsoft Yahei",
+          "defaultColor": {
+            "color": "#333333",
+            "colorType": "dk1"
+          },
+          "vertical": false,
+          "lineHeight": 1.15,
+          "wordSpace": 1,
+          "isDefault": false,
+          "fit": "resize"
+        },
+        {
+          "tag": "noEdit",
+          "type": "shape",
+          "id": "r01w87d80i",
+          "left": 0,
+          "top": 0,
+          "width": 69.44444444444444,
+          "height": 92.59259259259258,
+          "viewBox": [69.44444444444444, 92.59259259259258],
+          "path": "M 6.944444444444445 0 L 62.5 0 Q 69.44444444444444 0 69.44444444444444 6.944444444444445 L 69.44444444444444 85.64814814814814 Q 69.44444444444444 92.59259259259258 62.5 92.59259259259258 L 6.944444444444445 92.59259259259258 Q 0 92.59259259259258 0 85.64814814814814 L 0 6.944444444444445 Q 0 0 6.944444444444445 0 Z",
+          "themeFill": {
+            "color": "#dcaf7a",
+            "colorType": "accent2"
+          },
+          "fixedRatio": false,
+          "rotate": 0,
+          "pathFormula": "roundRect",
+          "keypoint": 0.5,
+          "opacity": 1,
+          "isDefault": false
+        },
+        {
+          "tag": "text",
+          "type": "text",
+          "id": "husmtq0imt",
+          "left": 0,
+          "top": 0,
+          "width": 69.44444444444444,
+          "height": 18.51851851851852,
+          "content": "<div style=\"\"><p style=\"\"><span style=\"color:#333333ff;--colortype:dk1;font-family:Microsoft Yahei;font-size:24px;\">选题策略与方法</span></p></div>",
+          "rotate": 0,
+          "defaultFontName": "Microsoft Yahei",
+          "defaultColor": {
+            "color": "#333333",
+            "colorType": "dk1"
+          },
+          "vertical": false,
+          "lineHeight": 1.15,
+          "wordSpace": 1,
+          "isDefault": false,
+          "fit": "resize"
+        },
+        {
+          "tag": "noEdit",
+          "type": "shape",
+          "id": "9icyfnx5rm",
+          "left": 0,
+          "top": 0,
+          "width": 69.44444444444444,
+          "height": 92.59259259259258,
+          "viewBox": [69.44444444444444, 92.59259259259258],
+          "path": "M 6.944444444444445 0 L 62.5 0 Q 69.44444444444444 0 69.44444444444444 6.944444444444445 L 69.44444444444444 85.64814814814814 Q 69.44444444444444 92.59259259259258 62.5 92.59259259259258 L 6.944444444444445 92.59259259259258 Q 0 92.59259259259258 0 85.64814814814814 L 0 6.944444444444445 Q 0 0 6.944444444444445 0 Z",
+          "themeFill": {
+            "color": "#dcaf7a",
+            "colorType": "accent2"
+          },
+          "fixedRatio": false,
+          "rotate": 0,
+          "pathFormula": "roundRect",
+          "keypoint": 0.5,
+          "opacity": 1,
+          "isDefault": false
+        },
+        {
+          "tag": "item_number",
+          "type": "text",
+          "id": "o0sht4356k",
+          "left": 0,
+          "top": 0,
+          "width": 69.44444444444444,
+          "height": 18.51851851851852,
+          "content": "<div style=\"\"><p style=\"\"><span style=\"color:#333333ff;--colortype:dk1;font-family:Microsoft Yahei;font-size:24px;\">02</span></p></div>",
+          "rotate": 0,
+          "defaultFontName": "Microsoft Yahei",
+          "defaultColor": {
+            "color": "#333333",
+            "colorType": "dk1"
+          },
+          "vertical": false,
+          "lineHeight": 1.15,
+          "wordSpace": 1,
+          "isDefault": false,
+          "fit": "resize"
+        },
+        {
+          "tag": "noEdit",
+          "type": "shape",
+          "id": "nu10nk18ru",
+          "left": 0,
+          "top": 0,
+          "width": 69.44444444444444,
+          "height": 92.59259259259258,
+          "viewBox": [69.44444444444444, 92.59259259259258],
+          "path": "M 6.944444444444445 0 L 62.5 0 Q 69.44444444444444 0 69.44444444444444 6.944444444444445 L 69.44444444444444 85.64814814814814 Q 69.44444444444444 92.59259259259258 62.5 92.59259259259258 L 6.944444444444445 92.59259259259258 Q 0 92.59259259259258 0 85.64814814814814 L 0 6.944444444444445 Q 0 0 6.944444444444445 0 Z",
+          "themeFill": {
+            "color": "#dcaf7a",
+            "colorType": "accent2"
+          },
+          "fixedRatio": false,
+          "rotate": 0,
+          "pathFormula": "roundRect",
+          "keypoint": 0.5,
+          "opacity": 1,
+          "isDefault": false
+        },
+        {
+          "tag": "text",
+          "type": "text",
+          "id": "30mqt37tjl",
+          "left": 0,
+          "top": 0,
+          "width": 69.44444444444444,
+          "height": 18.51851851851852,
+          "content": "<div style=\"\"><p style=\"\"><span style=\"color:#333333ff;--colortype:dk1;font-family:Microsoft Yahei;font-size:24px;\">内容创作技巧</span></p></div>",
+          "rotate": 0,
+          "defaultFontName": "Microsoft Yahei",
+          "defaultColor": {
+            "color": "#333333",
+            "colorType": "dk1"
+          },
+          "vertical": false,
+          "lineHeight": 1.15,
+          "wordSpace": 1,
+          "isDefault": false,
+          "fit": "resize"
+        },
+        {
+          "tag": "noEdit",
+          "type": "shape",
+          "id": "otqx0xx7k4",
+          "left": 0,
+          "top": 0,
+          "width": 69.44444444444444,
+          "height": 92.59259259259258,
+          "viewBox": [69.44444444444444, 92.59259259259258],
+          "path": "M 6.944444444444445 0 L 62.5 0 Q 69.44444444444444 0 69.44444444444444 6.944444444444445 L 69.44444444444444 85.64814814814814 Q 69.44444444444444 92.59259259259258 62.5 92.59259259259258 L 6.944444444444445 92.59259259259258 Q 0 92.59259259259258 0 85.64814814814814 L 0 6.944444444444445 Q 0 0 6.944444444444445 0 Z",
+          "themeFill": {
+            "color": "#dcaf7a",
+            "colorType": "accent2"
+          },
+          "fixedRatio": false,
+          "rotate": 0,
+          "pathFormula": "roundRect",
+          "keypoint": 0.5,
+          "opacity": 1,
+          "isDefault": false
+        },
+        {
+          "tag": "item_number",
+          "type": "text",
+          "id": "hrukggiwbi",
+          "left": 0,
+          "top": 0,
+          "width": 69.44444444444444,
+          "height": 18.51851851851852,
+          "content": "<div style=\"\"><p style=\"\"><span style=\"color:#333333ff;--colortype:dk1;font-family:Microsoft Yahei;font-size:24px;\">03</span></p></div>",
+          "rotate": 0,
+          "defaultFontName": "Microsoft Yahei",
+          "defaultColor": {
+            "color": "#333333",
+            "colorType": "dk1"
+          },
+          "vertical": false,
+          "lineHeight": 1.15,
+          "wordSpace": 1,
+          "isDefault": false,
+          "fit": "resize"
+        },
+        {
+          "tag": "noEdit",
+          "type": "shape",
+          "id": "rpm0uhdiev",
+          "left": 0,
+          "top": 0,
+          "width": 69.44444444444444,
+          "height": 92.59259259259258,
+          "viewBox": [69.44444444444444, 92.59259259259258],
+          "path": "M 6.944444444444445 0 L 62.5 0 Q 69.44444444444444 0 69.44444444444444 6.944444444444445 L 69.44444444444444 85.64814814814814 Q 69.44444444444444 92.59259259259258 62.5 92.59259259259258 L 6.944444444444445 92.59259259259258 Q 0 92.59259259259258 0 85.64814814814814 L 0 6.944444444444445 Q 0 0 6.944444444444445 0 Z",
+          "themeFill": {
+            "color": "#dcaf7a",
+            "colorType": "accent2"
+          },
+          "fixedRatio": false,
+          "rotate": 0,
+          "pathFormula": "roundRect",
+          "keypoint": 0.5,
+          "opacity": 1,
+          "isDefault": false
+        },
+        {
+          "tag": "text",
+          "type": "text",
+          "id": "pdxq519est",
+          "left": 0,
+          "top": 0,
+          "width": 69.44444444444444,
+          "height": 18.51851851851852,
+          "content": "<div style=\"\"><p style=\"\"><span style=\"color:#333333ff;--colortype:dk1;font-family:Microsoft Yahei;font-size:24px;\">多媒体运用指南</span></p></div>",
+          "rotate": 0,
+          "defaultFontName": "Microsoft Yahei",
+          "defaultColor": {
+            "color": "#333333",
+            "colorType": "dk1"
+          },
+          "vertical": false,
+          "lineHeight": 1.15,
+          "wordSpace": 1,
+          "isDefault": false,
+          "fit": "resize"
+        },
+        {
+          "tag": "noEdit",
+          "type": "shape",
+          "id": "qss77o2a00",
+          "left": 0,
+          "top": 0,
+          "width": 69.44444444444444,
+          "height": 92.59259259259258,
+          "viewBox": [69.44444444444444, 92.59259259259258],
+          "path": "M 6.944444444444445 0 L 62.5 0 Q 69.44444444444444 0 69.44444444444444 6.944444444444445 L 69.44444444444444 85.64814814814814 Q 69.44444444444444 92.59259259259258 62.5 92.59259259259258 L 6.944444444444445 92.59259259259258 Q 0 92.59259259259258 0 85.64814814814814 L 0 6.944444444444445 Q 0 0 6.944444444444445 0 Z",
+          "themeFill": {
+            "color": "#dcaf7a",
+            "colorType": "accent2"
+          },
+          "fixedRatio": false,
+          "rotate": 0,
+          "pathFormula": "roundRect",
+          "keypoint": 0.5,
+          "opacity": 1,
+          "isDefault": false
+        },
+        {
+          "tag": "item_number",
+          "type": "text",
+          "id": "edyk793uyf",
+          "left": 0,
+          "top": 0,
+          "width": 69.44444444444444,
+          "height": 18.51851851851852,
+          "content": "<div style=\"\"><p style=\"\"><span style=\"color:#333333ff;--colortype:dk1;font-family:Microsoft Yahei;font-size:24px;\">04</span></p></div>",
+          "rotate": 0,
+          "defaultFontName": "Microsoft Yahei",
+          "defaultColor": {
+            "color": "#333333",
+            "colorType": "dk1"
+          },
+          "vertical": false,
+          "lineHeight": 1.15,
+          "wordSpace": 1,
+          "isDefault": false,
+          "fit": "resize"
+        },
+        {
+          "tag": "noEdit",
+          "type": "shape",
+          "id": "hb58lictge",
+          "left": 0,
+          "top": 0,
+          "width": 69.44444444444444,
+          "height": 92.59259259259258,
+          "viewBox": [69.44444444444444, 92.59259259259258],
+          "path": "M 6.944444444444445 0 L 62.5 0 Q 69.44444444444444 0 69.44444444444444 6.944444444444445 L 69.44444444444444 85.64814814814814 Q 69.44444444444444 92.59259259259258 62.5 92.59259259259258 L 6.944444444444445 92.59259259259258 Q 0 92.59259259259258 0 85.64814814814814 L 0 6.944444444444445 Q 0 0 6.944444444444445 0 Z",
+          "themeFill": {
+            "color": "#dcaf7a",
+            "colorType": "accent2"
+          },
+          "fixedRatio": false,
+          "rotate": 0,
+          "pathFormula": "roundRect",
+          "keypoint": 0.5,
+          "opacity": 1,
+          "isDefault": false
+        },
+        {
+          "tag": "subTitle",
+          "type": "text",
+          "id": "c4ndpz4vb7",
+          "left": 0,
+          "top": 0,
+          "width": 69.44444444444444,
+          "height": 18.51851851851852,
+          "content": "<div style=\"\"><p style=\"\"><span style=\"color:#b93423ff;--colortype:accent1;font-family:Microsoft Yahei;font-size:24px;font-weight:bold;\">传播渠道分析</span></p></div>",
+          "rotate": 0,
+          "defaultFontName": "Microsoft Yahei",
+          "defaultColor": {
+            "color": "#b93423",
+            "colorType": "accent1"
+          },
+          "vertical": false,
+          "lineHeight": 1.15,
+          "wordSpace": 2,
+          "isDefault": false,
+          "fit": "resize"
+        },
+        {
+          "tag": "noEdit",
+          "type": "shape",
+          "id": "niv2sif2xp",
+          "left": 0,
+          "top": 0,
+          "width": 69.44444444444444,
+          "height": 92.59259259259258,
+          "viewBox": [69.44444444444444, 92.59259259259258],
+          "path": "M 6.944444444444445 0 L 62.5 0 Q 69.44444444444444 0 69.44444444444444 6.944444444444445 L 69.44444444444444 85.64814814814814 Q 69.44444444444444 92.59259259259258 62.5 92.59259259259258 L 6.944444444444445 92.59259259259258 Q 0 92.59259259259258 0 85.64814814814814 L 0 6.944444444444445 Q 0 0 6.944444444444445 0 Z",
+          "themeFill": {
+            "color": "#dcaf7a",
+            "colorType": "accent2"
+          },
+          "fixedRatio": false,
+          "rotate": 0,
+          "pathFormula": "roundRect",
+          "keypoint": 0.5,
+          "opacity": 1,
+          "isDefault": false
+        },
+        {
+          "tag": "item_number",
+          "type": "text",
+          "id": "xcljdcbiii",
+          "left": 0,
+          "top": 0,
+          "width": 69.44444444444444,
+          "height": 18.51851851851852,
+          "content": "<div style=\"\"><p style=\"\"><span style=\"color:#333333ff;--colortype:dk1;font-family:Microsoft Yahei;font-size:24px;\">05</span></p></div>",
+          "rotate": 0,
+          "defaultFontName": "Microsoft Yahei",
+          "defaultColor": {
+            "color": "#333333",
+            "colorType": "dk1"
+          },
+          "vertical": false,
+          "lineHeight": 1.15,
+          "wordSpace": 1,
+          "isDefault": false,
+          "fit": "resize"
+        },
+        {
+          "tag": "noEdit",
+          "type": "shape",
+          "id": "740gbcr1rj",
+          "left": 0,
+          "top": 0,
+          "width": 69.44444444444444,
+          "height": 92.59259259259258,
+          "viewBox": [69.44444444444444, 92.59259259259258],
+          "path": "M 6.944444444444445 0 L 62.5 0 Q 69.44444444444444 0 69.44444444444444 6.944444444444445 L 69.44444444444444 85.64814814814814 Q 69.44444444444444 92.59259259259258 62.5 92.59259259259258 L 6.944444444444445 92.59259259259258 Q 0 92.59259259259258 0 85.64814814814814 L 0 6.944444444444445 Q 0 0 6.944444444444445 0 Z",
+          "themeFill": {
+            "color": "#dcaf7a",
+            "colorType": "accent2"
+          },
+          "fixedRatio": false,
+          "rotate": 0,
+          "pathFormula": "roundRect",
+          "keypoint": 0.5,
+          "opacity": 1,
+          "isDefault": false
+        },
+        {
+          "tag": "subTitle",
+          "type": "text",
+          "id": "073qral7fh",
+          "left": 0,
+          "top": 0,
+          "width": 69.44444444444444,
+          "height": 18.51851851851852,
+          "content": "<div style=\"\"><p style=\"\"><span style=\"color:#b93423ff;--colortype:accent1;font-family:Microsoft Yahei;font-size:24px;font-weight:bold;\">常见误区分析</span></p></div>",
+          "rotate": 0,
+          "defaultFontName": "Microsoft Yahei",
+          "defaultColor": {
+            "color": "#b93423",
+            "colorType": "accent1"
+          },
+          "vertical": false,
+          "lineHeight": 1.15,
+          "wordSpace": 2,
+          "isDefault": false,
+          "fit": "resize"
+        },
+        {
+          "tag": "noEdit",
+          "type": "shape",
+          "id": "7wtpjo1l5j",
+          "left": 0,
+          "top": 0,
+          "width": 69.44444444444444,
+          "height": 92.59259259259258,
+          "viewBox": [69.44444444444444, 92.59259259259258],
+          "path": "M 6.944444444444445 0 L 62.5 0 Q 69.44444444444444 0 69.44444444444444 6.944444444444445 L 69.44444444444444 85.64814814814814 Q 69.44444444444444 92.59259259259258 62.5 92.59259259259258 L 6.944444444444445 92.59259259259258 Q 0 92.59259259259258 0 85.64814814814814 L 0 6.944444444444445 Q 0 0 6.944444444444445 0 Z",
+          "themeFill": {
+            "color": "#dcaf7a",
+            "colorType": "accent2"
+          },
+          "fixedRatio": false,
+          "rotate": 0,
+          "pathFormula": "roundRect",
+          "keypoint": 0.5,
+          "opacity": 1,
+          "isDefault": false
+        },
+        {
+          "tag": "item_number",
+          "type": "text",
+          "id": "8fj63161ke",
+          "left": 0,
+          "top": 0,
+          "width": 69.44444444444444,
+          "height": 18.51851851851852,
+          "content": "<div style=\"\"><p style=\"\"><span style=\"color:#333333ff;--colortype:dk1;font-family:Microsoft Yahei;font-size:24px;\">06</span></p></div>",
+          "rotate": 0,
+          "defaultFontName": "Microsoft Yahei",
+          "defaultColor": {
+            "color": "#333333",
+            "colorType": "dk1"
+          },
+          "vertical": false,
+          "lineHeight": 1.15,
+          "wordSpace": 1,
+          "isDefault": false,
+          "fit": "resize"
+        },
+        {
+          "tag": "noEdit",
+          "type": "shape",
+          "id": "t44kmxk8nu",
+          "left": 0,
+          "top": 0,
+          "width": 69.44444444444444,
+          "height": 92.59259259259258,
+          "viewBox": [69.44444444444444, 92.59259259259258],
+          "path": "M 6.944444444444445 0 L 62.5 0 Q 69.44444444444444 0 69.44444444444444 6.944444444444445 L 69.44444444444444 85.64814814814814 Q 69.44444444444444 92.59259259259258 62.5 92.59259259259258 L 6.944444444444445 92.59259259259258 Q 0 92.59259259259258 0 85.64814814814814 L 0 6.944444444444445 Q 0 0 6.944444444444445 0 Z",
+          "themeFill": {
+            "color": "#dcaf7a",
+            "colorType": "accent2"
+          },
+          "fixedRatio": false,
+          "rotate": 0,
+          "pathFormula": "roundRect",
+          "keypoint": 0.5,
+          "opacity": 1,
+          "isDefault": false
+        }
+      ],
+      "background": {
+        "type": "color",
+        "themeColor": {
+          "color": "#ffffff",
+          "colorType": "lt1"
+        }
+      },
+      "remark": "幻灯片: ppt/slides/slide2.xml",
+      "pageId": "v9giy5nus6"
+    },
+    {
+      "id": "412e23yn0f",
+      "tag": "content",
+      "elements": [
+        {
+          "tag": "title",
+          "type": "text",
+          "id": "780x9xbvg1",
+          "left": 0,
+          "top": 0,
+          "width": 69.44444444444444,
+          "height": 18.51851851851852,
+          "content": "<div style=\"\"><p style=\"\"><span style=\"color:#b93423ff;--colortype:accent1;font-family:Microsoft Yahei;font-size:24px;font-weight:bold;\">01</span></p></div>",
+          "rotate": 0,
+          "defaultFontName": "Microsoft Yahei",
+          "defaultColor": {
+            "color": "#b93423",
+            "colorType": "accent1"
+          },
+          "vertical": false,
+          "lineHeight": 1.15,
+          "wordSpace": 2,
+          "isDefault": false,
+          "fit": "resize"
+        },
+        {
+          "tag": "noEdit",
+          "type": "shape",
+          "id": "voswpeg71x",
+          "left": 0,
+          "top": 0,
+          "width": 69.44444444444444,
+          "height": 92.59259259259258,
+          "viewBox": [69.44444444444444, 92.59259259259258],
+          "path": "M 6.944444444444445 0 L 62.5 0 Q 69.44444444444444 0 69.44444444444444 6.944444444444445 L 69.44444444444444 85.64814814814814 Q 69.44444444444444 92.59259259259258 62.5 92.59259259259258 L 6.944444444444445 92.59259259259258 Q 0 92.59259259259258 0 85.64814814814814 L 0 6.944444444444445 Q 0 0 6.944444444444445 0 Z",
+          "themeFill": {
+            "color": "#dcaf7a",
+            "colorType": "accent2"
+          },
+          "fixedRatio": false,
+          "rotate": 0,
+          "pathFormula": "roundRect",
+          "keypoint": 0.5,
+          "opacity": 1,
+          "isDefault": false
+        },
+        {
+          "tag": "text",
+          "type": "text",
+          "id": "ey5ls4qq0x",
+          "left": 0,
+          "top": 0,
+          "width": 69.44444444444444,
+          "height": 18.51851851851852,
+          "content": "<div style=\"\"><p style=\"\"><span style=\"color:#333333ff;--colortype:dk1;font-family:Microsoft Yahei;font-size:24px;\">党建宣传策略概述</span></p></div>",
+          "rotate": 0,
+          "defaultFontName": "Microsoft Yahei",
+          "defaultColor": {
+            "color": "#333333",
+            "colorType": "dk1"
+          },
+          "vertical": false,
+          "lineHeight": 1.15,
+          "wordSpace": 1,
+          "isDefault": false,
+          "fit": "resize"
+        },
+        {
+          "tag": "noEdit",
+          "type": "shape",
+          "id": "5n91tqasdh",
+          "left": 0,
+          "top": 0,
+          "width": 69.44444444444444,
+          "height": 92.59259259259258,
+          "viewBox": [69.44444444444444, 92.59259259259258],
+          "path": "M 6.944444444444445 0 L 62.5 0 Q 69.44444444444444 0 69.44444444444444 6.944444444444445 L 69.44444444444444 85.64814814814814 Q 69.44444444444444 92.59259259259258 62.5 92.59259259259258 L 6.944444444444445 92.59259259259258 Q 0 92.59259259259258 0 85.64814814814814 L 0 6.944444444444445 Q 0 0 6.944444444444445 0 Z",
+          "themeFill": {
+            "color": "#dcaf7a",
+            "colorType": "accent2"
+          },
+          "fixedRatio": false,
+          "rotate": 0,
+          "pathFormula": "roundRect",
+          "keypoint": 0.5,
+          "opacity": 1,
+          "isDefault": false
+        }
+      ],
+      "background": {
+        "type": "color",
+        "themeColor": {
+          "color": "#ffffff",
+          "colorType": "lt1"
+        }
+      },
+      "remark": "幻灯片: ppt/slides/slide3.xml",
+      "pageId": "4o9yga4xi7"
+    }
+  ],
+  "theme": {
+    "fontName": "Microsoft Yahei",
+    "themeColor": {
+      "lt1": "#ffffff",
+      "dk1": "#333333",
+      "lt2": "#e1e1e1",
+      "dk2": "#ababab",
+      "accent1": "#4472C4",
+      "accent2": "#ED7D31",
+      "accent3": "#A5A5A5",
+      "accent4": "#FFC000",
+      "accent5": "#5B9BD5",
+      "accent6": "#70AD47"
+    }
+  },
+  "title": "党建宣传策略实战方法论"
+}
