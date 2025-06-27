@@ -1,6 +1,7 @@
 'use client'
 
 import { useRef } from 'react'
+import { DiffEditor } from './DiffEditor'
 
 interface FileUploaderProps {
   onFileUpload: (file: File) => void
@@ -84,6 +85,10 @@ export function FileUploader({ onFileUpload, loading }: FileUploaderProps) {
         
         <div style={{ marginTop: '10px', fontSize: '14px', color: '#666', textAlign: 'center' }}>
           支持最大 50MB 的 .pptx 文件
+        </div>
+        
+        <div style={{ marginTop: '20px', width: '300px' }}>
+          <DiffEditor />
         </div>
       </div>
     </>
