@@ -73,6 +73,11 @@ This is a Next.js application that provides both a web interface and a TypeScrip
 - **Text**: Rich text with formatting, fonts, colors (`TextElement`)
 - **Shapes**: Geometric shapes with fills, borders, custom paths (`ShapeElement`)
 - **Images**: Pictures with positioning, cropping, transformations (`ImageElement`)
+  - **Base64 Mode**: Complete image data embedded as Data URLs
+  - **URL Mode**: Image references for external hosting
+  - **Format Detection**: JPEG, PNG, GIF, BMP, WebP, TIFF support
+  - **Metadata Extraction**: Original size, format, MIME type
+  - **Crop Information**: PowerPoint cropping data preservation
 - **Tables**: Structured data with cell formatting
 - **Charts**: Data visualization elements
 - **Groups**: Nested element hierarchies
@@ -105,6 +110,40 @@ This is a Next.js application that provides both a web interface and a TypeScrip
 - Configurable precision (default: 2 decimal places)
 - Tolerance checking for position/size validation
 - Consistent unit handling across all elements
+
+### Image Processing System (2024 Base64 Implementation)
+
+#### **ImageDataService** (`app/lib/services/images/ImageDataService.ts`)
+- **Binary Data Extraction**: Extracts image files from PPTX zip archives
+- **Format Detection**: Automatic detection of JPEG, PNG, GIF, BMP, WebP, TIFF formats
+- **Base64 Encoding**: Converts binary data to Data URLs for embedding
+- **Batch Processing**: Concurrent processing with semaphore-based memory management
+- **Error Recovery**: Graceful handling of missing or corrupted images
+
+#### **ImageElement Enhancement** (`app/lib/models/domain/elements/ImageElement.ts`)
+- **Dual Output Modes**: Supports both base64 and URL output formats
+- **Metadata Support**: Original size, format, MIME type preservation
+- **Crop Information**: PowerPoint srcRect cropping data processing
+- **Backward Compatibility**: Maintains legacy URL format when image data unavailable
+
+#### **ImageProcessor Integration** (`app/lib/services/element/processors/ImageProcessor.ts`)
+- **Seamless Processing**: Automatic image data extraction during element processing
+- **Relationship Resolution**: Resolves PPTX relationship IDs to image paths
+- **Crop Data Extraction**: Processes PowerPoint srcRect cropping information
+- **Fallback Handling**: Continues processing when image extraction fails
+
+#### **Storage Strategy Architecture** (`app/lib/services/images/interfaces/ImageStorageStrategy.ts`)
+- **Strategy Pattern**: Pluggable storage backends (Base64, CDN, Custom)
+- **Priority System**: Automatic fallback to available strategies
+- **Health Monitoring**: Strategy availability and performance tracking
+- **Base64 Default**: Built-in Base64StorageStrategy as reliable fallback
+
+#### **Image Processing Features**
+- **Memory Management**: Semaphore-controlled concurrent processing (default: 3 concurrent)
+- **Format Support**: Comprehensive format detection with magic number validation
+- **Error Isolation**: Individual image failures don't affect overall parsing
+- **Performance Optimization**: Batch processing for multiple images
+- **CDN Ready**: Interface designed for future CDN integration
 
 ### API Architecture
 
@@ -146,6 +185,9 @@ This is a Next.js application that provides both a web interface and a TypeScrip
 - **Color Processing**: Comprehensive testing of color transformations and error recovery
 - **HTML Output Integrity**: CSS formatting consistency and property ordering
 - **Integration Testing**: Cross-component interaction validation
+- **Image Processing**: Base64 encoding, format detection, batch processing, and storage strategies
+- **Memory Management**: Large image handling and concurrent processing validation
+- **Storage Strategy**: CDN interface testing and fallback mechanism validation
 
 #### **Test Configuration**
 - **Jest** with TypeScript support

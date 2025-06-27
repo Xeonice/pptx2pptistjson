@@ -20,6 +20,11 @@ export interface IFileService {
   extractBinaryFile(zip: JSZip, path: string): Promise<ArrayBuffer>;
 
   /**
+   * Extract a binary file from the ZIP as Buffer
+   */
+  extractBinaryFileAsBuffer(zip: JSZip, path: string): Promise<Buffer>;
+
+  /**
    * Check if a file exists in the ZIP
    */
   fileExists(zip: JSZip, path: string): boolean;

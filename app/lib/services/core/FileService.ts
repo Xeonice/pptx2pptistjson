@@ -38,6 +38,19 @@ export class FileService implements IFileService {
     }
   }
 
+  async extractBinaryFileAsBuffer(zip: JSZip, path: string): Promise<Buffer> {
+    const file = zip.file(path);
+    if (!file) {
+      throw new Error(`File not found in ZIP: ${path}`);
+    }
+    
+    try {
+      return await file.async('nodebuffer') as Buffer;
+    } catch (error) {
+      throw new Error(`Failed to extract binary file as buffer ${path}: ${(error as Error).message}`);
+    }
+  }
+
   fileExists(zip: JSZip, path: string): boolean {
     return zip.file(path) !== null;
   }

@@ -1,12 +1,16 @@
 import { IElementProcessor } from '../../interfaces/IElementProcessor';
 import { ProcessingContext } from '../../interfaces/ProcessingContext';
-import { ImageElement } from '../../../models/domain/elements/ImageElement';
+import { ImageElement, ImageCrop } from '../../../models/domain/elements/ImageElement';
 import { XmlNode } from '../../../models/xml/XmlNode';
 import { IXmlParseService } from '../../interfaces/IXmlParseService';
 import { UnitConverter } from '../../utils/UnitConverter';
+import { ImageDataService } from '../../images/ImageDataService';
 
 export class ImageProcessor implements IElementProcessor<ImageElement> {
-  constructor(private xmlParser: IXmlParseService) {}
+  constructor(
+    private xmlParser: IXmlParseService,
+    private imageDataService?: ImageDataService
+  ) {}
 
   canProcess(xmlNode: XmlNode): boolean {
     // Process pic nodes (images)
@@ -32,12 +36,25 @@ export class ImageProcessor implements IElementProcessor<ImageElement> {
     if (embedId && context.relationships.has(embedId)) {
       const rel = context.relationships.get(embedId);
       if (rel && rel.target) {
-        // In a full implementation, this would resolve to actual image data or URL
         imageUrl = rel.target;
       }
     }
     
     const imageElement = new ImageElement(id, imageUrl);
+    
+    // 尝试提取并处理实际的图片数据
+    if (embedId && this.imageDataService) {
+      try {
+        const imageData = await this.imageDataService.extractImageData(embedId, context);
+        if (imageData) {
+          const dataUrl = this.imageDataService.encodeToBase64(imageData);
+          imageElement.setImageData(imageData, dataUrl);
+        }
+      } catch (error) {
+        console.warn(`Failed to process image data for ${embedId}:`, error);
+        // 继续使用占位符URL，不影响其他处理
+      }
+    }
     
     // Extract position and size
     const spPrNode = this.xmlParser.findNode(xmlNode, 'spPr');
@@ -86,11 +103,48 @@ export class ImageProcessor implements IElementProcessor<ImageElement> {
       }
     }
     
+    // Extract crop information from blip
+    if (blipNode) {
+      const crop = this.extractCropInfo(blipNode);
+      if (crop) {
+        imageElement.setCrop(crop);
+      }
+    }
+    
     return imageElement;
   }
 
   getElementType(): string {
     return 'image';
+  }
+
+  /**
+   * 从blip节点提取裁剪信息
+   */
+  private extractCropInfo(blipNode: XmlNode): ImageCrop | undefined {
+    // PowerPoint中的图片裁剪信息通常在 a:srcRect 元素中
+    const srcRectNode = this.xmlParser.findNode(blipNode, 'srcRect');
+    if (!srcRectNode) return undefined;
+
+    const l = this.xmlParser.getAttribute(srcRectNode, 'l'); // left
+    const t = this.xmlParser.getAttribute(srcRectNode, 't'); // top  
+    const r = this.xmlParser.getAttribute(srcRectNode, 'r'); // right
+    const b = this.xmlParser.getAttribute(srcRectNode, 'b'); // bottom
+
+    // PowerPoint使用1000分之一的单位表示百分比
+    const crop: ImageCrop = {
+      left: l ? parseInt(l) / 1000 : 0,
+      top: t ? parseInt(t) / 1000 : 0,
+      right: r ? parseInt(r) / 1000 : 0,
+      bottom: b ? parseInt(b) / 1000 : 0
+    };
+
+    // 只有当存在实际裁剪时才返回裁剪信息
+    if (crop.left > 0 || crop.top > 0 || crop.right > 0 || crop.bottom > 0) {
+      return crop;
+    }
+
+    return undefined;
   }
 
 }

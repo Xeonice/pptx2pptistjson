@@ -44,6 +44,29 @@ document.querySelector('input').addEventListener('change', evt => {
 })
 ```
 
+### Node.js (服务端)
+```javascript
+import { parse } from 'pptxtojson'
+import fs from 'fs'
+
+const buffer = fs.readFileSync('presentation.pptx')
+const json = await parse(buffer)
+console.log(json)
+```
+
+### 配置选项
+```javascript
+// 基础用法
+const json = await parse(arrayBuffer)
+
+// 带配置选项
+const json = await parse(arrayBuffer, {
+  imageMode: 'base64', // 'base64' | 'url' 
+  includeNotes: true,
+  includeMaster: true
+})
+```
+
 ### 输出示例
 ```javascript
 {
@@ -139,8 +162,13 @@ document.querySelector('input').addEventListener('change', evt => {
 - 非实线边框样式 `borderStrokeDasharray`
 - 裁剪形状 `geom`
 - 裁剪范围 `rect`
-- 图片地址（base64） `src`
+- 图片地址 `src`
 - 旋转角度 `rotate`
+- **图片处理模式** `mode` - 'base64' | 'url'
+- **图片格式** `format` - 'jpeg' | 'png' | 'gif' | 'bmp' | 'webp' | 'tiff'
+- **MIME类型** `mimeType` - 'image/jpeg' | 'image/png' 等
+- **原始文件大小** `originalSize` - 字节数
+- **原始路径** `originalSrc` - PPTX中的原始图片路径
 
 ##### 形状
 - 类型 `type='shape'`
@@ -231,6 +259,110 @@ document.querySelector('input').addEventListener('change', evt => {
 - 宽度 `width`
 - 高度 `height`
 - 子元素集合 `elements`
+
+# 🖼️ 图片处理
+
+### 图片处理模式
+
+pptxtojson 支持两种图片处理模式：
+
+#### 1. Base64 模式（默认）
+将 PPTX 中的图片提取并转换为 base64 Data URLs，图片数据直接嵌入在 JSON 中。
+
+**优点：**
+- 无需额外的图片服务器
+- 图片数据完整保存
+- 支持离线使用
+- 适合小型应用或文档归档
+
+**缺点：**
+- JSON 文件体积较大
+- 内存占用较高
+
+#### 2. URL 模式
+图片以 URL 形式输出，需要配合图片服务器使用。
+
+**优点：**
+- JSON 文件体积小
+- 内存占用低
+- 支持 CDN 加速
+
+**缺点：**
+- 需要额外的图片存储服务
+- 图片可能丢失
+
+### 使用示例
+
+#### Base64 模式（推荐）
+```javascript
+import { parse } from 'pptxtojson'
+
+const json = await parse(arrayBuffer, { imageMode: 'base64' })
+
+// 图片元素输出格式
+{
+  "type": "image",
+  "mode": "base64",
+  "src": "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAA...",
+  "format": "jpeg",
+  "mimeType": "image/jpeg",
+  "originalSize": 45678,
+  "originalSrc": "../media/image1.jpeg",
+  "left": 100,
+  "top": 200,
+  "width": 300,
+  "height": 400,
+  // ... 其他属性
+}
+```
+
+#### URL 模式
+```javascript
+const json = await parse(arrayBuffer, { imageMode: 'url' })
+
+// 图片元素输出格式
+{
+  "type": "image", 
+  "mode": "url",
+  "src": "https://example.com/images/image1.jpg",
+  "originalSrc": "../media/image1.jpeg",
+  "left": 100,
+  "top": 200,
+  "width": 300,
+  "height": 400,
+  // ... 其他属性
+}
+```
+
+### 支持的图片格式
+
+- **JPEG** (.jpg, .jpeg)
+- **PNG** (.png)
+- **GIF** (.gif)
+- **BMP** (.bmp)
+- **WebP** (.webp)
+- **TIFF** (.tiff)
+
+### 图片裁剪信息
+
+当图片在 PowerPoint 中被裁剪时，会包含裁剪信息：
+
+```javascript
+{
+  "type": "image",
+  "clip": {
+    "range": [[10, 20], [70, 60]] // [[left, top], [right, bottom]]
+  },
+  // ... 其他属性
+}
+```
+
+### 性能和内存管理
+
+- **并发处理**：自动控制图片处理并发数（默认3个）
+- **内存优化**：大图片批量处理时使用信号量机制
+- **错误处理**：单个图片处理失败不影响整体解析
+- **进度反馈**：支持批量处理进度回调
 
 ### 更多类型请参考 👇
 [https://github.com/pipipi-pikachu/pptxtojson/blob/master/dist/index.d.ts](https://github.com/pipipi-pikachu/pptxtojson/blob/master/dist/index.d.ts)
