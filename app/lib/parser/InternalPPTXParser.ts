@@ -4,6 +4,8 @@
  */
 
 import { Presentation } from "../models/domain/Presentation";
+import { Slide } from "../models/domain/Slide";
+import { Theme } from "../models/domain/Theme";
 import { ParseResult } from "../models/dto/ParseResult";
 import { IPresentationParser } from "../services/interfaces/IPresentationParser";
 import { createConfiguredContainer } from "../services/ServiceConfiguration";
@@ -26,6 +28,13 @@ export interface InternalParseResult {
   elementCount: number;
   warnings?: string[];
   parseTimeMs: number;
+}
+
+export interface PPTistJSON {
+  slides: Slide[];
+  theme: Theme;
+  title: string;
+  slideSize: number;
 }
 
 /**
@@ -80,65 +89,22 @@ export class InternalPPTXParser {
   async parseToJSON(
     file: ArrayBuffer | Blob,
     options?: InternalParseOptions
-  ): Promise<any> {
+  ): Promise<PPTistJSON> {
     const result = await this.parse(file, options);
-    
+
     // Convert to the expected output format
     return {
       slides: result.presentation.getSlides().map((slide) => slide.toJSON()),
       theme: this.convertTheme(result.presentation.getTheme()),
-      title: result.presentation.getMetadata().title || "Presentation"
+      title: result.presentation.getMetadata().title || "Presentation",
     };
   }
-  
-  private convertTheme(theme: any): any {
-    if (!theme) {
-      return {
-        fontName: "Microsoft Yahei",
-        themeColor: {
-          dk1: "rgba(0,7,15,1)",
-          lt1: "#FFFFFF", 
-          dk2: "#c3c3c3",
-          lt2: "#e1e1e1",
-          accent1: "rgba(0,7,15,1)",
-          accent2: "#16a2ffff",
-          accent3: "#16a2ffff", 
-          accent4: "#c5dcffff",
-          accent5: "#1450b0ff",
-          accent6: "#FFFFFF"
-        }
-      };
-    }
-    
+
+  private convertTheme(theme: Theme): any {
     return {
-      fontName: theme.fontScheme?.majorFont?.latin || "Microsoft Yahei",
-      themeColor: {
-        dk1: this.convertColor(theme.colorScheme?.text1) || "rgba(0,7,15,1)",
-        lt1: this.convertColor(theme.colorScheme?.background1) || "#FFFFFF",
-        dk2: "#c3c3c3",
-        lt2: "#e1e1e1", 
-        accent1: this.convertColor(theme.colorScheme?.accent1) || "rgba(0,7,15,1)",
-        accent2: this.convertColor(theme.colorScheme?.accent2) || "#16a2ffff",
-        accent3: this.convertColor(theme.colorScheme?.accent3) || "#16a2ffff",
-        accent4: this.convertColor(theme.colorScheme?.accent4) || "#c5dcffff",
-        accent5: this.convertColor(theme.colorScheme?.accent5) || "#1450b0ff",
-        accent6: this.convertColor(theme.colorScheme?.accent6) || "#FFFFFF"
-      }
+      fontName: theme.getFontScheme()?.majorFont?.latin || "Microsoft Yahei",
+      themeColor: theme.getColorScheme(),
     };
-  }
-  
-  private convertColor(color: string | undefined): string | undefined {
-    if (!color) return undefined;
-    
-    // Convert hex colors to rgba format if needed
-    if (color.startsWith('#') && color.length === 7) {
-      const r = parseInt(color.slice(1, 3), 16);
-      const g = parseInt(color.slice(3, 5), 16);
-      const b = parseInt(color.slice(5, 7), 16);
-      return `rgba(${r},${g},${b},1)`;
-    }
-    
-    return color;
   }
 
   /**

@@ -9,6 +9,7 @@ import { IXmlParseService } from "../../interfaces/IXmlParseService";
 import { ProcessingContext } from "../../interfaces/ProcessingContext";
 import { UnitConverter } from "../../utils/UnitConverter";
 import { Theme } from "../../../models/domain/Theme";
+import { FillExtractor } from "../../utils/FillExtractor";
 
 export class TextProcessor implements IElementProcessor<TextElement> {
   constructor(private xmlParser: IXmlParseService) {}
@@ -18,7 +19,10 @@ export class TextProcessor implements IElementProcessor<TextElement> {
     return xmlNode.name.endsWith("sp") && this.hasTextContent(xmlNode);
   }
 
-  async process(xmlNode: XmlNode, context: ProcessingContext): Promise<TextElement> {
+  async process(
+    xmlNode: XmlNode,
+    context: ProcessingContext
+  ): Promise<TextElement> {
     // Extract shape ID
     const nvSpPrNode = this.xmlParser.findNode(xmlNode, "nvSpPr");
     const cNvPrNode = nvSpPrNode
@@ -29,7 +33,7 @@ export class TextProcessor implements IElementProcessor<TextElement> {
       : undefined;
 
     // Generate unique ID
-    const id = context.idGenerator.generateUniqueId(originalId, 'text');
+    const id = context.idGenerator.generateUniqueId(originalId, "text");
 
     const textElement = new TextElement(id);
 
@@ -109,7 +113,10 @@ export class TextProcessor implements IElementProcessor<TextElement> {
     return false;
   }
 
-  private extractParagraphContent(pNode: XmlNode, context: ProcessingContext): TextContent | undefined {
+  private extractParagraphContent(
+    pNode: XmlNode,
+    context: ProcessingContext
+  ): TextContent | undefined {
     const runs = this.xmlParser.findNodes(pNode, "r");
     if (runs.length === 0) return undefined;
 
@@ -139,8 +146,10 @@ export class TextProcessor implements IElementProcessor<TextElement> {
       style: commonStyle,
     };
   }
-
-  private extractRunStyle(rPrNode: XmlNode, context: ProcessingContext): TextRunStyle {
+  private extractRunStyle(
+    rPrNode: XmlNode,
+    context: ProcessingContext
+  ): TextRunStyle {
     const style: TextRunStyle = {};
 
     // Font size
@@ -172,33 +181,36 @@ export class TextProcessor implements IElementProcessor<TextElement> {
     // Color
     const solidFillNode = this.xmlParser.findNode(rPrNode, "solidFill");
     if (solidFillNode) {
-      // Check for direct color (srgbClr)
-      const srgbClrNode = this.xmlParser.findNode(solidFillNode, "srgbClr");
-      if (srgbClrNode) {
-        const val = this.xmlParser.getAttribute(srgbClrNode, "val");
-        if (val) {
-          style.color = `#${val}ff`;
-        }
-      }
-      
-      // Check for theme color (schemeClr)
-      const schemeClrNode = this.xmlParser.findNode(solidFillNode, "schemeClr");
-      if (schemeClrNode) {
-        const val = this.xmlParser.getAttribute(schemeClrNode, "val");
-        if (val && context.theme) {
-          // Get actual color from theme
-          const themeColor = this.getThemeColor(context.theme, val);
-          if (themeColor) {
-            // Store both actual color and theme reference
-            style.color = themeColor;
+      // Convert solidFillNode to plain object for FillExtractor
+      const solidFillObj = this.xmlNodeToObject(solidFillNode);
+
+      // Create warpObj with theme content
+      const warpObj = {
+        themeContent: context.theme
+          ? this.createThemeContent(context.theme)
+          : undefined,
+      };
+
+      // Use FillExtractor to get color
+      const color = FillExtractor.getSolidFill(
+        solidFillObj,
+        undefined,
+        undefined,
+        warpObj
+      );
+      if (color) {
+        style.color = color;
+
+        // Extract theme color type if present
+        const schemeClrNode = this.xmlParser.findNode(
+          solidFillNode,
+          "schemeClr"
+        );
+        if (schemeClrNode) {
+          const val = this.xmlParser.getAttribute(schemeClrNode, "val");
+          if (val) {
             style.themeColorType = val;
-          } else {
-            // Fallback to theme reference
-            style.color = `theme:${val}`;
           }
-        } else if (val) {
-          // No theme available, use reference
-          style.color = `theme:${val}`;
         }
       }
     }
@@ -215,45 +227,151 @@ export class TextProcessor implements IElementProcessor<TextElement> {
     return style;
   }
 
-  private getThemeColor(theme: Theme, colorType: string): string | undefined {
-    // Map PowerPoint theme color names to our theme structure
+  private xmlNodeToObject(node: XmlNode): any {
+    const obj: any = {};
+
+    // Add attributes
+    if (node.attributes && Object.keys(node.attributes).length > 0) {
+      obj.attrs = { ...node.attributes };
+    }
+
+    // Add children
+    if (node.children && node.children.length > 0) {
+      for (const child of node.children) {
+        const childName = child.name.includes(":")
+          ? child.name
+          : `a:${child.name}`;
+        obj[childName] = this.xmlNodeToObject(child);
+      }
+    }
+
+    // Note: Text content is handled separately in XML processing
+
+    return obj;
+  }
+
+  private createThemeContent(theme: Theme): any {
     const colorScheme = theme.getColorScheme();
     if (!colorScheme) return undefined;
 
-    const colorMapping: { [key: string]: keyof typeof colorScheme } = {
-      'accent1': 'accent1',
-      'accent2': 'accent2', 
-      'accent3': 'accent3',
-      'accent4': 'accent4',
-      'accent5': 'accent5',
-      'accent6': 'accent6',
-      'dk1': 'text1',
-      'dk2': 'text2',
-      'lt1': 'background1',
-      'lt2': 'background2',
-      'hlink': 'hyperlink',
-      'folHlink': 'followedHyperlink'
+    // Create theme structure expected by FillExtractor
+    return {
+      "a:theme": {
+        "a:themeElements": {
+          "a:clrScheme": {
+            "a:accent1": {
+              "a:srgbClr": {
+                attrs: {
+                  val:
+                    colorScheme.accent1?.replace("#", "").replace(/ff$/, "") ||
+                    "000000",
+                },
+              },
+            },
+            "a:accent2": {
+              "a:srgbClr": {
+                attrs: {
+                  val:
+                    colorScheme.accent2?.replace("#", "").replace(/ff$/, "") ||
+                    "000000",
+                },
+              },
+            },
+            "a:accent3": {
+              "a:srgbClr": {
+                attrs: {
+                  val:
+                    colorScheme.accent3?.replace("#", "").replace(/ff$/, "") ||
+                    "000000",
+                },
+              },
+            },
+            "a:accent4": {
+              "a:srgbClr": {
+                attrs: {
+                  val:
+                    colorScheme.accent4?.replace("#", "").replace(/ff$/, "") ||
+                    "000000",
+                },
+              },
+            },
+            "a:accent5": {
+              "a:srgbClr": {
+                attrs: {
+                  val:
+                    colorScheme.accent5?.replace("#", "").replace(/ff$/, "") ||
+                    "000000",
+                },
+              },
+            },
+            "a:accent6": {
+              "a:srgbClr": {
+                attrs: {
+                  val:
+                    colorScheme.accent6?.replace("#", "").replace(/ff$/, "") ||
+                    "000000",
+                },
+              },
+            },
+            "a:dk1": {
+              "a:srgbClr": {
+                attrs: {
+                  val:
+                    colorScheme.dk1?.replace("#", "").replace(/ff$/, "") ||
+                    "000000",
+                },
+              },
+            },
+            "a:dk2": {
+              "a:srgbClr": {
+                attrs: {
+                  val:
+                    colorScheme.dk2?.replace("#", "").replace(/ff$/, "") ||
+                    "000000",
+                },
+              },
+            },
+            "a:lt1": {
+              "a:srgbClr": {
+                attrs: {
+                  val:
+                    colorScheme.lt1?.replace("#", "").replace(/ff$/, "") ||
+                    "FFFFFF",
+                },
+              },
+            },
+            "a:lt2": {
+              "a:srgbClr": {
+                attrs: {
+                  val:
+                    colorScheme.lt2?.replace("#", "").replace(/ff$/, "") ||
+                    "FFFFFF",
+                },
+              },
+            },
+            "a:hlink": {
+              "a:srgbClr": {
+                attrs: {
+                  val:
+                    colorScheme.hyperlink
+                      ?.replace("#", "")
+                      .replace(/ff$/, "") || "0000FF",
+                },
+              },
+            },
+            "a:folHlink": {
+              "a:srgbClr": {
+                attrs: {
+                  val:
+                    colorScheme.followedHyperlink
+                      ?.replace("#", "")
+                      .replace(/ff$/, "") || "800080",
+                },
+              },
+            },
+          },
+        },
+      },
     };
-
-    const mappedColor = colorMapping[colorType];
-    if (mappedColor && colorScheme[mappedColor]) {
-      // Convert to hex format with alpha
-      const color = colorScheme[mappedColor];
-      if (color.startsWith('rgba(')) {
-        // Convert rgba to hex
-        const match = color.match(/rgba\((\d+),(\d+),(\d+),([\d.]+)\)/);
-        if (match) {
-          const [, r, g, b] = match;
-          const hex = `#${parseInt(r).toString(16).padStart(2, '0')}${parseInt(g).toString(16).padStart(2, '0')}${parseInt(b).toString(16).padStart(2, '0')}ff`;
-          return hex;
-        }
-      } else if (color.startsWith('#')) {
-        return color.endsWith('ff') ? color : color + 'ff';
-      }
-      return color;
-    }
-
-    return undefined;
   }
-
 }

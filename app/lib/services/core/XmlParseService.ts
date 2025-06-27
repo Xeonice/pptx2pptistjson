@@ -37,6 +37,14 @@ export class XmlParseService implements IXmlParseService {
     return XmlNodeHelper.findNode(root, selector);
   }
 
+  getChildNodes(parent: XmlNode, tagName: string): XmlNode[] {
+    if (!parent.children) {
+      return [];
+    }
+    
+    return parent.children.filter(child => child.name === tagName);
+  }
+
   getAttribute(node: XmlNode, attributeName: string): string | undefined {
     return XmlNodeHelper.getAttribute(node, attributeName);
   }

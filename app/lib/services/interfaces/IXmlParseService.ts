@@ -20,6 +20,11 @@ export interface IXmlParseService {
   findNode(root: XmlNode, selector: string): XmlNode | undefined;
 
   /**
+   * Get child nodes by tag name
+   */
+  getChildNodes(parent: XmlNode, tagName: string): XmlNode[];
+
+  /**
    * Get attribute value from a node
    */
   getAttribute(node: XmlNode, attributeName: string): string | undefined;

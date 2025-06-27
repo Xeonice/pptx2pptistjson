@@ -90,6 +90,8 @@ This is a Next.js application that provides both a web interface and a TypeScrip
 - Converts between hex, rgb, and rgba formats
 - Supports theme color resolution and luminance modifications
 - Handles transparent colors and color inheritance
+- **Color Conversion Note**: 
+  - 这里不需要过度关注 rgba 和 hex 颜色的差别问题，保证两种颜色是完全对应一致的即可
 
 #### **UnitConverter** (`app/lib/services/utils/UnitConverter.ts`)
 - High-precision EMU (English Metric Units) to points conversion
@@ -162,5 +164,11 @@ Comprehensive TypeScript coverage with:
 - **Strategy Pattern**: Element processors handle different PowerPoint element types
 - **Factory Pattern**: Utility classes provide standardized conversion methods
 - **Chain of Responsibility**: Processing pipeline with context passing
+
+## Parsing Principles
+
+### PPTX File Reading
+- **File Attribute Reading**: 
+  - 这里读取 pptx 文件属性时，不应该有默认值的概念，读不到就是读不到，不需要任何 fallback
 
 This architecture supports both standalone library usage and full Next.js application deployment, with comprehensive testing and utility enhancements for accurate PPTX parsing.

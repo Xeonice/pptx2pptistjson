@@ -1,12 +1,13 @@
-import { Element } from './Element';
+import { Element } from "./Element";
 
 export class ShapeElement extends Element {
   private shapeType: ShapeType;
   private path?: string;
   private text?: TextContent;
+  private fill?: { color: string };
 
   constructor(id: string, shapeType: ShapeType) {
-    super(id, 'shape');
+    super(id, "shape");
     this.shapeType = shapeType;
   }
 
@@ -30,6 +31,14 @@ export class ShapeElement extends Element {
     return this.text;
   }
 
+  setFill(fill: { color: string }): void {
+    this.fill = fill;
+  }
+
+  getFill(): { color: string } | undefined {
+    return this.fill;
+  }
+
   toJSON(): any {
     return {
       type: this.type,
@@ -43,56 +52,60 @@ export class ShapeElement extends Element {
       themeFill: this.getThemeFill(),
       fixedRatio: false,
       rotate: this.rotation || 0,
-      enableShrink: true
     };
   }
-  
+
   private getShapePath(): string {
     // Generate SVG path based on shape type
     switch (this.shapeType) {
-      case 'ellipse':
+      case "ellipse":
         return "M 100 0 A 50 50 0 1 1 100 200 A 50 50 0 1 1 100 0 Z";
-      case 'rect':
-      case 'roundRect':
+      case "rect":
+      case "roundRect":
         return "M 0 0 L 200 0 L 200 200 L 0 200 Z";
-      case 'triangle':
+      case "triangle":
         return "M 100 0 L 200 200 L 0 200 Z";
-      case 'diamond':
+      case "diamond":
         return "M 100 0 L 200 100 L 100 200 L 0 100 Z";
       default:
         return "M 0 0 L 200 0 L 200 200 L 0 200 Z";
     }
   }
-  
+
   private getThemeFill(): { color: string } {
-    // Generate random-ish colors for shapes
+    // Use actual fill color if available, otherwise fallback to default
+    if (this.fill) {
+      return this.fill;
+    }
+
+    // Generate random-ish colors for shapes as fallback
     const colors = [
       "rgba(255,137,137,1)",
-      "rgba(216,241,255,1)", 
+      "rgba(216,241,255,1)",
       "rgba(255,219,65,1)",
       "rgba(144,238,144,1)",
-      "rgba(255,182,193,1)"
+      "rgba(255,182,193,1)",
     ];
     const index = parseInt(this.id.slice(-1), 16) % colors.length;
     return { color: colors[index] };
   }
 }
 
-export type ShapeType = 
-  | 'rect'
-  | 'roundRect'
-  | 'ellipse'
-  | 'triangle'
-  | 'diamond'
-  | 'parallelogram'
-  | 'trapezoid'
-  | 'pentagon'
-  | 'hexagon'
-  | 'octagon'
-  | 'star'
-  | 'arrow'
-  | 'callout'
-  | 'custom';
+export type ShapeType =
+  | "rect"
+  | "roundRect"
+  | "ellipse"
+  | "triangle"
+  | "diamond"
+  | "parallelogram"
+  | "trapezoid"
+  | "pentagon"
+  | "hexagon"
+  | "octagon"
+  | "star"
+  | "arrow"
+  | "callout"
+  | "custom";
 
 export interface TextContent {
   content: string;
@@ -102,7 +115,7 @@ export interface TextContent {
     bold?: boolean;
     italic?: boolean;
     color?: string;
-    align?: 'left' | 'center' | 'right';
-    valign?: 'top' | 'middle' | 'bottom';
+    align?: "left" | "center" | "right";
+    valign?: "top" | "middle" | "bottom";
   };
 }

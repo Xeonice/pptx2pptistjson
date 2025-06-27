@@ -46,7 +46,7 @@ export class Theme {
       name: this.name,
       colorScheme: this.colorScheme,
       fontScheme: this.fontScheme,
-      formatScheme: this.formatScheme
+      formatScheme: this.formatScheme,
     };
   }
 }
@@ -58,10 +58,10 @@ export interface ColorScheme {
   accent4: string;
   accent5: string;
   accent6: string;
-  background1: string;
-  background2: string;
-  text1: string;
-  text2: string;
+  lt1: string;
+  lt2: string;
+  dk1: string;
+  dk2: string;
   hyperlink: string;
   followedHyperlink: string;
 }

@@ -1,4 +1,4 @@
-import { Element } from './Element';
+import { Element } from "./Element";
 
 export class ImageElement extends Element {
   private src: string;
@@ -6,7 +6,7 @@ export class ImageElement extends Element {
   private crop?: ImageCrop;
 
   constructor(id: string, src: string) {
-    super(id, 'image');
+    super(id, "image");
     this.src = src;
   }
 
@@ -41,23 +41,22 @@ export class ImageElement extends Element {
       top: this.position?.y || 0,
       fixedRatio: true,
       rotate: this.rotation || 0,
-      enableShrink: true,
       clip: {
         shape: "rect",
         range: [
           [0, 0],
-          [100, 100]
-        ]
+          [100, 100],
+        ],
       },
-      loading: false
+      loading: false,
     };
   }
-  
+
   private convertSrcToUrl(): string {
     // Convert relative paths to placeholder URLs
-    if (this.src.startsWith('../media/') || this.src.startsWith('media/')) {
+    if (this.src.startsWith("../media/") || this.src.startsWith("media/")) {
       // Generate a placeholder URL based on filename
-      const filename = this.src.split('/').pop() || 'image.jpg';
+      const filename = this.src.split("/").pop() || "image.jpg";
       return `https://example.com/images/${filename}`;
     }
     return this.src;

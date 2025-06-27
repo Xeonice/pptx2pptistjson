@@ -7,6 +7,7 @@ import {
 import { XmlNode } from "../../../models/xml/XmlNode";
 import { IXmlParseService } from "../../interfaces/IXmlParseService";
 import { UnitConverter } from "../../utils/UnitConverter";
+import { FillExtractor } from "../../utils/FillExtractor";
 
 export class ShapeProcessor implements IElementProcessor<ShapeElement> {
   constructor(private xmlParser: IXmlParseService) {}
@@ -81,6 +82,12 @@ export class ShapeProcessor implements IElementProcessor<ShapeElement> {
           shapeElement.setRotation(parseInt(rot) / 60000); // Convert to degrees
         }
       }
+
+      // Extract fill color
+      const fillColor = this.extractFillColor(spPrNode, context);
+      if (fillColor) {
+        shapeElement.setFill({ color: fillColor });
+      }
     }
 
     return shapeElement;
@@ -134,6 +141,66 @@ export class ShapeProcessor implements IElementProcessor<ShapeElement> {
     };
 
     return mapping[prst] || "custom";
+  }
+
+  private extractFillColor(spPrNode: XmlNode, context: ProcessingContext): string | undefined {
+    // Convert spPrNode to plain object for FillExtractor
+    const spPrObj = this.xmlNodeToObject(spPrNode);
+    
+    // Create warpObj with theme content
+    const warpObj = {
+      themeContent: context.theme ? this.createThemeContent(context.theme) : undefined
+    };
+    
+    // Use FillExtractor to get fill color
+    const color = FillExtractor.getFillColor(spPrObj, undefined, undefined, warpObj);
+    return color || undefined;
+  }
+
+  private xmlNodeToObject(node: XmlNode): any {
+    const obj: any = {};
+    
+    // Add attributes
+    if (node.attributes && Object.keys(node.attributes).length > 0) {
+      obj.attrs = { ...node.attributes };
+    }
+    
+    // Add children
+    if (node.children && node.children.length > 0) {
+      for (const child of node.children) {
+        const childName = child.name.includes(':') ? child.name : `a:${child.name}`;
+        obj[childName] = this.xmlNodeToObject(child);
+      }
+    }
+    
+    return obj;
+  }
+
+  private createThemeContent(theme: any): any {
+    const colorScheme = theme.getColorScheme();
+    if (!colorScheme) return undefined;
+    
+    // Create theme structure expected by FillExtractor
+    return {
+      "a:theme": {
+        "a:themeElements": {
+          "a:clrScheme": {
+            "a:accent1": { "a:srgbClr": { attrs: { val: colorScheme.accent1?.replace('#', '').replace(/ff$/, '') || '000000' } } },
+            "a:accent2": { "a:srgbClr": { attrs: { val: colorScheme.accent2?.replace('#', '').replace(/ff$/, '') || '000000' } } },
+            "a:accent3": { "a:srgbClr": { attrs: { val: colorScheme.accent3?.replace('#', '').replace(/ff$/, '') || '000000' } } },
+            "a:accent4": { "a:srgbClr": { attrs: { val: colorScheme.accent4?.replace('#', '').replace(/ff$/, '') || '000000' } } },
+            "a:accent5": { "a:srgbClr": { attrs: { val: colorScheme.accent5?.replace('#', '').replace(/ff$/, '') || '000000' } } },
+            "a:accent6": { "a:srgbClr": { attrs: { val: colorScheme.accent6?.replace('#', '').replace(/ff$/, '') || '000000' } } },
+            "a:dk1": { "a:srgbClr": { attrs: { val: colorScheme.dk1?.replace('#', '').replace(/ff$/, '') || '000000' } } },
+            "a:dk2": { "a:srgbClr": { attrs: { val: colorScheme.dk2?.replace('#', '').replace(/ff$/, '') || '000000' } } },
+            "a:lt1": { "a:srgbClr": { attrs: { val: colorScheme.lt1?.replace('#', '').replace(/ff$/, '') || 'FFFFFF' } } },
+            "a:lt2": { "a:srgbClr": { attrs: { val: colorScheme.lt2?.replace('#', '').replace(/ff$/, '') || 'FFFFFF' } } },
+            "a:hlink": { "a:srgbClr": { attrs: { val: colorScheme.hyperlink?.replace('#', '').replace(/ff$/, '') || '0000FF' } } },
+            "a:folHlink": { "a:srgbClr": { attrs: { val: colorScheme.followedHyperlink?.replace('#', '').replace(/ff$/, '') || '800080' } } }
+          }
+        }
+      }
+    };
   }
 
 }

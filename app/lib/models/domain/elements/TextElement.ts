@@ -1,11 +1,11 @@
-import { Element, ElementType } from './Element';
+import { Element, ElementType } from "./Element";
 
 export class TextElement extends Element {
   private content: TextContent[] = [];
   private textStyle?: TextStyle;
 
   constructor(id: string) {
-    super(id, 'text');
+    super(id, "text");
   }
 
   addContent(content: TextContent): void {
@@ -27,7 +27,7 @@ export class TextElement extends Element {
   toJSON(): any {
     // Convert text content to HTML format like the expected output
     const htmlContent = this.convertToHTML();
-    
+
     return {
       type: this.type,
       id: this.id,
@@ -41,110 +41,121 @@ export class TextElement extends Element {
       defaultColor: this.getDefaultColor(),
       vertical: false,
       fit: "resize",
-      enableShrink: true
     };
   }
 
   private convertToHTML(): string {
     if (this.content.length === 0) return "";
-    
+
     // Combine all text content with their styles
-    let htmlSpans = this.content.map(content => {
-      const style = content.style;
-      const styleAttrs: string[] = [];
-      
-      if (style?.color) {
-        let colorValue = style.color;
-        let colorType = style.themeColorType || '';
-        
-        // Handle theme color references
-        if (style.color.startsWith('theme:')) {
-          colorType = style.color.replace('theme:', '');
-          // Get actual color from theme context (would need theme access)
-          // For now, use the expected colors from output.json
-          const themeColorMap: { [key: string]: string } = {
-            'accent1': '#5b9bd5ff',
-            'dk1': '#333333ff',
-            'lt1': '#ffffffff'
-          };
-          colorValue = themeColorMap[colorType] || '#333333ff';
+    let htmlSpans = this.content
+      .map((content) => {
+        const style = content.style;
+        const styleAttrs: string[] = [];
+
+        if (style?.color) {
+          let colorValue = style.color;
+          let colorType = style.themeColorType || "";
+
+          // Handle theme color references
+          if (style.color.startsWith("theme:")) {
+            colorType = style.color.replace("theme:", "");
+            // Get actual color from theme context (would need theme access)
+            // For now, use the expected colors from output.json
+            const themeColorMap: { [key: string]: string } = {
+              accent1: "#5b9bd5ff",
+              dk1: "#333333ff",
+              lt1: "#ffffffff",
+            };
+            colorValue = themeColorMap[colorType] || "#333333ff";
+          }
+
+          styleAttrs.push(`color:${colorValue}`);
+
+          if (colorType || this.isThemeColor(colorValue)) {
+            const finalColorType = colorType || this.getColorType(colorValue);
+            styleAttrs.push(`--colortype:${finalColorType}`);
+          }
         }
-        
-        styleAttrs.push(`color:${colorValue}`);
-        
-        if (colorType || this.isThemeColor(colorValue)) {
-          const finalColorType = colorType || this.getColorType(colorValue);
-          styleAttrs.push(`--colortype:${finalColorType}`);
+
+        if (style?.fontSize) {
+          styleAttrs.push(`font-size:${style.fontSize}px`);
         }
-      }
-      
-      if (style?.fontSize) {
-        styleAttrs.push(`font-size:${style.fontSize}px`);
-      }
-      
-      if (style?.bold) {
-        styleAttrs.push('font-weight:bold');
-      }
-      
-      if (style?.italic) {
-        styleAttrs.push('font-style:italic');
-      }
-      
-      const styleStr = styleAttrs.length > 0 ? ` style="${styleAttrs.join(';')}"` : '';
-      return `<span${styleStr}>${content.text}</span>`;
-    }).join('');
-    
+
+        if (style?.bold) {
+          styleAttrs.push("font-weight:bold");
+        }
+
+        if (style?.italic) {
+          styleAttrs.push("font-style:italic");
+        }
+
+        const styleStr =
+          styleAttrs.length > 0 ? ` style="${styleAttrs.join(";")}"` : "";
+        return `<span${styleStr}>${content.text}</span>`;
+      })
+      .join("");
+
     return `<div  style=""><p  style="">${htmlSpans}</p></div>`;
   }
-  
+
   private getDefaultFontName(): string {
     // Get font from first content item or use default
     return this.content[0]?.style?.fontFamily || "Microsoft Yahei";
   }
-  
+
   private getDefaultColor(): { color: string; colorType: string } {
     return {
       color: "#333333",
-      colorType: "dk1"
+      colorType: "dk1",
     };
   }
-  
+
   private isThemeColor(color: string): boolean {
     // Check for theme colors in various formats
     const normalizedColor = color.toUpperCase();
-    
+
     // Common theme colors in hex format (including actual values from current PPTX)
     const themeColors = [
-      '#4472C4', '#4472C4FF',
-      '#ED7D31', '#ED7D31FF', 
-      '#A5A5A5', '#A5A5A5FF',
-      '#FFC000', '#FFC000FF',
-      '#5B9BD5', '#5B9BD5FF',
-      '#70AD47', '#70AD47FF',
-      '#333333', '#333333FF',
-      '#000000', '#000000FF',
-      '#00070F', '#00070FFF'  // dk1 color from current file
+      "#4472C4",
+      "#4472C4FF",
+      "#ED7D31",
+      "#ED7D31FF",
+      "#A5A5A5",
+      "#A5A5A5FF",
+      "#FFC000",
+      "#FFC000FF",
+      "#5B9BD5",
+      "#5B9BD5FF",
+      "#70AD47",
+      "#70AD47FF",
+      "#333333",
+      "#333333FF",
+      "#000000",
+      "#000000FF",
+      "#00070F",
+      "#00070FFF", // dk1 color from current file
     ];
-    
+
     // Also check if it's a dark color that should be treated as dk1
     if (this.isDarkColor(color)) {
       return true;
     }
-    
+
     return themeColors.includes(normalizedColor);
   }
-  
+
   private isDarkColor(color: string): boolean {
     // Parse hex color and check if it's dark (suitable for dk1/dk2)
-    let hex = color.replace('#', '').replace('ff', '').replace('FF', '');
+    let hex = color.replace("#", "").replace("ff", "").replace("FF", "");
     if (hex.length === 6) {
       const r = parseInt(hex.substr(0, 2), 16);
       const g = parseInt(hex.substr(2, 2), 16);
       const b = parseInt(hex.substr(4, 2), 16);
-      
+
       // Calculate luminance (0.299*R + 0.587*G + 0.114*B)
       const luminance = 0.299 * r + 0.587 * g + 0.114 * b;
-      
+
       // Consider colors with luminance < 50 as dark (dk1/dk2)
       return luminance < 50;
     }
@@ -155,30 +166,30 @@ export class TextElement extends Element {
     // Map colors to theme types
     const normalizedColor = color.toUpperCase();
     const colorMap: { [key: string]: string } = {
-      '#4472C4': 'accent1',
-      '#4472C4FF': 'accent1',
-      '#5B9BD5': 'accent1', 
-      '#5B9BD5FF': 'accent1',
-      '#333333': 'dk1',
-      '#333333FF': 'dk1',
-      '#000000': 'dk1',
-      '#000000FF': 'dk1',
-      '#00070F': 'dk1',
-      '#00070FFF': 'dk1'
+      "#4472C4": "accent1",
+      "#4472C4FF": "accent1",
+      "#5B9BD5": "accent1",
+      "#5B9BD5FF": "accent1",
+      "#333333": "dk1",
+      "#333333FF": "dk1",
+      "#000000": "dk1",
+      "#000000FF": "dk1",
+      "#00070F": "dk1",
+      "#00070FFF": "dk1",
     };
-    
+
     // Check explicit mapping first
     if (colorMap[normalizedColor]) {
       return colorMap[normalizedColor];
     }
-    
+
     // For unmapped colors, use luminance to determine type
     if (this.isDarkColor(color)) {
-      return 'dk1';
+      return "dk1";
     }
-    
+
     // Default fallback
-    return 'dk1';
+    return "dk1";
   }
 }
 
@@ -188,8 +199,8 @@ export interface TextContent {
 }
 
 export interface TextStyle {
-  align?: 'left' | 'center' | 'right' | 'justify';
-  valign?: 'top' | 'middle' | 'bottom';
+  align?: "left" | "center" | "right" | "justify";
+  valign?: "top" | "middle" | "bottom";
   margin?: {
     left?: number;
     right?: number;
@@ -219,7 +230,7 @@ export interface TextRunStyle {
 }
 
 export interface BulletStyle {
-  type: 'bullet' | 'number' | 'custom';
+  type: "bullet" | "number" | "custom";
   char?: string;
   color?: string;
   size?: number;

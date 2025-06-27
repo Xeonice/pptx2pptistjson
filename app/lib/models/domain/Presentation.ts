@@ -1,9 +1,9 @@
-import { Slide } from './Slide';
-import { Theme } from './Theme';
+import { Slide } from "./Slide";
+import { Theme } from "./Theme";
 
 export class Presentation {
   private slides: Slide[] = [];
-  private theme?: Theme;
+  private theme: Theme;
   private metadata: PresentationMetadata;
   private slideSize: SlideSize;
   private defaultTextStyle?: DefaultTextStyle;
@@ -13,7 +13,7 @@ export class Presentation {
     // Default slide size (16:9 ratio)
     this.slideSize = {
       width: 960,
-      height: 540
+      height: 540,
     };
   }
 
@@ -26,18 +26,21 @@ export class Presentation {
   }
 
   getSlideById(id: string): Slide | undefined {
-    return this.slides.find(slide => slide.getId() === id);
+    return this.slides.find((slide) => slide.getId() === id);
   }
 
   getSlideByNumber(number: number): Slide | undefined {
-    return this.slides.find(slide => slide.getNumber() === number);
+    return this.slides.find((slide) => slide.getNumber() === number);
   }
 
   setTheme(theme: Theme): void {
     this.theme = theme;
   }
 
-  getTheme(): Theme | undefined {
+  getTheme(): Theme {
+    if (!this.theme) {
+      throw new Error("theme is not found");
+    }
     return this.theme;
   }
 
@@ -67,7 +70,7 @@ export class Presentation {
       slideSize: this.slideSize,
       theme: this.theme?.toJSON(),
       defaultTextStyle: this.defaultTextStyle,
-      slides: this.slides.map(s => s.toJSON())
+      slides: this.slides.map((s) => s.toJSON()),
     };
   }
 }
@@ -80,7 +83,7 @@ export interface PresentationMetadata {
   keywords?: string;
   created?: Date;
   modified?: Date;
-  format: 'pptx';
+  format: "pptx";
 }
 
 export interface SlideSize {
