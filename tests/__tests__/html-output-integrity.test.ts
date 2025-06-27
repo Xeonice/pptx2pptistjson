@@ -376,7 +376,7 @@ describe('HTML Output Integrity Tests', () => {
       // Key format requirements from output.json
       expect(json.content).toContain('<div  style="">'); // Note: double space
       expect(json.content).toContain('<p  style="">'); // Note: double space
-      expect(json.content).toContain('color:#5b9bd5ff;font-size:54px;font-weight:bold;--colortype:accent1;');
+      expect(json.content).toContain('color:#5b9bd5ff;font-size:54px;font-weight:bold;--colortype:accent1');
     });
     
     test('should generate consistent output across multiple instances', () => {

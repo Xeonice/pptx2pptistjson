@@ -20,16 +20,20 @@ describe('Edge Cases Tests', () => {
     });
     
     test('should handle none and null color values', () => {
-      const noneCases = [
-        'none',
+      const noneCase = 'none';
+      const result = ColorUtils.toRgba(noneCase);
+      // 'none' should return transparent
+      expect(result).toBe('rgba(0,0,0,0)');
+
+      const nullCases = [
         null,
         undefined,
         '',
         '   ', // whitespace
       ];
       
-      noneCases.forEach(noneColor => {
-        const result = ColorUtils.toRgba(noneColor as any);
+      nullCases.forEach(nullColor => {
+        const result = ColorUtils.toRgba(nullColor as any);
         // Should fallback to default black
         expect(result).toBe('rgba(0,0,0,1)');
       });

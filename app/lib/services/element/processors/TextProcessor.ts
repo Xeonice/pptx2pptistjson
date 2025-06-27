@@ -81,10 +81,12 @@ export class TextProcessor implements IElementProcessor<TextElement> {
     if (txBodyNode) {
       const paragraphs = this.xmlParser.findNodes(txBodyNode, "p");
       for (const pNode of paragraphs) {
-        const content = this.extractParagraphContent(pNode, context);
-        if (content) {
-          textElement.addContent(content);
-        }
+        const contentItems = this.extractParagraphContent(pNode, context);
+        contentItems.forEach(content => {
+          if (content) {
+            textElement.addContent(content);
+          }
+        });
       }
     }
 
@@ -116,35 +118,30 @@ export class TextProcessor implements IElementProcessor<TextElement> {
   private extractParagraphContent(
     pNode: XmlNode,
     context: ProcessingContext
-  ): TextContent | undefined {
+  ): TextContent[] {
     const runs = this.xmlParser.findNodes(pNode, "r");
-    if (runs.length === 0) return undefined;
+    if (runs.length === 0) return [];
 
-    let fullText = "";
-    let commonStyle: TextRunStyle | undefined;
+    const contentItems: TextContent[] = [];
 
     for (const rNode of runs) {
       const tNode = this.xmlParser.findNode(rNode, "t");
       if (tNode) {
         const text = this.xmlParser.getTextContent(tNode);
-        fullText += text;
-
-        // Extract run properties (simplified)
-        if (!commonStyle) {
+        if (text.trim()) {
+          // Extract run properties for each run
           const rPrNode = this.xmlParser.findNode(rNode, "rPr");
-          if (rPrNode) {
-            commonStyle = this.extractRunStyle(rPrNode, context);
-          }
+          const style = rPrNode ? this.extractRunStyle(rPrNode, context) : undefined;
+
+          contentItems.push({
+            text: text,
+            style: style,
+          });
         }
       }
     }
 
-    if (!fullText.trim()) return undefined;
-
-    return {
-      text: fullText,
-      style: commonStyle,
-    };
+    return contentItems;
   }
   private extractRunStyle(
     rPrNode: XmlNode,

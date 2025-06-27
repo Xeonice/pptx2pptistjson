@@ -1,11 +1,11 @@
 export class Theme {
-  private name: string;
+  private name = "";
   private colorScheme?: ColorScheme;
   private fontScheme?: FontScheme;
   private formatScheme?: FormatScheme;
 
-  constructor(name: string) {
-    this.name = name;
+  constructor(name?: string) {
+    this.name = name || '';
   }
 
   getName(): string {
@@ -39,6 +39,34 @@ export class Theme {
   getColor(colorType: ThemeColorType): string | undefined {
     if (!this.colorScheme) return undefined;
     return this.colorScheme[colorType];
+  }
+
+  // Methods expected by tests
+  setThemeColor(colorType: string, color: string): void {
+    if (!this.colorScheme) {
+      this.colorScheme = {} as ColorScheme;
+    }
+    (this.colorScheme as any)[colorType] = color;
+  }
+
+  getThemeColor(colorType: string): string | undefined {
+    if (!this.colorScheme) return undefined;
+    return (this.colorScheme as any)[colorType];
+  }
+
+  setFontName(fontName: string): void {
+    if (!this.fontScheme) {
+      this.fontScheme = {
+        majorFont: { latin: "", ea: "", cs: "" },
+        minorFont: { latin: "", ea: "", cs: "" },
+      };
+    }
+    this.fontScheme.majorFont.latin = fontName;
+    this.fontScheme.minorFont.latin = fontName;
+  }
+
+  getFontName(): string {
+    return this.fontScheme?.majorFont?.latin || "";
   }
 
   toJSON(): any {

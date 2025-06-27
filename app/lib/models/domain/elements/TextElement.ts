@@ -41,6 +41,7 @@ export class TextElement extends Element {
       defaultColor: this.getDefaultColor(),
       vertical: false,
       fit: "resize",
+      enableShrink: true,
     };
   }
 
@@ -53,9 +54,11 @@ export class TextElement extends Element {
         const style = content.style;
         const styleAttrs: string[] = [];
 
+        let colorType = "";
+        
         if (style?.color) {
           let colorValue = style.color;
-          let colorType = style.themeColorType || "";
+          colorType = style.themeColorType || "";
 
           // Handle theme color references
           if (style.color.startsWith("theme:")) {
@@ -71,11 +74,6 @@ export class TextElement extends Element {
           }
 
           styleAttrs.push(`color:${colorValue}`);
-
-          if (colorType || this.isThemeColor(colorValue)) {
-            const finalColorType = colorType || this.getColorType(colorValue);
-            styleAttrs.push(`--colortype:${finalColorType}`);
-          }
         }
 
         if (style?.fontSize) {
@@ -88,6 +86,12 @@ export class TextElement extends Element {
 
         if (style?.italic) {
           styleAttrs.push("font-style:italic");
+        }
+
+        // Add colortype at the end
+        if (style?.color && (colorType || this.isThemeColor(style.color))) {
+          const finalColorType = colorType || this.getColorType(style.color);
+          styleAttrs.push(`--colortype:${finalColorType}`);
         }
 
         const styleStr =
@@ -149,9 +153,9 @@ export class TextElement extends Element {
     // Parse hex color and check if it's dark (suitable for dk1/dk2)
     let hex = color.replace("#", "").replace("ff", "").replace("FF", "");
     if (hex.length === 6) {
-      const r = parseInt(hex.substr(0, 2), 16);
-      const g = parseInt(hex.substr(2, 2), 16);
-      const b = parseInt(hex.substr(4, 2), 16);
+      const r = parseInt(hex.substring(0, 2), 16);
+      const g = parseInt(hex.substring(2, 4), 16);
+      const b = parseInt(hex.substring(4, 6), 16);
 
       // Calculate luminance (0.299*R + 0.587*G + 0.114*B)
       const luminance = 0.299 * r + 0.587 * g + 0.114 * b;

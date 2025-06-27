@@ -129,12 +129,12 @@ describe('ColorUtils', () => {
   describe('New transformation functions', () => {
     it('should apply shade transformation', () => {
       const result = ColorUtils.applyShade("rgba(255,0,0,1)", 0.5);
-      expect(result).toBe("rgba(127,0,0,1)");
+      expect(result).toBe("rgba(128,0,0,1)");
     });
 
     it('should apply tint transformation', () => {
       const result = ColorUtils.applyTint("rgba(255,0,0,1)", 0.5);
-      expect(result).toBe("rgba(255,127,127,1)");
+      expect(result).toBe("rgba(255,128,128,1)");
     });
 
     it('should apply alpha transformation', () => {

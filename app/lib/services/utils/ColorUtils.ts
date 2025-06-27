@@ -3,8 +3,9 @@ export class ColorUtils {
    * Converts any color format to standard rgba format
    */
   static toRgba(color: string | undefined): string {
-    if (!color) {
-      throw new Error("not find color");
+    // Handle undefined/null/empty - return default black
+    if (!color || !color.trim()) {
+      return "rgba(0,0,0,1)";
     }
 
     // Handle transparent/none
@@ -12,22 +13,54 @@ export class ColorUtils {
       return "rgba(0,0,0,0)";
     }
 
-    // Handle hex format
-    if (color.startsWith("#")) {
-      return this.hexToRgba(color);
+    try {
+      // Handle hex format
+      if (color.startsWith("#")) {
+        return this.hexToRgba(color);
+      }
+
+      // Handle rgb format
+      if (color.startsWith("rgb(")) {
+        return this.rgbToRgba(color);
+      }
+
+      // Handle rgba format - check for complete format first
+      if (color.startsWith("rgba(")) {
+        // Try malformed rgba without alpha first
+        const rgbaMatch = color.match(/rgba\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*\)$/);
+        if (rgbaMatch) {
+          const [, r, g, b] = rgbaMatch;
+          return `rgba(${r},${g},${b},1)`;
+        }
+        // Then try normal rgba with alpha
+        return this.normalizeRgba(color);
+      }
+
+      // Handle case-insensitive formats
+      if (color.toLowerCase().startsWith("rgba(")) {
+        const caseInsensitiveMatch = color.toLowerCase().match(/rgba\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*,\s*([\d.]+)\s*\)/);
+        if (caseInsensitiveMatch) {
+          const [, r, g, b, a] = caseInsensitiveMatch;
+          const alpha = parseFloat(a) === 1 ? "1" : parseFloat(a).toFixed(3).replace(/\.?0+$/, "");
+          return `rgba(${r},${g},${b},${alpha})`;
+        }
+      }
+
+      // Handle rgb with alpha (malformed)
+      if (color.startsWith("rgb(") && color.includes(",") && color.split(",").length >= 4) {
+        const parts = color.match(/rgb\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*,\s*([\d.]+)\s*\)/);
+        if (parts) {
+          const [, r, g, b, a] = parts;
+          const alpha = parseFloat(a) === 1 ? "1" : parseFloat(a).toFixed(3).replace(/\.?0+$/, "");
+          return `rgba(${r},${g},${b},${alpha})`;
+        }
+      }
+    } catch (e) {
+      // Fall through to default
     }
 
-    // Handle rgb format
-    if (color.startsWith("rgb(")) {
-      return this.rgbToRgba(color);
-    }
-
-    // Handle rgba format (already standard)
-    if (color.startsWith("rgba(")) {
-      return this.normalizeRgba(color);
-    }
-
-    throw new Error("not find color");
+    // Return default black for any invalid color
+    return "rgba(0,0,0,1)";
   }
 
   /**
@@ -36,6 +69,11 @@ export class ColorUtils {
   private static hexToRgba(hex: string): string {
     // Remove # if present
     hex = hex.replace("#", "");
+
+    // Validate hex characters
+    if (!/^[0-9A-Fa-f]{3}([0-9A-Fa-f]{3})?([0-9A-Fa-f]{2})?$/.test(hex)) {
+      throw new Error("Invalid hex color");
+    }
 
     // Handle 3-digit hex
     if (hex.length === 3) {
@@ -61,19 +99,20 @@ export class ColorUtils {
    * Converts rgb format to rgba format
    */
   private static rgbToRgba(rgb: string): string {
-    const match = rgb.match(/rgb\((\d+),\s*(\d+),\s*(\d+)\)/);
+    const match = rgb.match(/rgb\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*\)/);
     if (match) {
       const [, r, g, b] = match;
       return `rgba(${r},${g},${b},1)`;
     }
-    throw new Error("not find color");
+    throw new Error("Invalid rgb format");
   }
 
   /**
    * Normalizes rgba format (removes spaces, ensures consistent formatting)
    */
   private static normalizeRgba(rgba: string): string {
-    const match = rgba.match(/rgba\((\d+),\s*(\d+),\s*(\d+),\s*([\d.]+)\)/);
+    // Strict match for valid rgba format only
+    const match = rgba.match(/^rgba\(\s*(\d+(?:\.\d+)?)\s*,\s*(\d+(?:\.\d+)?)\s*,\s*(\d+(?:\.\d+)?)\s*,\s*([\d.]+)\s*\)$/);
     if (match) {
       const [, r, g, b, a] = match;
       const alpha =
@@ -82,22 +121,25 @@ export class ColorUtils {
           : parseFloat(a)
               .toFixed(3)
               .replace(/\.?0+$/, "");
-      return `rgba(${r},${g},${b},${alpha})`;
+      return `rgba(${Math.round(parseFloat(r))},${Math.round(parseFloat(g))},${Math.round(parseFloat(b))},${alpha})`;
     }
-    return rgba;
+    throw new Error("Invalid rgba format");
   }
 
   /**
    * Applies luminance modification to a color
    */
   static applyLuminanceMod(color: string, lumMod: number): string {
-    const rgba = this.parseRgba(color);
+    const rgba = this.parseRgba(this.toRgba(color));
     if (!rgba) return color;
 
+    // Clamp luminance modifier to reasonable range
+    const clampedLumMod = Math.max(0, Math.min(10, lumMod));
+
     const modified = {
-      r: Math.round(rgba.r * lumMod),
-      g: Math.round(rgba.g * lumMod),
-      b: Math.round(rgba.b * lumMod),
+      r: Math.max(0, Math.min(255, Math.round(rgba.r * clampedLumMod))),
+      g: Math.max(0, Math.min(255, Math.round(rgba.g * clampedLumMod))),
+      b: Math.max(0, Math.min(255, Math.round(rgba.b * clampedLumMod))),
       a: rgba.a,
     };
 
@@ -108,13 +150,16 @@ export class ColorUtils {
    * Applies luminance offset to a color
    */
   static applyLuminanceOff(color: string, lumOff: number): string {
-    const rgba = this.parseRgba(color);
+    const rgba = this.parseRgba(this.toRgba(color));
     if (!rgba) return color;
 
+    // Clamp luminance offset to reasonable range
+    const clampedLumOff = Math.max(-255, Math.min(255, lumOff));
+
     const modified = {
-      r: Math.min(255, Math.max(0, rgba.r + lumOff)),
-      g: Math.min(255, Math.max(0, rgba.g + lumOff)),
-      b: Math.min(255, Math.max(0, rgba.b + lumOff)),
+      r: Math.min(255, Math.max(0, Math.round(rgba.r + clampedLumOff))),
+      g: Math.min(255, Math.max(0, Math.round(rgba.g + clampedLumOff))),
+      b: Math.min(255, Math.max(0, Math.round(rgba.b + clampedLumOff))),
       a: rgba.a,
     };
 
@@ -204,10 +249,13 @@ export class ColorUtils {
     const rgba = this.parseRgba(this.toRgba(color));
     if (!rgba) return color;
 
+    // Clamp factor to reasonable range
+    const clampedFactor = Math.max(0, Math.min(1, factor));
+
     const modified = {
-      r: Math.round(rgba.r * (1 - factor)),
-      g: Math.round(rgba.g * (1 - factor)),
-      b: Math.round(rgba.b * (1 - factor)),
+      r: Math.max(0, Math.min(255, Math.round(rgba.r * (1 - clampedFactor)))),
+      g: Math.max(0, Math.min(255, Math.round(rgba.g * (1 - clampedFactor)))),
+      b: Math.max(0, Math.min(255, Math.round(rgba.b * (1 - clampedFactor)))),
       a: rgba.a,
     };
 
@@ -221,10 +269,13 @@ export class ColorUtils {
     const rgba = this.parseRgba(this.toRgba(color));
     if (!rgba) return color;
 
+    // Clamp factor to reasonable range
+    const clampedFactor = Math.max(0, Math.min(1, factor));
+
     const modified = {
-      r: Math.round(rgba.r + (255 - rgba.r) * factor),
-      g: Math.round(rgba.g + (255 - rgba.g) * factor),
-      b: Math.round(rgba.b + (255 - rgba.b) * factor),
+      r: Math.max(0, Math.min(255, Math.round(rgba.r + (255 - rgba.r) * clampedFactor))),
+      g: Math.max(0, Math.min(255, Math.round(rgba.g + (255 - rgba.g) * clampedFactor))),
+      b: Math.max(0, Math.min(255, Math.round(rgba.b + (255 - rgba.b) * clampedFactor))),
       a: rgba.a,
     };
 
@@ -305,7 +356,10 @@ export class ColorUtils {
     const rgba = this.parseRgba(this.toRgba(color));
     if (!rgba) return color;
 
-    return this.formatRgba({ ...rgba, a: alpha });
+    // Clamp alpha to valid range [0, 1]
+    const clampedAlpha = Math.max(0, Math.min(1, alpha));
+
+    return this.formatRgba({ ...rgba, a: clampedAlpha });
   }
 
   /**
