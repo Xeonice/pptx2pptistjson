@@ -1,5 +1,6 @@
 import { Theme } from '../../models/domain/Theme';
 import { SlideLayout } from '../../models/domain/Slide';
+import { IdGenerator } from '../utils/IdGenerator';
 import JSZip from 'jszip';
 
 /**
@@ -55,6 +56,11 @@ export interface ProcessingContext {
    * Warnings collected during parsing
    */
   warnings: any[];
+
+  /**
+   * ID generator for ensuring unique element IDs
+   */
+  idGenerator: IdGenerator;
 }
 
 export interface RelationshipInfo {

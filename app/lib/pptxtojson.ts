@@ -24,9 +24,8 @@ export async function parse(file: ArrayBuffer | Blob): Promise<any> {
         name: element.id, // Map id to name for legacy compatibility
       }))
     })),
-    slideSize: result.slideSize,
     theme: result.theme,
-    metadata: result.metadata
+    title: result.title || "Presentation"
   };
 }
 

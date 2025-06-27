@@ -1,10 +1,9 @@
-// Jest setup file
-// Global test configuration and setup code can be added here
+// Jest setup file for test environment configuration
 
-// Example: Mock console methods to reduce test output noise
-// global.console = {
-//   ...console,
-//   log: jest.fn(),
-//   debug: jest.fn(),
-//   info: jest.fn()
-// };
+// Increase timeout for integration tests
+jest.setTimeout(30000);
+
+// Global test utilities
+global.beforeEach(() => {
+  jest.clearAllMocks();
+});

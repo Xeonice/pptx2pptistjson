@@ -1,5 +1,4 @@
 import { IElementProcessor } from "../../interfaces/IElementProcessor";
-import { ProcessingContext } from "../../interfaces/ProcessingContext";
 import {
   TextElement,
   TextContent,
@@ -7,6 +6,9 @@ import {
 } from "../../../models/domain/elements/TextElement";
 import { XmlNode } from "../../../models/xml/XmlNode";
 import { IXmlParseService } from "../../interfaces/IXmlParseService";
+import { ProcessingContext } from "../../interfaces/ProcessingContext";
+import { ColorUtils } from "../../utils/ColorUtils";
+import { UnitConverter } from "../../utils/UnitConverter";
 
 export class TextProcessor implements IElementProcessor<TextElement> {
   constructor(private xmlParser: IXmlParseService) {}
@@ -16,18 +18,18 @@ export class TextProcessor implements IElementProcessor<TextElement> {
     return xmlNode.name.endsWith("sp") && this.hasTextContent(xmlNode);
   }
 
-  async process(
-    xmlNode: XmlNode,
-    context: ProcessingContext
-  ): Promise<TextElement> {
+  async process(xmlNode: XmlNode, context: ProcessingContext): Promise<TextElement> {
     // Extract shape ID
     const nvSpPrNode = this.xmlParser.findNode(xmlNode, "nvSpPr");
     const cNvPrNode = nvSpPrNode
       ? this.xmlParser.findNode(nvSpPrNode, "cNvPr")
       : undefined;
-    const id = cNvPrNode
-      ? this.xmlParser.getAttribute(cNvPrNode, "id") || "unknown"
-      : "unknown";
+    const originalId = cNvPrNode
+      ? this.xmlParser.getAttribute(cNvPrNode, "id")
+      : undefined;
+
+    // Generate unique ID
+    const id = context.idGenerator.generateUniqueId(originalId, 'text');
 
     const textElement = new TextElement(id);
 
@@ -43,8 +45,8 @@ export class TextProcessor implements IElementProcessor<TextElement> {
           const y = this.xmlParser.getAttribute(offNode, "y");
           if (x && y) {
             textElement.setPosition({
-              x: this.emuToPoints(parseInt(x)),
-              y: this.emuToPoints(parseInt(y)),
+              x: UnitConverter.emuToPoints(parseInt(x)),
+              y: UnitConverter.emuToPoints(parseInt(y)),
             });
           }
         }
@@ -56,8 +58,8 @@ export class TextProcessor implements IElementProcessor<TextElement> {
           const cy = this.xmlParser.getAttribute(extNode, "cy");
           if (cx && cy) {
             textElement.setSize({
-              width: this.emuToPoints(parseInt(cx)),
-              height: this.emuToPoints(parseInt(cy)),
+              width: UnitConverter.emuToPoints(parseInt(cx)),
+              height: UnitConverter.emuToPoints(parseInt(cy)),
             });
           }
         }
@@ -174,7 +176,7 @@ export class TextProcessor implements IElementProcessor<TextElement> {
       if (srgbClrNode) {
         const val = this.xmlParser.getAttribute(srgbClrNode, "val");
         if (val) {
-          style.color = `#${val}`;
+          style.color = ColorUtils.toRgba(`#${val}`);
         }
       }
     }
@@ -191,9 +193,4 @@ export class TextProcessor implements IElementProcessor<TextElement> {
     return style;
   }
 
-  private emuToPoints(emu: number): number {
-    // 1 point = 12700 EMUs
-    // Apply correction factor based on dimension analysis: ~1.395 for consistent scaling
-    return Math.round((emu / 12700) * 1.395);
-  }
 }

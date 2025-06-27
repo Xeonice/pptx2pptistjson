@@ -7,6 +7,8 @@ import { XmlNode } from '../../models/xml/XmlNode';
 import { ProcessingContext } from '../interfaces/ProcessingContext';
 import { IElementProcessor } from '../interfaces/IElementProcessor';
 import { Element } from '../../models/domain/elements/Element';
+import { IdGenerator } from '../utils/IdGenerator';
+import { ColorUtils } from '../utils/ColorUtils';
 
 export class SlideParser {
   private elementProcessors: Map<string, IElementProcessor> = new Map();
@@ -51,7 +53,8 @@ export class SlideParser {
         relationships: relationships || new Map(),
         basePath: slidePath.substring(0, slidePath.lastIndexOf('/')),
         options: {},
-        warnings: []
+        warnings: [],
+        idGenerator: new IdGenerator()
       };
       
       // Parse elements
@@ -186,7 +189,7 @@ export class SlideParser {
     if (srgbNode) {
       const val = this.xmlParser.getAttribute(srgbNode, 'val');
       if (val) {
-        return `#${val}`;
+        return ColorUtils.toRgba(`#${val}`);
       }
     }
 

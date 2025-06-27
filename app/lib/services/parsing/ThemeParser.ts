@@ -3,6 +3,7 @@ import { Theme, ColorScheme, FontScheme } from '../../models/domain/Theme';
 import { IFileService } from '../interfaces/IFileService';
 import { IXmlParseService } from '../interfaces/IXmlParseService';
 import { XmlNode } from '../../models/xml/XmlNode';
+import { ColorUtils } from '../utils/ColorUtils';
 
 export class ThemeParser {
   constructor(
@@ -114,7 +115,7 @@ export class ThemeParser {
     if (srgbNode) {
       const val = this.xmlParser.getAttribute(srgbNode, 'val');
       if (val) {
-        return `#${val}`;
+        return ColorUtils.toRgba(`#${val}`);
       }
     }
 
@@ -123,7 +124,7 @@ export class ThemeParser {
     if (sysClrNode) {
       const val = this.xmlParser.getAttribute(sysClrNode, 'lastClr');
       if (val) {
-        return `#${val}`;
+        return ColorUtils.toRgba(`#${val}`);
       }
     }
 
@@ -157,6 +158,6 @@ export class ThemeParser {
       followedHyperlink: '#954F72'
     };
     
-    return defaults[colorName];
+    return ColorUtils.toRgba(defaults[colorName]);
   }
 }

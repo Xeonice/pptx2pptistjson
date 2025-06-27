@@ -3,6 +3,7 @@ import { ProcessingContext } from '../../interfaces/ProcessingContext';
 import { ImageElement } from '../../../models/domain/elements/ImageElement';
 import { XmlNode } from '../../../models/xml/XmlNode';
 import { IXmlParseService } from '../../interfaces/IXmlParseService';
+import { UnitConverter } from '../../utils/UnitConverter';
 
 export class ImageProcessor implements IElementProcessor<ImageElement> {
   constructor(private xmlParser: IXmlParseService) {}
@@ -16,7 +17,10 @@ export class ImageProcessor implements IElementProcessor<ImageElement> {
     // Extract image ID
     const nvPicPrNode = this.xmlParser.findNode(xmlNode, 'nvPicPr');
     const cNvPrNode = nvPicPrNode ? this.xmlParser.findNode(nvPicPrNode, 'cNvPr') : undefined;
-    const id = cNvPrNode ? this.xmlParser.getAttribute(cNvPrNode, 'id') || 'unknown' : 'unknown';
+    const originalId = cNvPrNode ? this.xmlParser.getAttribute(cNvPrNode, 'id') : undefined;
+    
+    // Generate unique ID
+    const id = context.idGenerator.generateUniqueId(originalId, 'image');
     
     // Extract image reference
     const blipFillNode = this.xmlParser.findNode(xmlNode, 'blipFill');
@@ -47,8 +51,8 @@ export class ImageProcessor implements IElementProcessor<ImageElement> {
           const y = this.xmlParser.getAttribute(offNode, 'y');
           if (x && y) {
             imageElement.setPosition({
-              x: this.emuToPoints(parseInt(x)),
-              y: this.emuToPoints(parseInt(y))
+              x: UnitConverter.emuToPoints(parseInt(x)),
+              y: UnitConverter.emuToPoints(parseInt(y))
             });
           }
         }
@@ -60,8 +64,8 @@ export class ImageProcessor implements IElementProcessor<ImageElement> {
           const cy = this.xmlParser.getAttribute(extNode, 'cy');
           if (cx && cy) {
             imageElement.setSize({
-              width: this.emuToPoints(parseInt(cx)),
-              height: this.emuToPoints(parseInt(cy))
+              width: UnitConverter.emuToPoints(parseInt(cx)),
+              height: UnitConverter.emuToPoints(parseInt(cy))
             });
           }
         }
@@ -89,9 +93,4 @@ export class ImageProcessor implements IElementProcessor<ImageElement> {
     return 'image';
   }
 
-  private emuToPoints(emu: number): number {
-    // 1 point = 12700 EMUs
-    // Apply correction factor based on dimension analysis: ~1.395 for consistent scaling
-    return Math.round((emu / 12700) * 1.395);
-  }
 }
