@@ -1,6 +1,6 @@
 {
 	"name": "pptxtojson",
-	"version": "1.5.0",
+	"version": "2.0.0",
 	"description": "A javascript tool for parsing .pptx file",
 	"scripts": {
 		"dev": "next dev",
