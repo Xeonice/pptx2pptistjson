@@ -41,12 +41,20 @@ export class ShapeProcessor implements IElementProcessor<ShapeElement> {
         if (prst) {
           shapeType = this.mapGeometryToShapeType(prst);
         }
+      } else {
+        // Check for custom geometry
+        const custGeomNode = this.xmlParser.findNode(spPrNode, "custGeom");
+        if (custGeomNode) {
+          // For custom geometry, try to detect if it's circular
+          shapeType = this.analyzeCustomGeometry(custGeomNode);
+        }
       }
     }
 
     const shapeElement = new ShapeElement(id, shapeType);
 
     // Extract position and size
+    let width = 0, height = 0;
     if (spPrNode) {
       const xfrmNode = this.xmlParser.findNode(spPrNode, "xfrm");
       if (xfrmNode) {
@@ -69,9 +77,11 @@ export class ShapeProcessor implements IElementProcessor<ShapeElement> {
           const cx = this.xmlParser.getAttribute(extNode, "cx");
           const cy = this.xmlParser.getAttribute(extNode, "cy");
           if (cx && cy) {
+            width = UnitConverter.emuToPoints(parseInt(cx));
+            height = UnitConverter.emuToPoints(parseInt(cy));
             shapeElement.setSize({
-              width: UnitConverter.emuToPoints(parseInt(cx)),
-              height: UnitConverter.emuToPoints(parseInt(cy)),
+              width,
+              height,
             });
           }
         }
@@ -121,6 +131,8 @@ export class ShapeProcessor implements IElementProcessor<ShapeElement> {
       rect: "rect",
       roundRect: "roundRect",
       ellipse: "ellipse",
+      circle: "ellipse", // Add circle mapping
+      oval: "ellipse",   // Add oval mapping
       triangle: "triangle",
       diamond: "diamond",
       parallelogram: "parallelogram",
@@ -201,6 +213,48 @@ export class ShapeProcessor implements IElementProcessor<ShapeElement> {
         }
       }
     };
+  }
+
+  /**
+   * Analyzes custom geometry to determine if it represents a known shape type
+   */
+  private analyzeCustomGeometry(custGeomNode: XmlNode): ShapeType {
+    const pathLstNode = this.xmlParser.findNode(custGeomNode, "pathLst");
+    if (!pathLstNode) return "custom";
+
+    const pathNode = this.xmlParser.findNode(pathLstNode, "path");
+    if (!pathNode) return "custom";
+
+    // Get path dimensions
+    const w = this.xmlParser.getAttribute(pathNode, "w");
+    const h = this.xmlParser.getAttribute(pathNode, "h");
+    
+    // Check if it's square (potential circle)
+    if (w === h) {
+      // Look for cubic Bézier patterns that indicate circular geometry
+      const cubicBezNodes = this.xmlParser.findNodes(pathNode, "cubicBezTo");
+      
+      // Circular custom geometry typically has 4 cubic Bézier curves
+      if (cubicBezNodes.length === 4) {
+        // Check if it starts from center-top (typical circle pattern)
+        const moveToNode = this.xmlParser.findNode(pathNode, "moveTo");
+        if (moveToNode) {
+          const ptNode = this.xmlParser.findNode(moveToNode, "pt");
+          if (ptNode) {
+            const x = this.xmlParser.getAttribute(ptNode, "x");
+            const pathWidth = parseInt(w || "0");
+            const centerX = pathWidth / 2;
+            
+            // If starts from approximately center-top, likely a circle
+            if (Math.abs(parseInt(x || "0") - centerX) < pathWidth * 0.1) {
+              return "ellipse";
+            }
+          }
+        }
+      }
+    }
+
+    return "custom";
   }
 
 }

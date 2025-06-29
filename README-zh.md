@@ -1,13 +1,13 @@
-# 🎨 PPTXtoJSON - 高级 PowerPoint 解析器与全栈应用
+# 🎨 PPTX2PPTistJSON - 高级 PowerPoint 到 PPTist 转换器
 
-一个基于 Next.js 的综合应用程序和 TypeScript 库，用于将 .pptx 文件解析为结构化 JSON 数据，具备先进的图像处理、背景支持和现代化网页界面。
+一个基于 Next.js 的综合应用程序和 TypeScript 库，用于将 .pptx 文件转换为 PPTist 兼容的 JSON 格式，具备先进的图像处理、背景支持和现代化网页界面。
 
 [![测试覆盖](https://img.shields.io/badge/tests-450%2B-green)](./tests/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-100%25-blue)](./tsconfig.json)
-[![Next.js](https://img.shields.io/badge/Next.js-13%2B-black)](./package.json)
+[![Next.js](https://img.shields.io/badge/Next.js-14%2B-black)](./package.json)
 [![License](https://img.shields.io/badge/license-MIT-green)](./LICENSE)
 
-> **🚀 现代化全栈应用**: 与其他 PPTX 解析器不同，这是一个完整的 Web 应用程序，具备 API 端点、Web 界面和复杂的解析架构，能够生成人类可读的 JSON 数据。
+> **🚀 现代化全栈应用**: 专门设计用于将 PowerPoint 演示文稿转换为 PPTist 兼容 JSON 格式的完整 Web 应用程序，具备复杂的解析架构、API 端点和 Web 界面。
 
 ## 📚 目录
 
@@ -29,25 +29,27 @@
 ## 🌟 核心特性
 
 ### 📱 Web 应用程序
-- **交互式文件上传**: 拖放式 .pptx 文件处理
-- **实时 JSON 可视化**: Monaco 编辑器语法高亮显示
-- **JSON 差异对比**: 解析结果与预期输出比较
-- **位置测试工具**: 元素位置验证实用程序
+- **交互式文件上传**: 拖放式 .pptx 文件处理，实时转换
+- **PPTist 兼容输出**: 针对 PPTist 演示编辑器优化的 JSON 格式
+- **实时 JSON 可视化**: Monaco 编辑器语法高亮和验证
+- **JSON 差异对比**: 转换结果与预期 PPTist 输出的比较
+- **位置测试工具**: PPTist 中元素位置验证实用程序
 - **API 文档**: `/api-docs` 交互式 API 参考
 
 [⬆️ 回到目录](#-目录)
 
-### 🔧 解析引擎
+### 🔧 转换引擎
+- **PPTist 优化解析器**: 专门为 PPTist JSON 格式兼容性设计
 - **面向服务架构**: 依赖注入的模块化设计
 - **高级图像处理**: Base64 编码与格式检测 (JPEG, PNG, GIF, BMP, WebP, TIFF)
-- **背景图像支持**: 完整的幻灯片背景处理
-- **主题色彩管理**: 动态主题颜色解析
-- **精密单位转换**: 高精度 EMU 到点的转换
-- **全面元素支持**: 文本、形状、图像、表格、图表、数学公式
+- **背景图像支持**: 针对 PPTist 的完整幻灯片背景处理
+- **主题色彩管理**: 兼容 PPTist 的动态主题颜色解析
+- **精密单位转换**: 针对 PPTist 布局的高精度 EMU 到点转换
+- **全面元素支持**: 针对 PPTist 优化的文本、形状、图像、表格、图表
 
 ### 🧪 质量保证
-- **450+ 测试用例**: 全组件综合测试覆盖
-- **集成测试**: 端到端解析工作流验证
+- **450+ 测试用例**: 所有转换组件的综合测试覆盖
+- **PPTist 集成测试**: 端到端转换工作流验证
 - **边界案例处理**: 强大的错误恢复和优雅降级
 - **性能测试**: 内存管理和并发处理验证
 
@@ -84,13 +86,13 @@ npm start
 
 #### 浏览器 / 前端
 ```javascript
-import { parse } from 'pptxtojson'
+import { parse } from 'pptx2pptistjson'
 
-// 基础解析
-const json = await parse(arrayBuffer)
+// PPTist 基础转换
+const pptistJson = await parse(arrayBuffer)
 
-// 高级配置
-const json = await parse(arrayBuffer, {
+// PPTist 高级配置
+const pptistJson = await parse(arrayBuffer, {
   imageMode: 'base64',     // 'base64' | 'url'
   includeNotes: true,      // 包含演讲者备注
   includeMaster: true,     // 包含母版元素
@@ -100,7 +102,7 @@ const json = await parse(arrayBuffer, {
 
 #### API 端点
 ```javascript
-// 通过 REST API 上传
+// 通过 REST API 进行 PPTist 转换
 const formData = new FormData()
 formData.append('file', pptxFile)
 
@@ -109,16 +111,16 @@ const response = await fetch('/api/parse-pptx', {
   body: formData
 })
 
-const result = await response.json()
+const pptistCompatibleResult = await response.json()
 ```
 
 #### Node.js / 服务器
 ```javascript
-import { parse } from 'pptxtojson'
+import { parse } from 'pptx2pptistjson'
 import fs from 'fs'
 
 const buffer = fs.readFileSync('presentation.pptx')
-const json = await parse(buffer, {
+const pptistJson = await parse(buffer, {
   imageMode: 'base64',
   includeNotes: true
 })
@@ -132,15 +134,15 @@ const json = await parse(buffer, {
 ```
 app/
 ├── api/                    # REST API 端点
-│   └── parse-pptx/        # PPTX 解析端点
-├── lib/                   # 核心解析库
+│   └── parse-pptx/        # PPTX 到 PPTist 转换端点
+├── lib/                   # 核心转换库
 │   ├── models/            # 领域模型 & DTO
 │   ├── services/          # 依赖注入服务层
 │   ├── parser/            # 主解析引擎
 │   └── utils.ts          # 共享工具
-├── json-diff/             # JSON 比较工具
+├── json-diff/             # PPTist JSON 比较工具
 ├── api-docs/             # API 文档
-└── test-position/        # 位置测试工具
+└── test-position/        # PPTist 位置测试工具
 ```
 
 ### 核心服务架构
@@ -149,21 +151,21 @@ ServiceContainer
 ├── FileService           # 文件和 ZIP 处理
 ├── XmlParseService      # XML 解析与命名空间
 ├── ImageDataService     # 图像提取和处理
-├── PresentationParser   # 编排解析工作流
-├── SlideParser         # 单个幻灯片处理
+├── PresentationParser   # 编排转换工作流
+├── SlideParser         # PPTist 单个幻灯片处理
 ├── ThemeParser         # 主题和颜色处理
 └── Element Processors   # 专用元素处理器
-    ├── TextProcessor    # 富文本处理
-    ├── ShapeProcessor   # 几何形状
-    └── ImageProcessor   # 图像元素
+    ├── TextProcessor    # PPTist 富文本处理
+    ├── ShapeProcessor   # PPTist 几何形状
+    └── ImageProcessor   # PPTist 图像元素
 ```
 
 ### 工具系统
 ```
 utils/
-├── ColorUtils          # RGBA 颜色标准化
+├── ColorUtils          # PPTist RGBA 颜色标准化
 ├── IdGenerator         # 唯一元素 ID 管理
-├── UnitConverter       # EMU 到点转换
+├── UnitConverter       # PPTist EMU 到点转换
 └── FillExtractor       # 填充和背景处理
 ```
 
@@ -173,13 +175,13 @@ utils/
 
 ### 图像处理模式
 
-#### 1. Base64 模式 (推荐)
-将完整图像数据嵌入为 Data URLs，支持离线使用：
+#### 1. Base64 模式 (推荐用于 PPTist)
+将完整图像数据嵌入为 Data URLs，支持离线 PPTist 使用：
 
 ```javascript
-const json = await parse(arrayBuffer, { imageMode: 'base64' })
+const pptistJson = await parse(arrayBuffer, { imageMode: 'base64' })
 
-// 输出包含完整图像数据
+// PPTist 兼容输出包含完整图像数据
 {
   "type": "image",
   "src": "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAA...",
@@ -195,12 +197,12 @@ const json = await parse(arrayBuffer, { imageMode: 'base64' })
 ```
 
 #### 2. URL 模式
-轻量级 URL 输出，适合云存储集成：
+轻量级 URL 输出，适合 PPTist 云存储集成：
 
 ```javascript
-const json = await parse(arrayBuffer, { imageMode: 'url' })
+const pptistJson = await parse(arrayBuffer, { imageMode: 'url' })
 
-// 输出外部 URL
+// PPTist 兼容输出，使用外部 URL
 {
   "type": "image",
   "src": "https://cdn.example.com/images/slide1_image1.jpg",
@@ -210,11 +212,11 @@ const json = await parse(arrayBuffer, { imageMode: 'url' })
 
 [⬆️ 回到目录](#-目录)
 
-### 背景图像支持
-完整的幻灯片背景处理，支持多种填充类型：
+### PPTist 背景图像支持
+完整的幻灯片背景处理，兼容 PPTist 格式：
 
 ```javascript
-// 纯色背景
+// PPTist 纯色背景
 {
   "background": {
     "type": "solid",
@@ -222,7 +224,7 @@ const json = await parse(arrayBuffer, { imageMode: 'url' })
   }
 }
 
-// 图像背景 (Base64)
+// PPTist 图像背景 (Base64)
 {
   "background": {
     "type": "image",
@@ -231,7 +233,7 @@ const json = await parse(arrayBuffer, { imageMode: 'url' })
   }
 }
 
-// 渐变背景
+// PPTist 渐变背景
 {
   "background": {
     "type": "gradient",
@@ -243,7 +245,7 @@ const json = await parse(arrayBuffer, { imageMode: 'url' })
 }
 ```
 
-### 支持的格式
+### PPTist 支持的格式
 - **JPEG** (.jpg, .jpeg) - 优化压缩
 - **PNG** (.png) - 透明度支持  
 - **GIF** (.gif) - 动画支持
@@ -253,15 +255,15 @@ const json = await parse(arrayBuffer, { imageMode: 'url' })
 
 ### 性能特性
 - **并发处理**: 信号量控制的批处理 (默认: 3 个并发)
-- **内存管理**: 针对大型演示文稿优化
-- **错误隔离**: 单个图像失败不影响整体解析
+- **内存管理**: 针对 PPTist 大型演示文稿优化
+- **错误隔离**: 单个图像失败不影响整体转换
 - **存储策略**: 可插拔存储后端 (Base64, CDN, 自定义)
 
 [⬆️ 回到目录](#-目录)
 
-## 📋 完整元素支持
+## 📋 PPTist 兼容元素支持
 
-### 文本元素
+### PPTist 文本元素
 ```javascript
 {
   "type": "text",
@@ -273,7 +275,7 @@ const json = await parse(arrayBuffer, { imageMode: 'url' })
 }
 ```
 
-### 形状元素
+### PPTist 形状元素
 ```javascript
 {
   "type": "shape",
@@ -284,7 +286,7 @@ const json = await parse(arrayBuffer, { imageMode: 'url' })
 }
 ```
 
-### 图像元素
+### PPTist 图像元素
 ```javascript
 {
   "type": "image",
@@ -295,7 +297,7 @@ const json = await parse(arrayBuffer, { imageMode: 'url' })
 }
 ```
 
-### 表格元素
+### PPTist 表格元素
 ```javascript
 {
   "type": "table",
@@ -306,7 +308,7 @@ const json = await parse(arrayBuffer, { imageMode: 'url' })
 }
 ```
 
-### 图表元素
+### PPTist 图表元素
 ```javascript
 {
   "type": "chart",
@@ -322,10 +324,10 @@ const json = await parse(arrayBuffer, { imageMode: 'url' })
 ## 🧪 测试与质量保证
 
 ### 测试套件概览
-- **450+ 测试用例** 覆盖所有组件
+- **450+ 测试用例** 覆盖所有转换组件
 - **单元测试**: 各服务和工具的独立测试
-- **集成测试**: 端到端解析工作流  
-- **背景图像测试**: 全面的背景处理验证
+- **集成测试**: 端到端 PPTist 转换工作流  
+- **背景图像测试**: PPTist 背景处理全面验证
 - **边界案例测试**: 错误处理和畸形输入处理
 - **性能测试**: 内存管理和并发处理
 
@@ -375,7 +377,7 @@ npm run type-check   # TypeScript 类型验证
 ### API 端点
 
 #### POST `/api/parse-pptx`
-解析上传的 PPTX 文件并返回 JSON 结构。
+解析上传的 PPTX 文件并返回 PPTist 兼容的 JSON 结构。
 
 **请求:**
 ```javascript
@@ -392,8 +394,8 @@ formData.append('options', JSON.stringify({
 {
   "success": true,
   "data": {
-    "slides": [...],
-    "theme": {...},
+    "slides": [...],        // PPTist 兼容幻灯片
+    "theme": {...},         // PPTist 主题格式
     "title": "演示文稿标题"
   },
   "filename": "presentation.pptx",
@@ -404,20 +406,20 @@ formData.append('options', JSON.stringify({
 ### 配置选项
 ```typescript
 interface ParseOptions {
-  imageMode?: 'base64' | 'url'        // 图像处理模式
+  imageMode?: 'base64' | 'url'        // PPTist 图像处理模式
   includeNotes?: boolean              // 包含演讲者备注
   includeMaster?: boolean             // 包含母版元素
   enableDebug?: boolean               // 调试信息
   maxConcurrency?: number             // 图像处理并发数
-  precision?: number                  // 单位转换精度
+  precision?: number                  // PPTist 单位转换精度
 }
 ```
 
 [⬆️ 回到目录](#-目录)
 
-## 📈 输出格式
+## 📈 PPTist 兼容输出格式
 
-### 完整 JSON 结构
+### PPTist 完整 JSON 结构
 ```javascript
 {
   "slides": [
@@ -433,7 +435,7 @@ interface ParseOptions {
           "type": "text",
           "content": "<p>富文本内容</p>",
           "left": 100, "top": 200, "width": 400, "height": 100,
-          "style": { /* 全面样式设置 */ }
+          "style": { /* PPTist 兼容样式设置 */ }
         }
       ],
       "remark": "演讲者备注内容"
@@ -448,11 +450,11 @@ interface ParseOptions {
 }
 ```
 
-### 单位系统
-所有尺寸值都使用 **点 (pt)** 作为单位，具有高精度转换：
+### PPTist 单位系统
+所有尺寸值都使用 **点 (pt)** 作为单位，针对 PPTist 的高精度转换：
 - EMU 到点: `value * 0.0007874015748031496`
 - 精度: 2 位小数 (可配置)
-- 所有元素类型保持一致
+- 所有元素类型保持 PPTist 兼容性
 
 [⬆️ 回到目录](#-目录)
 
@@ -508,12 +510,33 @@ interface ParseOptions {
 - [架构指南](./CLAUDE.md) - 详细开发见解
 - [类型定义](./app/lib/models/) - TypeScript 接口
 
-### 从 v0.x 迁移
-版本 1.5.0+ 引入破坏性变更：
-- 单位系统从像素改为点
-- 图像处理增强 Base64 支持
-- 背景处理完全重写
-- 面向服务架构替代单体解析器
+### 从 v1.x 迁移
+版本 2.0.0+ 引入 PPTist 专注变更：
+- 增强 PPTist 兼容性，优化输出格式
+- 针对 PPTist 布局精度细化的单位系统
+- 增强 PPTist Base64 支持的图像处理
+- 为 PPTist 兼容性重写的背景处理
+- 针对 PPTist 转换优化的面向服务架构
+
+[⬆️ 回到目录](#-目录)
+
+## 🎯 PPTist 集成
+
+本工具专门设计用于与 [PPTist](https://github.com/pipipi-pikachu/PPTist) 这个现代 Web 演示编辑器无缝集成：
+
+### PPTist 兼容性关键特性：
+- **优化 JSON 格式**: 直接兼容 PPTist 的数据结构
+- **元素定位**: PPTist 布局的精确坐标映射  
+- **主题集成**: PowerPoint 主题转换为 PPTist 格式
+- **图像处理**: Base64 编码，支持 PPTist 离线使用
+- **字体处理**: 与 PPTist 排版兼容的字体映射
+- **动画支持**: PPTist 动画转换基础（未来功能）
+
+### PPTist 工作流程：
+1. **上传 PPTX**: 使用此工具转换 PowerPoint 文件
+2. **获取 PPTist JSON**: 接收 PPTist 兼容的 JSON 输出
+3. **导入到 PPTist**: 直接将 JSON 加载到 PPTist 编辑器
+4. **编辑和增强**: 在 PPTist 的现代界面中继续编辑
 
 [⬆️ 回到目录](#-目录)
 
@@ -521,8 +544,8 @@ interface ParseOptions {
 
 ### 开发环境设置
 ```bash
-git clone https://github.com/pipipi-pikachu/pptxtojson.git
-cd pptxtojson
+git clone https://github.com/Xeonice/pptx2pptistjson.git
+cd pptx2pptistjson
 npm install
 npm run dev
 ```
@@ -532,7 +555,7 @@ npm run dev
 # 运行现有测试
 npm test
 
-# 添加新测试用例
+# 添加 PPTist 兼容性新测试用例
 # 遵循 tests/__tests__/ 目录中的模式
 ```
 
@@ -540,32 +563,35 @@ npm test
 - **TypeScript**: 需要严格类型检查
 - **ESLint**: 代码风格强制执行
 - **Jest**: 维护测试覆盖率
-- **文档**: 为新功能更新 README
+- **文档**: 为新 PPTist 功能更新 README
 
 [⬆️ 回到目录](#-目录)
 
 ## 🙏 致谢
 
-本项目基于并显著扩展了：
+本项目基于并显著扩展了 PowerPoint 解析概念，同时专门针对 PPTist 兼容性进行优化：
+
+- [PPTist](https://github.com/pipipi-pikachu/PPTist) - 目标演示编辑器
 - [PPTX2HTML](https://github.com/g21589/PPTX2HTML) - 原始解析概念
 - [PPTXjs](https://github.com/meshesha/PPTXjs) - 基础实现参考
 
 **主要差异:**
+- **PPTist 专用**: 针对 PPTist JSON 格式优化 vs. 通用解析
 - **全栈应用**: 完整 Web 界面 vs. 仅库
 - **高级架构**: 面向服务设计与依赖注入
-- **卓越图像处理**: Base64 编码、格式检测、背景支持
+- **卓越图像处理**: Base64 编码、格式检测、PPTist 背景支持
 - **全面测试**: 450+ 测试 vs. 最小测试覆盖
 - **现代 TypeScript**: 严格类型和最新语言特性
-- **生产就绪**: 错误处理、性能优化和可扩展性
+- **生产就绪**: 错误处理、性能优化和 PPTist 可扩展性
 
 [⬆️ 回到目录](#-目录)
 
 ## 📄 开源协议
 
-MIT License | Copyright © 2020-PRESENT [pipipi-pikachu](https://github.com/pipipi-pikachu)
+MIT License | Copyright © 2020-PRESENT [Xeonice](https://github.com/Xeonice)
 
 ---
 
-**🚀 准备好前所未有地解析 PPTX 文件了吗？** 从 `npm run dev` 开始，体验现代 PowerPoint 解析解决方案。
+**🚀 准备好将 PPTX 文件转换为 PPTist 了吗？** 从 `npm run dev` 开始，体验现代 PowerPoint 到 PPTist 转换解决方案。
 
 [⬆️ 回到目录](#-目录)

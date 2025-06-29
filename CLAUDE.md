@@ -22,20 +22,26 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ### Package Management
 This project uses npm as the package manager. Run `npm install` to install dependencies.
 
+### Project Identity (v2.0.0)
+- **Package Name**: `pptx2pptistjson` (changed from `pptxtojson`)
+- **Primary Focus**: PPTist-compatible JSON output format
+- **Target Integration**: [PPTist](https://github.com/pipipi-pikachu/PPTist) presentation editor
+
 ## Architecture Overview
 
 ### Core Structure
-This is a Next.js application that provides both a web interface and a TypeScript library for parsing .pptx files into readable JSON data. The project has been migrated from a browser-only library to a full-stack Next.js application with comprehensive PPTX parsing capabilities.
+This is a Next.js application that provides both a web interface and a TypeScript library for converting .pptx files to PPTist-compatible JSON format. The project has evolved from a generic PPTX parser to a specialized PPTist conversion tool with comprehensive parsing capabilities, advanced image processing, and seamless PPTist integration.
 
 ### Application Layers
 
 #### **1. Next.js Application Layer (`app/`)**
 - **Web Interface**: React-based UI for file upload and JSON visualization
-- **API Routes**: RESTful endpoints for PPTX processing
+- **API Routes**: RESTful endpoints for PPTX to PPTist conversion
 - **Pages**: 
-  - `/` - Main file upload and parsing interface
+  - `/` - Main file upload and PPTist conversion interface
   - `/api-docs` - API documentation
-  - `/test-position` - Position testing utilities
+  - `/test-position` - Position testing utilities for PPTist
+  - `/json-diff` - JSON comparison and editing tool with Monaco Editor
 
 #### **2. Core Library Layer (`app/lib/`)**
 - **Entry Points**:
@@ -52,7 +58,12 @@ This is a Next.js application that provides both a web interface and a TypeScrip
 - **Core Services**: `FileService`, `XmlParseService`
 - **Parsers**: `PresentationParser`, `SlideParser`, `ThemeParser`
 - **Element Processors**: `TextProcessor`, `ShapeProcessor`, `ImageProcessor`
-- **Utilities**: `ColorUtils`, `IdGenerator`, `UnitConverter`
+- **Utilities**: `ColorUtils`, `IdGenerator`, `UnitConverter`, `FillExtractor`
+
+#### **5. Components Layer (`components/`)**
+- **FileUploader**: Drag-and-drop file upload component
+- **JsonViewer**: JSON display and formatting component
+- **MonacoJsonEditor**: Monaco Editor wrapper for advanced JSON editing
 
 ### Key Architecture Components
 
@@ -111,6 +122,14 @@ This is a Next.js application that provides both a web interface and a TypeScrip
 - Tolerance checking for position/size validation
 - Consistent unit handling across all elements
 
+#### **FillExtractor** (`app/lib/services/utils/FillExtractor.ts`)
+- Extracts PowerPoint fill colors from XML nodes with comprehensive format support
+- **Color Type Support**: Direct RGB (`a:srgbClr`), theme colors (`a:schemeClr`), percentage RGB (`a:scrgbClr`), HSL (`a:hslClr`), preset colors (`a:prstClr`)
+- **Color Transformations**: Handles alpha, hue, luminance, saturation, shade, tint modifications
+- **Theme Integration**: Resolves theme color references from PPTX color maps
+- **Fallback Handling**: Returns appropriate defaults when color extraction fails
+- **PPTist Compatibility**: Output format optimized for PPTist color requirements
+
 ### Image Processing System (2024 Base64 Implementation)
 
 #### **ImageDataService** (`app/lib/services/images/ImageDataService.ts`)
@@ -150,7 +169,7 @@ This is a Next.js application that provides both a web interface and a TypeScrip
 #### **Main API Endpoint** (`app/api/parse-pptx/route.ts`)
 - Handles file uploads via FormData
 - Validates .pptx file types
-- Returns structured JSON with parsing results
+- Returns PPTist-compatible JSON with conversion results
 - Includes debug information and error handling
 
 #### **Response Format**
@@ -179,15 +198,17 @@ This is a Next.js application that provides both a web interface and a TypeScrip
 #### **Test Categories**
 - **ID Uniqueness**: Element ID generation and collision handling
 - **Color Format**: rgba standardization and theme color mapping
-- **Output Structure**: JSON format validation and backward compatibility
+- **Output Structure**: PPTist-compatible JSON format validation and backward compatibility
 - **Precision**: EMU conversion accuracy and position/size precision
 - **Edge Cases**: Error handling and malformed input processing
 - **Color Processing**: Comprehensive testing of color transformations and error recovery
+- **Fill Extraction**: PowerPoint color fill processing with FillExtractor utility
 - **HTML Output Integrity**: CSS formatting consistency and property ordering
 - **Integration Testing**: Cross-component interaction validation
 - **Image Processing**: Base64 encoding, format detection, batch processing, and storage strategies
 - **Memory Management**: Large image handling and concurrent processing validation
 - **Storage Strategy**: CDN interface testing and fallback mechanism validation
+- **PPTist Integration**: End-to-end conversion workflow validation for PPTist compatibility
 
 #### **Test Configuration**
 - **Jest** with TypeScript support
@@ -218,13 +239,57 @@ Comprehensive TypeScript coverage with:
 - **Chain of Responsibility**: Processing pipeline with context passing
 - **Error Recovery**: Graceful degradation with fallback values instead of exceptions
 
+### User Interface Components
+
+#### **JSON Diff Tool** (`/json-diff`)
+- **Monaco Editor Integration**: Advanced JSON editing with syntax highlighting, validation, and IntelliSense
+- **Side-by-Side Comparison**: Real-time diff visualization between two JSON documents
+- **Split View Mode**: Toggle between unified diff view and split editing mode
+- **JSON Formatting**: Automatic JSON prettification and validation
+- **Copy/Export Functions**: Clipboard integration and file download capabilities
+- **Example Data Loading**: Pre-populated sample data for testing and demonstration
+
+#### **Monaco Editor Features**
+- **Syntax Highlighting**: Full JSON syntax support with error detection
+- **Auto-Completion**: IntelliSense for JSON structure and values
+- **Diff Visualization**: Line-by-line change detection and highlighting
+- **Error Indicators**: Real-time JSON validation with error markers
+- **Keyboard Shortcuts**: Standard editor shortcuts for productivity
+
 ## Parsing Principles
 
 ### PPTX File Reading
 - **File Attribute Reading**: 
   - 这里读取 pptx 文件属性时，不应该有默认值的概念，读不到就是读不到，不需要任何 fallback
 
-This architecture supports both standalone library usage and full Next.js application deployment, with comprehensive testing and utility enhancements for accurate PPTX parsing.
+## Development Philosophy
+
+### Code Design Principles
+- **不应该为了符合目标输出而进行任何硬编码强制符合输出**
+
+This architecture supports both standalone library usage and full Next.js application deployment, with comprehensive testing and utility enhancements for accurate PPTX to PPTist conversion.
+
+## PPTist Integration Focus
+
+### **PPTist-Specific Features**
+- **Optimized JSON Structure**: Output format specifically designed for PPTist data model compatibility
+- **Element Positioning**: Precise coordinate mapping for PPTist layout engine
+- **Theme Color Mapping**: PowerPoint theme colors converted to PPTist-compatible formats
+- **Image Processing**: Base64 encoding for offline PPTist usage and seamless import
+- **Font Handling**: Font mapping system compatible with PPTist typography engine
+- **Background Support**: Complete slide background processing optimized for PPTist rendering
+
+### **PPTist Workflow Integration**
+1. **Upload Phase**: PPTX file processing through web interface or API
+2. **Conversion Phase**: PPTist-optimized JSON generation with specialized processors
+3. **Validation Phase**: Output validation against PPTist schema requirements
+4. **Export Phase**: PPTist-ready JSON for direct import into presentation editor
+
+### **PPTist Compatibility Standards**
+- **JSON Schema**: Strict adherence to PPTist's expected data structure
+- **Unit System**: All measurements in points (pt) for PPTist layout precision
+- **Color Format**: Standardized rgba() format for consistent PPTist rendering
+- **Element Properties**: Required properties like `enableShrink` for PPTist UI framework compatibility
 
 ## Critical Implementation Insights (2024 Test Suite Fixes)
 
