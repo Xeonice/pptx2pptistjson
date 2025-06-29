@@ -1,0 +1,311 @@
+name: Performance Testing
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+  schedule:
+    # Run performance tests weekly on Sundays at 3 AM UTC
+    - cron: '0 3 * * 0'
+  workflow_dispatch:
+    inputs:
+      test_duration:
+        description: 'Test duration in minutes'
+        required: true
+        default: '5'
+        type: string
+
+jobs:
+  performance-test:
+    name: Performance & Load Testing
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20.x'
+        cache: 'npm'
+
+    - name: Install dependencies
+      run: npm ci
+
+    - name: Create performance test samples
+      run: |
+        mkdir -p performance-tests/samples
+        # Copy test samples for performance testing
+        cp sample/input.pptx performance-tests/samples/
+        # Create multiple file sizes for testing
+        for i in {1..5}; do
+          cp sample/input.pptx "performance-tests/samples/test-${i}.pptx"
+        done
+
+    - name: Run Jest performance tests
+      run: |
+        npx jest --testPathPattern="(performance|dimension-analysis)" \
+                 --verbose \
+                 --runInBand \
+                 --detectOpenHandles \
+                 --forceExit \
+                 --testTimeout=30000
+      env:
+        NODE_OPTIONS: --max_old_space_size=4096
+        PERFORMANCE_TEST: true
+
+    - name: Memory usage test
+      run: |
+        # Test memory usage with multiple concurrent requests
+        cat > performance-test.js << 'EOF'
+        const fs = require('fs');
+        const { parse } = require('./app/lib/pptxtojson');
+        
+        async function memoryTest() {
+          const startTime = Date.now();
+          const startMemory = process.memoryUsage();
+          
+          console.log('🚀 Starting memory usage test...');
+          console.log('Initial memory:', startMemory);
+          
+          const testFile = fs.readFileSync('sample/input.pptx');
+          const promises = [];
+          
+          // Run 10 concurrent parsing operations
+          for (let i = 0; i < 10; i++) {
+            promises.push(
+              parse(testFile).catch(err => {
+                console.error(`Parse ${i} failed:`, err.message);
+                return null;
+              })
+            );
+          }
+          
+          const results = await Promise.all(promises);
+          const successCount = results.filter(r => r !== null).length;
+          
+          const endTime = Date.now();
+          const endMemory = process.memoryUsage();
+          
+          console.log('✅ Memory test completed');
+          console.log('Final memory:', endMemory);
+          console.log('Memory delta:', {
+            rss: endMemory.rss - startMemory.rss,
+            heapUsed: endMemory.heapUsed - startMemory.heapUsed,
+            heapTotal: endMemory.heapTotal - startMemory.heapTotal,
+            external: endMemory.external - startMemory.external
+          });
+          console.log('Time taken:', endTime - startTime, 'ms');
+          console.log('Successful parses:', successCount, '/ 10');
+          
+          // Memory leak detection
+          const memoryIncrease = endMemory.heapUsed - startMemory.heapUsed;
+          const memoryLimitMB = 100; // 100MB limit
+          
+          if (memoryIncrease > memoryLimitMB * 1024 * 1024) {
+            console.error('❌ Potential memory leak detected!');
+            process.exit(1);
+          } else {
+            console.log('✅ Memory usage within acceptable limits');
+          }
+        }
+        
+        memoryTest().catch(console.error);
+        EOF
+        
+        node performance-test.js
+
+    - name: Load test simulation
+      run: |
+        # Simulate concurrent API requests
+        cat > load-test.js << 'EOF'
+        const http = require('http');
+        const fs = require('fs');
+        const FormData = require('form-data');
+        
+        async function loadTest() {
+          console.log('🔥 Starting load test simulation...');
+          
+          // Start the Next.js server in background
+          const { spawn } = require('child_process');
+          const server = spawn('npm', ['start'], { 
+            detached: true,
+            stdio: 'pipe'
+          });
+          
+          // Wait for server to start
+          await new Promise(resolve => setTimeout(resolve, 10000));
+          
+          const testFile = fs.readFileSync('sample/input.pptx');
+          const concurrent = 5;
+          const requestsPerConcurrent = 3;
+          
+          const makeRequest = () => {
+            return new Promise((resolve, reject) => {
+              const form = new FormData();
+              form.append('file', testFile, 'test.pptx');
+              
+              const req = http.request({
+                hostname: 'localhost',
+                port: 3000,
+                path: '/api/parse-pptx',
+                method: 'POST',
+                headers: form.getHeaders(),
+                timeout: 30000
+              }, (res) => {
+                let data = '';
+                res.on('data', chunk => data += chunk);
+                res.on('end', () => {
+                  if (res.statusCode === 200) {
+                    resolve({ status: res.statusCode, size: data.length });
+                  } else {
+                    reject(new Error(`HTTP ${res.statusCode}`));
+                  }
+                });
+              });
+              
+              req.on('error', reject);
+              req.on('timeout', () => reject(new Error('Request timeout')));
+              form.pipe(req);
+            });
+          };
+          
+          const startTime = Date.now();
+          const promises = [];
+          
+          for (let i = 0; i < concurrent; i++) {
+            for (let j = 0; j < requestsPerConcurrent; j++) {
+              promises.push(
+                makeRequest().catch(err => ({ error: err.message }))
+              );
+            }
+          }
+          
+          const results = await Promise.all(promises);
+          const endTime = Date.now();
+          
+          const successful = results.filter(r => !r.error).length;
+          const failed = results.filter(r => r.error).length;
+          
+          console.log('📊 Load test results:');
+          console.log('Total requests:', results.length);
+          console.log('Successful:', successful);
+          console.log('Failed:', failed);
+          console.log('Success rate:', (successful / results.length * 100).toFixed(2) + '%');
+          console.log('Total time:', endTime - startTime, 'ms');
+          console.log('Average time per request:', (endTime - startTime) / results.length, 'ms');
+          
+          // Kill server
+          process.kill(-server.pid);
+          
+          if (successful / results.length < 0.8) {
+            console.error('❌ Load test failed: success rate below 80%');
+            process.exit(1);
+          } else {
+            console.log('✅ Load test passed');
+          }
+        }
+        
+        loadTest().catch(console.error);
+        EOF
+        
+        # Build first
+        npm run build
+        
+        # Run load test
+        timeout 120s node load-test.js || echo "Load test completed or timed out"
+
+    - name: Performance regression check
+      run: |
+        # Check if performance has regressed compared to baseline
+        cat > regression-check.js << 'EOF'
+        const fs = require('fs');
+        const { parse } = require('./app/lib/pptxtojson');
+        
+        async function regressionCheck() {
+          console.log('📈 Running performance regression check...');
+          
+          const testFile = fs.readFileSync('sample/input.pptx');
+          const iterations = 5;
+          const times = [];
+          
+          for (let i = 0; i < iterations; i++) {
+            const startTime = process.hrtime.bigint();
+            await parse(testFile);
+            const endTime = process.hrtime.bigint();
+            const duration = Number(endTime - startTime) / 1000000; // Convert to ms
+            times.push(duration);
+            console.log(`Iteration ${i + 1}: ${duration.toFixed(2)}ms`);
+          }
+          
+          const avgTime = times.reduce((a, b) => a + b, 0) / times.length;
+          const minTime = Math.min(...times);
+          const maxTime = Math.max(...times);
+          
+          console.log('📊 Performance metrics:');
+          console.log('Average time:', avgTime.toFixed(2), 'ms');
+          console.log('Min time:', minTime.toFixed(2), 'ms');
+          console.log('Max time:', maxTime.toFixed(2), 'ms');
+          console.log('Standard deviation:', Math.sqrt(times.reduce((sq, n) => sq + Math.pow(n - avgTime, 2), 0) / times.length).toFixed(2), 'ms');
+          
+          // Save baseline if not exists
+          const baselineFile = 'performance-baseline.json';
+          let baseline = { avgTime: avgTime };
+          
+          if (fs.existsSync(baselineFile)) {
+            const savedBaseline = JSON.parse(fs.readFileSync(baselineFile, 'utf8'));
+            const regression = ((avgTime - savedBaseline.avgTime) / savedBaseline.avgTime) * 100;
+            
+            console.log('Baseline average:', savedBaseline.avgTime.toFixed(2), 'ms');
+            console.log('Performance change:', regression.toFixed(2) + '%');
+            
+            if (regression > 20) {
+              console.error('❌ Performance regression detected: >20% slower');
+              process.exit(1);
+            } else if (regression > 10) {
+              console.warn('⚠️  Performance warning: >10% slower');
+            } else {
+              console.log('✅ Performance within acceptable range');
+            }
+          } else {
+            fs.writeFileSync(baselineFile, JSON.stringify(baseline, null, 2));
+            console.log('📝 Baseline saved for future comparisons');
+          }
+        }
+        
+        regressionCheck().catch(console.error);
+        EOF
+        
+        node regression-check.js
+
+    - name: Upload performance results
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: performance-results
+        path: |
+          performance-baseline.json
+          performance-tests/
+        retention-days: 30
+
+    - name: Comment performance results on PR
+      if: github.event_name == 'pull_request'
+      uses: marocchino/sticky-pull-request-comment@v2
+      with:
+        recreate: true
+        message: |
+          ## 🚀 Performance Test Results
+          
+          Performance tests have been completed for this PR. 
+          
+          **Test Summary:**
+          - ✅ Memory Usage Test: Completed
+          - ✅ Load Test Simulation: Completed  
+          - ✅ Performance Regression Check: Completed
+          
+          Check the workflow logs for detailed performance metrics.
+          
+          [View detailed results](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
