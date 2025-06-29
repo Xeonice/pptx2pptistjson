@@ -25,10 +25,6 @@ export class ImageDataService {
     private fileService: FileService
   ) {}
   
-  // 允许使用context中的fileService
-  private getFileService(context: ProcessingContext): FileService {
-    return this.fileService || context.fileService;
-  }
 
   /**
    * 从PPTX中提取图片二进制数据
@@ -57,8 +53,7 @@ export class ImageDataService {
       const fullPath = this.resolveImagePath(imagePath);
       
       // 从ZIP中提取图片数据
-      const fileService = this.getFileService(context);
-      const buffer = await fileService.extractBinaryFileAsBuffer(context.zip, fullPath);
+      const buffer = await this.fileService.extractBinaryFileAsBuffer(context.zip, fullPath);
       if (!buffer) {
         console.warn(`Failed to extract image data from path: ${fullPath}`);
         return null;

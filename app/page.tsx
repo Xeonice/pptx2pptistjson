@@ -203,6 +203,14 @@ export default function Home() {
           >
             API 文档
           </a>
+          <a 
+            href="/json-diff"
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{ padding: '5px 10px', color: '#d14424', textDecoration: 'none' }}
+          >
+            JSON 对比
+          </a>
           <button 
             onClick={() => {
               console.log('Testing with fake data');

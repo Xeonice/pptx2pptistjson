@@ -30,6 +30,7 @@
 		"registry": "https://registry.npmjs.com"
 	},
 	"dependencies": {
+		"@monaco-editor/react": "^4.7.0",
 		"@radix-ui/react-dialog": "^1.1.14",
 		"@radix-ui/react-slot": "^1.2.3",
 		"@uiw/react-json-view": "^2.0.0-alpha.32",

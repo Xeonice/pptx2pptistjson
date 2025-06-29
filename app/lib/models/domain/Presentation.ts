@@ -15,6 +15,8 @@ export class Presentation {
       width: 960,
       height: 540,
     };
+    // Initialize with default theme
+    this.theme = new Theme();
   }
 
   addSlide(slide: Slide): void {

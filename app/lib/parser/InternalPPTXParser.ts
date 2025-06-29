@@ -4,7 +4,6 @@
  */
 
 import { Presentation } from "../models/domain/Presentation";
-import { Slide } from "../models/domain/Slide";
 import { Theme } from "../models/domain/Theme";
 import { ParseResult } from "../models/dto/ParseResult";
 import { IPresentationParser } from "../services/interfaces/IPresentationParser";
@@ -30,11 +29,64 @@ export interface InternalParseResult {
   parseTimeMs: number;
 }
 
+/**
+ * Slide data structure for JSON output
+ */
+export interface SlideJSON {
+  id: string;
+  elements: ElementJSON[];
+  background?: {
+    type: string;
+    color?: string;
+    image?: string;
+    [key: string]: unknown;
+  };
+  remark?: string;
+}
+
+/**
+ * Element data structure for JSON output
+ */
+export interface ElementJSON {
+  id: string;
+  type: string;
+  left: number;
+  top: number;
+  width: number;
+  height: number;
+  [key: string]: unknown;
+}
+
+/**
+ * Theme data structure for JSON output
+ */
+export interface ThemeJSON {
+  fontName: string;
+  themeColor?: Record<string, string>;
+}
+
+/**
+ * PPTist compatible JSON format
+ */
 export interface PPTistJSON {
-  slides: Slide[];
-  theme: Theme;
+  slides: SlideJSON[];
+  theme: ThemeJSON;
   title: string;
-  slideSize: number;
+  slideSize: { width: number; height: number };
+}
+
+/**
+ * Display format for rendering
+ */
+export interface DisplayFormat {
+  slides: Array<{
+    id: string;
+    number: number;
+    elements: Array<Record<string, unknown>>;
+    background?: unknown;
+  }>;
+  slideSize: { width: number; height: number };
+  theme?: Record<string, unknown>;
 }
 
 /**
@@ -97,24 +149,31 @@ export class InternalPPTXParser {
       slides: result.presentation.getSlides().map((slide) => slide.toJSON()),
       theme: this.convertTheme(result.presentation.getTheme()),
       title: result.presentation.getMetadata().title || "Presentation",
+      slideSize: result.presentation.getSlideSize(),
     };
   }
 
-  private convertTheme(theme: Theme): any {
+  private convertTheme(theme: Theme): ThemeJSON {
+    const colorScheme = theme.getColorScheme();
+    const themeColor: Record<string, string> = {};
+    
+    if (colorScheme) {
+      Object.entries(colorScheme).forEach(([key, value]) => {
+        themeColor[key] = value;
+      });
+    }
+    
     return {
       fontName: theme.getFontScheme()?.majorFont?.latin || "Microsoft Yahei",
-      themeColor: theme.getColorScheme(),
+      themeColor: Object.keys(themeColor).length > 0 ? themeColor : undefined,
     };
   }
+
 
   /**
    * Get only slide data for rendering
    */
-  async parseForDisplay(file: ArrayBuffer | Blob): Promise<{
-    slides: any[];
-    slideSize: { width: number; height: number };
-    theme?: any;
-  }> {
+  async parseForDisplay(file: ArrayBuffer | Blob): Promise<DisplayFormat> {
     const result = await this.parse(file);
     return {
       slides: result.presentation.getSlides().map((slide) => ({
