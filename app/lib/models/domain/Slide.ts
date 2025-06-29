@@ -96,17 +96,7 @@ export class Slide {
     
     switch (this.background.type) {
       case 'image':
-        return {
-          type: "image",
-          themeColor: {
-            color: "#F4F7FF",
-            colorType: "lt1"
-          },
-          image: this.background.imageUrl ? 
-            `https://example.com/backgrounds/${this.background.imageUrl}.png` : 
-            "https://example.com/background.png",
-          imageSize: "cover"
-        };
+        return this.convertImageBackground(this.background);
       case 'solid':
         return {
           type: "solid",
@@ -129,6 +119,64 @@ export class Slide {
         };
     }
   }
+
+  private convertImageBackground(background: SlideBackground): any {
+    const baseResult = {
+      type: "image",
+      themeColor: {
+        color: "#F4F7FF",
+        colorType: "lt1"
+      },
+      imageSize: "cover"
+    };
+
+    // Priority 1: Use base64 data URL if available (current implementation)
+    if (background.imageUrl && background.imageUrl.startsWith('data:')) {
+      return {
+        ...baseResult,
+        image: background.imageUrl
+      };
+    }
+
+    // Priority 2: Cloud service URL (extension point for future implementation)
+    if (background.imageData && this.shouldUseCloudStorage()) {
+      const cloudUrl = this.uploadToCloudService(background.imageData);
+      if (cloudUrl) {
+        return {
+          ...baseResult,
+          image: cloudUrl
+        };
+      }
+    }
+
+    // Priority 3: Fallback to relationship-based URL or placeholder
+    const fallbackImage = background.imageUrl ? 
+      `https://example.com/backgrounds/${background.imageUrl}.png` : 
+      "https://example.com/background.png";
+    
+    return {
+      ...baseResult,
+      image: fallbackImage
+    };
+  }
+
+  // Extension point: Override this method to enable cloud storage
+  private shouldUseCloudStorage(): boolean {
+    // TODO: Implement cloud storage configuration check
+    // return process.env.ENABLE_CLOUD_STORAGE === 'true' || this.cloudConfig?.enabled;
+    return false;
+  }
+
+  // Extension point: Override this method to implement cloud upload
+  private uploadToCloudService(imageData: any): string | null {
+    // TODO: Implement cloud service upload logic
+    // Examples:
+    // - Upload to AWS S3 and return public URL
+    // - Upload to Alibaba Cloud OSS and return CDN URL  
+    // - Upload to custom image service and return hosted URL
+    console.warn('Cloud storage not implemented yet, falling back to base64');
+    return null;
+  }
 }
 
 export interface SlideBackground {
@@ -136,6 +184,7 @@ export interface SlideBackground {
   color?: string;
   colors?: Array<{ color: string; position: number }>;
   imageUrl?: string;
+  imageData?: any; // Raw image data for cloud upload extension
 }
 
 export interface SlideLayout {

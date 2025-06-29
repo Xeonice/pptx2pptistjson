@@ -36,12 +36,12 @@ export function configureServices(container: ServiceContainer): void {
   container.registerFactory('SlideParser', () => {
     const fileService = container.resolve<IFileService>('IFileService');
     const xmlParser = container.resolve<IXmlParseService>('IXmlParseService');
-    const slideParser = new SlideParser(fileService, xmlParser);
+    const imageDataService = container.resolve<ImageDataService>('ImageDataService');
+    const slideParser = new SlideParser(fileService, xmlParser, imageDataService);
     
     // Register element processors
     const textProcessor = new TextProcessor(xmlParser);
     const shapeProcessor = new ShapeProcessor(xmlParser);
-    const imageDataService = container.resolve<ImageDataService>('ImageDataService');
     const imageProcessor = new ImageProcessor(xmlParser, imageDataService);
     
     slideParser.registerElementProcessor(textProcessor);

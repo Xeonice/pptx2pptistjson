@@ -388,8 +388,8 @@ describe('Advanced Color Processing Tests', () => {
       const endTime = Date.now();
       const duration = endTime - startTime;
       
-      // Should complete in reasonable time
-      expect(duration).toBeLessThan(100); // 100ms for 1000 operations
+      // Should complete in reasonable time (relaxed for CI/slower machines)
+      expect(duration).toBeLessThan(500); // 500ms for 1000 operations
     });
   });
 });

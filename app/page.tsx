@@ -211,35 +211,6 @@ export default function Home() {
           >
             JSON 对比
           </a>
-          <button 
-            onClick={() => {
-              console.log('Testing with fake data');
-              const fakeData = {
-                success: true,
-                data: {
-                  slides: [
-                    { id: 1, title: "测试幻灯片 1", content: "这是第一页内容" },
-                    { id: 2, title: "测试幻灯片 2", content: "这是第二页内容" }
-                  ],
-                  theme: { name: "默认主题", colors: ["#ff0000", "#00ff00", "#0000ff"] },
-                  size: { width: 720, height: 540 }
-                }
-              };
-              setJsonData(fakeData.data);
-            }}
-            style={{ 
-              padding: '5px 10px', 
-              color: 'white', 
-              backgroundColor: '#28a745',
-              border: 'none',
-              borderRadius: '4px',
-              cursor: 'pointer',
-              fontSize: '12px',
-              marginLeft: '10px'
-            }}
-          >
-            🧪 测试数据
-          </button>
         </div>
       </div>
       
@@ -252,7 +223,6 @@ export default function Home() {
         <JsonViewer 
           data={jsonData} 
           onCopy={handleCopy} 
-          onTestData={setJsonData}
         />
       </div>
     </div>

@@ -9,13 +9,15 @@ import { IElementProcessor } from '../interfaces/IElementProcessor';
 import { Element } from '../../models/domain/elements/Element';
 import { IdGenerator } from '../utils/IdGenerator';
 import { ColorUtils } from '../utils/ColorUtils';
+import { ImageDataService } from '../images/ImageDataService';
 
 export class SlideParser {
   private elementProcessors: Map<string, IElementProcessor> = new Map();
 
   constructor(
     private fileService: IFileService,
-    private xmlParser: IXmlParseService
+    private xmlParser: IXmlParseService,
+    private imageDataService?: ImageDataService
   ) {}
 
   registerElementProcessor(processor: IElementProcessor): void {
@@ -38,12 +40,6 @@ export class SlideParser {
       const slideId = this.extractSlideId(slidePath);
       const slide = new Slide(slideId, slideNumber);
       
-      // Parse background
-      const background = this.parseBackground(slideNode);
-      if (background) {
-        slide.setBackground(background);
-      }
-      
       // Create processing context
       const context: ProcessingContext = {
         zip,
@@ -56,6 +52,12 @@ export class SlideParser {
         warnings: [],
         idGenerator: new IdGenerator()
       };
+      
+      // Parse background
+      const background = await this.parseBackground(slideNode, context);
+      if (background) {
+        slide.setBackground(background);
+      }
       
       // Parse elements
       const elements = await this.parseElements(slideNode, context);
@@ -75,7 +77,7 @@ export class SlideParser {
     return match ? match[1] : 'unknown';
   }
 
-  private parseBackground(slideNode: XmlNode): SlideBackground | undefined {
+  private async parseBackground(slideNode: XmlNode, context: ProcessingContext): Promise<SlideBackground | undefined> {
     const bgNode = this.xmlParser.findNode(slideNode, 'bg');
     if (!bgNode) {
       return undefined;
@@ -117,9 +119,36 @@ export class SlideParser {
       if (blipNode) {
         const embedId = this.xmlParser.getAttribute(blipNode, 'r:embed');
         if (embedId) {
+          // Try to extract actual image data if ImageDataService is available
+          if (this.imageDataService) {
+            try {
+              const imageData = await this.imageDataService.extractImageData(embedId, context);
+              if (imageData) {
+                const dataUrl = this.imageDataService.encodeToBase64(imageData);
+                return {
+                  type: 'image',
+                  imageUrl: dataUrl,
+                  imageData: imageData // Store raw data for potential cloud upload
+                };
+              }
+            } catch (error) {
+              console.warn(`Failed to process background image data for ${embedId}:`, error);
+              // Fall back to relationship-based URL
+            }
+          }
+          
+          // Fallback: resolve from relationships for backward compatibility
+          let resolvedUrl = embedId;
+          if (context.relationships.has(embedId)) {
+            const rel = context.relationships.get(embedId);
+            if (rel && rel.target) {
+              resolvedUrl = rel.target;
+            }
+          }
+          
           return {
             type: 'image',
-            imageUrl: embedId // This would need to be resolved from relationships
+            imageUrl: resolvedUrl
           };
         }
       }

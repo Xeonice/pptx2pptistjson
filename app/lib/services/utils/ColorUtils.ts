@@ -243,123 +243,11 @@ export class ColorUtils {
   }
 
   /**
-   * Applies shade transformation (darker)
+   * Converts hex value to decimal
    */
-  static applyShade(color: string, factor: number): string {
-    const rgba = this.parseRgba(this.toRgba(color));
-    if (!rgba) return color;
-
-    // Clamp factor to reasonable range
-    const clampedFactor = Math.max(0, Math.min(1, factor));
-
-    const modified = {
-      r: Math.max(0, Math.min(255, Math.round(rgba.r * (1 - clampedFactor)))),
-      g: Math.max(0, Math.min(255, Math.round(rgba.g * (1 - clampedFactor)))),
-      b: Math.max(0, Math.min(255, Math.round(rgba.b * (1 - clampedFactor)))),
-      a: rgba.a,
-    };
-
-    return this.formatRgba(modified);
-  }
-
-  /**
-   * Applies tint transformation (lighter)
-   */
-  static applyTint(color: string, factor: number): string {
-    const rgba = this.parseRgba(this.toRgba(color));
-    if (!rgba) return color;
-
-    // Clamp factor to reasonable range
-    const clampedFactor = Math.max(0, Math.min(1, factor));
-
-    const modified = {
-      r: Math.max(0, Math.min(255, Math.round(rgba.r + (255 - rgba.r) * clampedFactor))),
-      g: Math.max(0, Math.min(255, Math.round(rgba.g + (255 - rgba.g) * clampedFactor))),
-      b: Math.max(0, Math.min(255, Math.round(rgba.b + (255 - rgba.b) * clampedFactor))),
-      a: rgba.a,
-    };
-
-    return this.formatRgba(modified);
-  }
-
-  /**
-   * Applies saturation modification
-   */
-  static applySatMod(color: string, factor: number): string {
-    const rgba = this.parseRgba(this.toRgba(color));
-    if (!rgba) return color;
-
-    // Convert RGB to HSL
-    const r = rgba.r / 255;
-    const g = rgba.g / 255;
-    const b = rgba.b / 255;
-    const max = Math.max(r, g, b);
-    const min = Math.min(r, g, b);
-    let h = 0, s = 0, l = (max + min) / 2;
-
-    if (max !== min) {
-      const d = max - min;
-      s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
-      switch (max) {
-        case r: h = ((g - b) / d + (g < b ? 6 : 0)) / 6; break;
-        case g: h = ((b - r) / d + 2) / 6; break;
-        case b: h = ((r - g) / d + 4) / 6; break;
-      }
-    }
-
-    // Apply saturation modification
-    s = Math.min(1, Math.max(0, s * factor));
-
-    // Convert back to RGB
-    const rgb = this.hslToRgb(h, s, l);
-    return this.formatRgba({ ...rgb, a: rgba.a });
-  }
-
-  /**
-   * Applies hue modification
-   */
-  static applyHueMod(color: string, factor: number): string {
-    const rgba = this.parseRgba(this.toRgba(color));
-    if (!rgba) return color;
-
-    // Convert RGB to HSL
-    const r = rgba.r / 255;
-    const g = rgba.g / 255;
-    const b = rgba.b / 255;
-    const max = Math.max(r, g, b);
-    const min = Math.min(r, g, b);
-    let h = 0, s = 0, l = (max + min) / 2;
-
-    if (max !== min) {
-      const d = max - min;
-      s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
-      switch (max) {
-        case r: h = ((g - b) / d + (g < b ? 6 : 0)) / 6; break;
-        case g: h = ((b - r) / d + 2) / 6; break;
-        case b: h = ((r - g) / d + 4) / 6; break;
-      }
-    }
-
-    // Apply hue modification
-    h = (h + factor) % 1;
-    if (h < 0) h += 1;
-
-    // Convert back to RGB
-    const rgb = this.hslToRgb(h, s, l);
-    return this.formatRgba({ ...rgb, a: rgba.a });
-  }
-
-  /**
-   * Applies alpha transparency
-   */
-  static applyAlpha(color: string, alpha: number): string {
-    const rgba = this.parseRgba(this.toRgba(color));
-    if (!rgba) return color;
-
-    // Clamp alpha to valid range [0, 1]
-    const clampedAlpha = Math.max(0, Math.min(1, alpha));
-
-    return this.formatRgba({ ...rgba, a: clampedAlpha });
+  static toHex(value: number): string {
+    const hex = Math.round(Math.max(0, Math.min(255, value))).toString(16);
+    return hex.length === 1 ? '0' + hex : hex;
   }
 
   /**
@@ -520,10 +408,122 @@ export class ColorUtils {
   }
 
   /**
-   * Converts hex value to decimal
+   * Applies shade transformation (darker)
    */
-  static toHex(value: number): string {
-    const hex = Math.round(Math.max(0, Math.min(255, value))).toString(16);
-    return hex.length === 1 ? '0' + hex : hex;
+  static applyShade(color: string, factor: number): string {
+    const rgba = this.parseRgba(this.toRgba(color));
+    if (!rgba) return color;
+
+    // Clamp factor to reasonable range
+    const clampedFactor = Math.max(0, Math.min(1, factor));
+
+    const modified = {
+      r: Math.max(0, Math.min(255, Math.round(rgba.r * (1 - clampedFactor)))),
+      g: Math.max(0, Math.min(255, Math.round(rgba.g * (1 - clampedFactor)))),
+      b: Math.max(0, Math.min(255, Math.round(rgba.b * (1 - clampedFactor)))),
+      a: rgba.a,
+    };
+
+    return this.formatRgba(modified);
+  }
+
+  /**
+   * Applies tint transformation (lighter)
+   */
+  static applyTint(color: string, factor: number): string {
+    const rgba = this.parseRgba(this.toRgba(color));
+    if (!rgba) return color;
+
+    // Clamp factor to reasonable range
+    const clampedFactor = Math.max(0, Math.min(1, factor));
+
+    const modified = {
+      r: Math.max(0, Math.min(255, Math.round(rgba.r + (255 - rgba.r) * clampedFactor))),
+      g: Math.max(0, Math.min(255, Math.round(rgba.g + (255 - rgba.g) * clampedFactor))),
+      b: Math.max(0, Math.min(255, Math.round(rgba.b + (255 - rgba.b) * clampedFactor))),
+      a: rgba.a,
+    };
+
+    return this.formatRgba(modified);
+  }
+
+  /**
+   * Applies saturation modification
+   */
+  static applySatMod(color: string, factor: number): string {
+    const rgba = this.parseRgba(this.toRgba(color));
+    if (!rgba) return color;
+
+    // Convert RGB to HSL
+    const r = rgba.r / 255;
+    const g = rgba.g / 255;
+    const b = rgba.b / 255;
+    const max = Math.max(r, g, b);
+    const min = Math.min(r, g, b);
+    let h = 0, s = 0, l = (max + min) / 2;
+
+    if (max !== min) {
+      const d = max - min;
+      s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+      switch (max) {
+        case r: h = ((g - b) / d + (g < b ? 6 : 0)) / 6; break;
+        case g: h = ((b - r) / d + 2) / 6; break;
+        case b: h = ((r - g) / d + 4) / 6; break;
+      }
+    }
+
+    // Apply saturation modification
+    s = Math.min(1, Math.max(0, s * factor));
+
+    // Convert back to RGB
+    const rgb = this.hslToRgb(h, s, l);
+    return this.formatRgba({ ...rgb, a: rgba.a });
+  }
+
+  /**
+   * Applies hue modification
+   */
+  static applyHueMod(color: string, factor: number): string {
+    const rgba = this.parseRgba(this.toRgba(color));
+    if (!rgba) return color;
+
+    // Convert RGB to HSL
+    const r = rgba.r / 255;
+    const g = rgba.g / 255;
+    const b = rgba.b / 255;
+    const max = Math.max(r, g, b);
+    const min = Math.min(r, g, b);
+    let h = 0, s = 0, l = (max + min) / 2;
+
+    if (max !== min) {
+      const d = max - min;
+      s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+      switch (max) {
+        case r: h = ((g - b) / d + (g < b ? 6 : 0)) / 6; break;
+        case g: h = ((b - r) / d + 2) / 6; break;
+        case b: h = ((r - g) / d + 4) / 6; break;
+      }
+    }
+
+    // Apply hue modification
+    h = (h + factor) % 1;
+    if (h < 0) h += 1;
+
+    // Convert back to RGB
+    const rgb = this.hslToRgb(h, s, l);
+    return this.formatRgba({ ...rgb, a: rgba.a });
+  }
+
+  /**
+   * Applies alpha transparency
+   */
+  static applyAlpha(color: string, alpha: number): string {
+    const rgba = this.parseRgba(this.toRgba(color));
+    if (!rgba) return color;
+
+    // Clamp alpha to valid range [0, 1]
+    const clampedAlpha = Math.max(0, Math.min(1, alpha));
+
+    return this.formatRgba({ ...rgba, a: clampedAlpha });
   }
 }
