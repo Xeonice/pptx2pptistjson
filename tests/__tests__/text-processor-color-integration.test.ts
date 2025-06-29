@@ -4,6 +4,8 @@ import { IdGenerator } from '../../app/lib/services/utils/IdGenerator';
 import { ColorTestUtils } from '../helpers/color-test-utils';
 import { colorTestData } from '../fixtures/color-test-data';
 import { XmlNode } from '../../app/lib/models/xml/XmlNode';
+import { ProcessingContext } from '../../app/lib/services/interfaces/ProcessingContext';
+import JSZip from 'jszip';
 
 describe('TextProcessor Color Integration Tests', () => {
   let textProcessor: TextProcessor;
@@ -22,6 +24,19 @@ describe('TextProcessor Color Integration Tests', () => {
     attributes,
     children,
     content
+  });
+
+  // Helper to create mock ProcessingContext
+  const createMockContext = (overrides: Partial<ProcessingContext> = {}): ProcessingContext => ({
+    zip: {} as JSZip,
+    slideNumber: 1,
+    slideId: 'slide1',
+    relationships: new Map(),
+    basePath: '',
+    options: {},
+    warnings: [],
+    idGenerator,
+    ...overrides
   });
 
   const createMockTextShapeXml = (colorData: any, text: string = 'Test Text'): XmlNode => {
@@ -58,11 +73,9 @@ describe('TextProcessor Color Integration Tests', () => {
       };
 
       const mockXml = createMockTextShapeXml(colorData);
-      const context = {
-        idGenerator,
-        theme: ColorTestUtils.createMockTheme({}),
-        slideSize: { width: 1000, height: 750 }
-      };
+      const context = createMockContext({
+        theme: ColorTestUtils.createMockTheme({})
+      });
 
       const result = await textProcessor.process(mockXml, context);
       const textContent = result.getContent();
@@ -82,11 +95,9 @@ describe('TextProcessor Color Integration Tests', () => {
       };
 
       const mockXml = createMockTextShapeXml(colorData);
-      const context = {
-        idGenerator,
-        theme: ColorTestUtils.createMockTheme({ accent1: '#FF0000' }),
-        slideSize: { width: 1000, height: 750 }
-      };
+      const context = createMockContext({
+        theme: ColorTestUtils.createMockTheme({ accent1: '#FF0000' })
+      });
 
       const result = await textProcessor.process(mockXml, context);
       const textContent = result.getContent();
@@ -109,11 +120,9 @@ describe('TextProcessor Color Integration Tests', () => {
       };
 
       const mockXml = createMockTextShapeXml(colorData);
-      const context = {
-        idGenerator,
-        theme: ColorTestUtils.createMockTheme({}),
-        slideSize: { width: 1000, height: 750 }
-      };
+      const context = createMockContext({
+        theme: ColorTestUtils.createMockTheme({})
+      });
 
       const result = await textProcessor.process(mockXml, context);
       const textContent = result.getContent();
@@ -157,11 +166,9 @@ describe('TextProcessor Color Integration Tests', () => {
         ])
       ]);
 
-      const context = {
-        idGenerator,
-        theme: ColorTestUtils.createMockTheme({}),
-        slideSize: { width: 1000, height: 750 }
-      };
+      const context = createMockContext({
+        theme: ColorTestUtils.createMockTheme({})
+      });
 
       const result = await textProcessor.process(mockXml, context);
       const textContent = result.getContent();
@@ -187,11 +194,9 @@ describe('TextProcessor Color Integration Tests', () => {
       };
 
       const mockXml = createMockTextShapeXml(colorData);
-      const context = {
-        idGenerator,
-        theme: ColorTestUtils.createMockTheme({}),
-        slideSize: { width: 1000, height: 750 }
-      };
+      const context = createMockContext({
+        theme: ColorTestUtils.createMockTheme({})
+      });
 
       const result = await textProcessor.process(mockXml, context);
       const textContent = result.getContent();
@@ -221,11 +226,9 @@ describe('TextProcessor Color Integration Tests', () => {
       };
 
       const mockXml = createMockTextShapeXml(colorData);
-      const context = {
-        idGenerator,
-        theme: mockTheme,
-        slideSize: { width: 1000, height: 750 }
-      };
+      const context = createMockContext({
+        theme: mockTheme
+      });
 
       const result = await textProcessor.process(mockXml, context);
       const textContent = result.getContent();
@@ -246,11 +249,9 @@ describe('TextProcessor Color Integration Tests', () => {
       };
 
       const mockXml = createMockTextShapeXml(colorData);
-      const context = {
-        idGenerator,
-        theme: undefined,
-        slideSize: { width: 1000, height: 750 }
-      };
+      const context = createMockContext({
+        theme: undefined
+      });
 
       const result = await textProcessor.process(mockXml, context);
       const textContent = result.getContent();
@@ -286,11 +287,9 @@ describe('TextProcessor Color Integration Tests', () => {
         };
 
         const mockXml = createMockTextShapeXml(colorData);
-        const context = {
-          idGenerator,
-          theme: mockTheme,
-          slideSize: { width: 1000, height: 750 }
-        };
+        const context = createMockContext({
+          theme: mockTheme
+        });
 
         const result = await textProcessor.process(mockXml, context);
         const textContent = result.getContent();
@@ -317,11 +316,9 @@ describe('TextProcessor Color Integration Tests', () => {
       };
 
       const mockXml = createMockTextShapeXml(colorData);
-      const context = {
-        idGenerator,
-        theme: mockTheme,
-        slideSize: { width: 1000, height: 750 }
-      };
+      const context = createMockContext({
+        theme: mockTheme
+      });
 
       const result = await textProcessor.process(mockXml, context);
       const textContent = result.getContent();
@@ -350,11 +347,9 @@ describe('TextProcessor Color Integration Tests', () => {
       };
 
       const mockXml = createMockTextShapeXml(colorData);
-      const context = {
-        idGenerator,
-        theme: ColorTestUtils.createMockTheme({}),
-        slideSize: { width: 1000, height: 750 }
-      };
+      const context = createMockContext({
+        theme: ColorTestUtils.createMockTheme({})
+      });
 
       const result = await textProcessor.process(mockXml, context);
       const textContent = result.getContent();
@@ -404,11 +399,9 @@ describe('TextProcessor Color Integration Tests', () => {
         ])
       ]);
 
-      const context = {
-        idGenerator,
-        theme: ColorTestUtils.createMockTheme({}),
-        slideSize: { width: 1000, height: 750 }
-      };
+      const context = createMockContext({
+        theme: ColorTestUtils.createMockTheme({})
+      });
 
       const result = await textProcessor.process(mockXml, context);
       const textContent = result.getContent();
@@ -444,11 +437,9 @@ describe('TextProcessor Color Integration Tests', () => {
       };
 
       const mockXml = createMockTextShapeXml(colorData);
-      const context = {
-        idGenerator,
-        theme: ColorTestUtils.createMockTheme({}),
-        slideSize: { width: 1000, height: 750 }
-      };
+      const context = createMockContext({
+        theme: ColorTestUtils.createMockTheme({})
+      });
 
       const result = await textProcessor.process(mockXml, context);
       const textContent = result.getContent();
@@ -471,11 +462,9 @@ describe('TextProcessor Color Integration Tests', () => {
       };
 
       const mockXml = createMockTextShapeXml(colorData);
-      const context = {
-        idGenerator,
-        theme: ColorTestUtils.createMockTheme({ accent1: '#FF0000' }),
-        slideSize: { width: 1000, height: 750 }
-      };
+      const context = createMockContext({
+        theme: ColorTestUtils.createMockTheme({ accent1: '#FF0000' })
+      });
 
       const result = await textProcessor.process(mockXml, context);
       const textContent = result.getContent();
@@ -501,11 +490,9 @@ describe('TextProcessor Color Integration Tests', () => {
       };
 
       const mockXml = createMockTextShapeXml(colorData);
-      const context = {
-        idGenerator,
-        theme: ColorTestUtils.createMockTheme({}),
-        slideSize: { width: 1000, height: 750 }
-      };
+      const context = createMockContext({
+        theme: ColorTestUtils.createMockTheme({})
+      });
 
       const result = await textProcessor.process(mockXml, context);
       const textContent = result.getContent();
@@ -525,11 +512,9 @@ describe('TextProcessor Color Integration Tests', () => {
       };
 
       const mockXml = createMockTextShapeXml(colorData);
-      const context = {
-        idGenerator,
-        theme: ColorTestUtils.createMockTheme({}),
-        slideSize: { width: 1000, height: 750 }
-      };
+      const context = createMockContext({
+        theme: ColorTestUtils.createMockTheme({})
+      });
 
       const result = await textProcessor.process(mockXml, context);
       const textContent = result.getContent();
@@ -549,11 +534,9 @@ describe('TextProcessor Color Integration Tests', () => {
       };
 
       const mockXml = createMockTextShapeXml(colorData);
-      const context = {
-        idGenerator,
-        theme: ColorTestUtils.createMockTheme({}),
-        slideSize: { width: 1000, height: 750 }
-      };
+      const context = createMockContext({
+        theme: ColorTestUtils.createMockTheme({})
+      });
 
       const result = await textProcessor.process(mockXml, context);
       const textContent = result.getContent();
@@ -579,11 +562,9 @@ describe('TextProcessor Color Integration Tests', () => {
         ])
       ]);
 
-      const context = {
-        idGenerator,
-        theme: ColorTestUtils.createMockTheme({}),
-        slideSize: { width: 1000, height: 750 }
-      };
+      const context = createMockContext({
+        theme: ColorTestUtils.createMockTheme({})
+      });
 
       const result = await textProcessor.process(mockXml, context);
       

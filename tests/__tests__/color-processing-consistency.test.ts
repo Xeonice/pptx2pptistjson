@@ -337,7 +337,7 @@ describe('Color Processing Consistency Tests', () => {
       ];
 
       const iterations = 1000;
-      const performanceResults = [];
+      const performanceResults: Array<{ type: string; duration: number }> = [];
 
       colorTypes.forEach(({ type, data }) => {
         const startTime = performance.now();

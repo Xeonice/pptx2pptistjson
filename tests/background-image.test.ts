@@ -6,6 +6,8 @@ import { XmlParseService } from '@/lib/services/core/XmlParseService';
 import { ImageDataService } from '@/lib/services/images/ImageDataService';
 import { ProcessingContext } from '@/lib/services/interfaces/ProcessingContext';
 import { XmlNode } from '@/lib/models/xml/XmlNode';
+import { IdGenerator } from '@/lib/services/utils/IdGenerator';
+import JSZip from 'jszip';
 
 describe('Background Image Processing', () => {
   let slideParser: SlideParser;
@@ -28,11 +30,17 @@ describe('Background Image Processing', () => {
     // Setup mock processing context
     mockContext = {
       relationships: new Map([
-        ['rId1', { target: 'media/image1.jpeg' }],
-        ['rId2', { target: 'media/image2.png' }]
+        ['rId1', { id: 'rId1', type: 'image', target: 'media/image1.jpeg' }],
+        ['rId2', { id: 'rId2', type: 'image', target: 'media/image2.png' }]
       ]),
-      zip: {} as any,
-      theme: undefined
+      zip: {} as JSZip,
+      theme: undefined,
+      slideNumber: 1,
+      slideId: 'slide1',
+      basePath: '',
+      options: {},
+      warnings: [],
+      idGenerator: new IdGenerator()
     };
   });
 
@@ -244,7 +252,7 @@ describe('Background Image Processing', () => {
 
   describe('Slide.convertBackground()', () => {
     it('should convert solid background to JSON', () => {
-      const slide = new Slide();
+      const slide = new Slide('slide1', 1);
       const solidBackground: SlideBackground = {
         type: 'solid',
         color: '#FF0000'
@@ -259,7 +267,7 @@ describe('Background Image Processing', () => {
     });
 
     it('should convert gradient background to JSON', () => {
-      const slide = new Slide();
+      const slide = new Slide('slide1', 1);
       const gradientBackground: SlideBackground = {
         type: 'gradient',
         colors: [
@@ -279,7 +287,7 @@ describe('Background Image Processing', () => {
     });
 
     it('should convert image background with base64 to JSON', () => {
-      const slide = new Slide();
+      const slide = new Slide('slide1', 1);
       const imageBackground: SlideBackground = {
         type: 'image',
         imageUrl: 'data:image/jpeg;base64,ZmFrZS1pbWFnZS1kYXRh',
@@ -300,7 +308,7 @@ describe('Background Image Processing', () => {
     });
 
     it('should convert image background with URL to JSON', () => {
-      const slide = new Slide();
+      const slide = new Slide('slide1', 1);
       const imageBackground: SlideBackground = {
         type: 'image',
         imageUrl: 'media/image1.jpeg'
@@ -316,7 +324,7 @@ describe('Background Image Processing', () => {
     });
 
     it('should handle missing background gracefully', () => {
-      const slide = new Slide();
+      const slide = new Slide('slide1', 1);
       const json = slide.toJSON();
       
       // The implementation returns a default background when none is set
@@ -328,10 +336,10 @@ describe('Background Image Processing', () => {
 
   describe('Error Handling', () => {
     it('should handle XML parsing errors gracefully', async () => {
-      const invalidXml = '<invalid-xml>';
+      const invalidXml = '';
       
       expect(() => {
-        xmlParseService.parseFromString(invalidXml);
+        xmlParseService.parse(invalidXml);
       }).toThrow();
     });
 

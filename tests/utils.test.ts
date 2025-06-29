@@ -21,7 +21,7 @@ describe('领域模型', () => {
     it('应该添加和获取幻灯片', () => {
       const metadata: PresentationMetadata = { format: 'pptx' };
       const presentation = new Presentation(metadata);
-      const slide = new Slide('slide1');
+      const slide = new Slide('slide1', 1);
       
       presentation.addSlide(slide);
       
@@ -32,7 +32,7 @@ describe('领域模型', () => {
 
   describe('幻灯片', () => {
     it('应该创建幻灯片实例', () => {
-      const slide = new Slide('slide1');
+      const slide = new Slide('slide1', 1);
       
       expect(slide).toBeInstanceOf(Slide);
       expect(slide.getId()).toBe('slide1');
@@ -58,10 +58,10 @@ describe('领域模型', () => {
         accent4: '#FFFF00',
         accent5: '#FF00FF',
         accent6: '#00FFFF',
-        background1: '#FFFFFF',
-        background2: '#F0F0F0',
-        text1: '#000000',
-        text2: '#333333',
+        lt1: '#FFFFFF',
+        lt2: '#F0F0F0',
+        dk1: '#000000',
+        dk2: '#333333',
         hyperlink: '#0066CC',
         followedHyperlink: '#800080'
       };
