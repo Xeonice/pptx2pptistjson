@@ -5,7 +5,7 @@
 
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { MonacoJsonEditor } from "./MonacoJsonEditor";
 
 interface JsonSource {
@@ -19,14 +19,12 @@ interface MonacoJsonLoaderProps {
   source?: JsonSource;
   readonly?: boolean;
   height?: string;
-  onJsonChange?: (json: string) => void;
 }
 
 export function MonacoJsonLoader({ 
   source, 
   readonly = false, 
-  height = "600px",
-  onJsonChange 
+  height = "600px"
 }: MonacoJsonLoaderProps) {
   const [jsonContent, setJsonContent] = useState<string>("");
   const [loading, setLoading] = useState(false);
@@ -72,13 +70,8 @@ export function MonacoJsonLoader({
     loadJson();
   }, [source]);
 
-  const handleJsonChange = (newJson: string) => {
-    setJsonContent(newJson);
-    onJsonChange?.(newJson);
-  };
-
   const downloadJson = () => {
-    if (!jsonContent) return;
+    if (!jsonContent || typeof document === 'undefined') return;
     
     const blob = new Blob([jsonContent], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
@@ -93,6 +86,10 @@ export function MonacoJsonLoader({
 
   const copyToClipboard = async () => {
     if (!jsonContent) return;
+    if (typeof navigator === 'undefined' || !navigator.clipboard) {
+      alert("Clipboard API not available");
+      return;
+    }
     
     try {
       await navigator.clipboard.writeText(jsonContent);
@@ -241,10 +238,21 @@ export function MonacoJsonLoader({
       {/* Monaco Editor */}
       {!loading && !error && (
         <MonacoJsonEditor
-          value={jsonContent}
-          onChange={readonly ? undefined : handleJsonChange}
+          data={(() => {
+            try {
+              return jsonContent ? JSON.parse(jsonContent) : null;
+            } catch (parseError) {
+              console.error("JSON parsing error:", parseError);
+              return { error: "Invalid JSON format", content: jsonContent };
+            }
+          })()}
           height={height}
-          readonly={readonly}
+          readOnly={readonly}
+          onCopy={(success) => {
+            if (success) {
+              console.log("JSON copied to clipboard");
+            }
+          }}
         />
       )}
 

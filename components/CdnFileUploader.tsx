@@ -64,6 +64,10 @@ export function CdnFileUploader({
   };
 
   const copyToClipboard = async (text: string) => {
+    if (typeof navigator === 'undefined' || !navigator.clipboard) {
+      alert("Clipboard API not available");
+      return;
+    }
     try {
       await navigator.clipboard.writeText(text);
       alert("URL copied to clipboard!");
@@ -74,10 +78,13 @@ export function CdnFileUploader({
   };
 
   const openInNewTab = (url: string) => {
-    window.open(url, '_blank');
+    if (typeof window !== 'undefined') {
+      window.open(url, '_blank');
+    }
   };
 
   const downloadJson = (url: string, filename: string) => {
+    if (typeof document === 'undefined') return;
     const link = document.createElement('a');
     link.href = url;
     link.download = filename;

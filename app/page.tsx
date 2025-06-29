@@ -1,8 +1,17 @@
 "use client";
 
 import React, { useState } from "react";
-import { CdnFileUploader } from "@/components/CdnFileUploader";
-import { MonacoJsonLoader } from "@/components/MonacoJsonLoader";
+import dynamic from "next/dynamic";
+
+// Dynamically import components that use browser APIs
+const CdnFileUploader = dynamic(() => import("@/components/CdnFileUploader").then(mod => ({ default: mod.CdnFileUploader })), { 
+  ssr: false,
+  loading: () => <div>Loading uploader...</div>
+});
+const MonacoJsonLoader = dynamic(() => import("@/components/MonacoJsonLoader").then(mod => ({ default: mod.MonacoJsonLoader })), { 
+  ssr: false,
+  loading: () => <div>Loading editor...</div>
+});
 import { JsonViewer } from "@/components/JsonViewer";
 
 interface UploadResult {
@@ -32,11 +41,11 @@ export default function Home() {
   // 页面加载时的调试信息
   React.useEffect(() => {
     console.log("🏠 Home 组件已加载");
-    console.log("📍 当前 URL:", window.location.href);
+    console.log("📍 当前 URL:", typeof window !== 'undefined' ? window.location.href : 'SSR');
     console.log("🔧 环境检查:", {
-      userAgent: navigator.userAgent,
-      localStorageAvailable: !!window.localStorage,
-      fetchAvailable: !!window.fetch,
+      userAgent: typeof navigator !== 'undefined' ? navigator.userAgent : 'SSR',
+      localStorageAvailable: typeof window !== 'undefined' && !!window.localStorage,
+      fetchAvailable: typeof window !== 'undefined' && !!window.fetch,
     });
   }, []);
 
