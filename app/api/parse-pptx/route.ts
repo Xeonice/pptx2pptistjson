@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { pptxParser } from "@/lib/parser/InternalPPTXParser";
+import { createCdnStorageService } from "@/lib/services/cdn";
 
 export async function POST(request: NextRequest) {
   console.log("🔄 开始处理 PPTX 解析请求...");
@@ -36,7 +37,11 @@ export async function POST(request: NextRequest) {
 
     // 获取输出格式参数
     const format = (formData.get("format") as string) || "legacy";
+    // 获取 CDN 存储选项
+    const useCdn = formData.get("useCdn") === "true";
+    const cdnFilename = formData.get("cdnFilename") as string;
     console.log("🎯 输出格式:", format);
+    console.log("☁️ 使用 CDN 存储:", useCdn);
 
     console.log("🔄 开始解析 PPTX 文件...");
     console.log("文件大小:", fileBuffer.byteLength);
@@ -69,7 +74,7 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    const response = {
+    let response: any = {
       success: true,
       data: jsonResult,
       filename: file.name,
@@ -80,6 +85,57 @@ export async function POST(request: NextRequest) {
         hasData: !!jsonResult,
       },
     };
+
+    // 如果启用 CDN 存储，上传 JSON 到 CDN
+    if (useCdn) {
+      try {
+        console.log("☁️ 开始上传 JSON 到 CDN...");
+        const cdnService = createCdnStorageService();
+        
+        if (cdnService.isAvailable()) {
+          const uploadOptions = {
+            filename: cdnFilename || `pptx-result-${Date.now()}.json`,
+            contentType: 'application/json',
+            access: 'public' as const,
+            ttl: 3600 * 24, // 24 hours
+            metadata: {
+              originalFilename: file.name,
+              uploadedAt: new Date().toISOString(),
+              format,
+            }
+          };
+
+          const uploadResult = await cdnService.uploadJSON(jsonResult, uploadOptions);
+          
+          console.log("✅ JSON 上传到 CDN 成功:", uploadResult.url);
+          
+          // 替换响应数据为 CDN URL 引用
+          response = {
+            success: true,
+            cdnUrl: uploadResult.url,
+            cdnId: uploadResult.id,
+            filename: file.name,
+            size: uploadResult.size,
+            contentType: uploadResult.contentType,
+            metadata: uploadResult.metadata,
+            debug: {
+              fileSize: fileBuffer.byteLength,
+              cdnProvider: cdnService.getPrimaryProvider().name,
+              uploadedAt: new Date().toISOString(),
+            },
+          };
+        } else {
+          console.warn("⚠️ CDN 存储不可用，回退到直接返回 JSON");
+        }
+      } catch (cdnError) {
+        console.error("💥 CDN 上传失败:", cdnError);
+        // 添加 CDN 错误信息但继续返回原始数据
+        response.cdnError = {
+          message: "CDN upload failed, returning JSON directly",
+          details: cdnError instanceof Error ? cdnError.message : String(cdnError),
+        };
+      }
+    }
 
     console.log("🎉 API 响应准备完成");
     return NextResponse.json(response);
