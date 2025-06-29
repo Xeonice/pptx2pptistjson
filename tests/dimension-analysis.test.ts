@@ -207,9 +207,9 @@ describe('尺寸转换逻辑分析', () => {
         console.log('3. 确保所有元素类型都应用相同的转换');
       } else {
         console.log('⚠️  转换比例不一致，需要按元素类型分别处理:');
-        Object.entries(typeGroups).forEach(([type, items]: [string, any[]]) => {
-          const typeWidthRatios = items.map(item => item.widthRatio);
-          const typeHeightRatios = items.map(item => item.heightRatio);
+        Object.entries(typeGroups).forEach(([type, items]) => {
+          const typeWidthRatios = (items as any[]).map(item => item.widthRatio);
+          const typeHeightRatios = (items as any[]).map(item => item.heightRatio);
           
           const avgTypeWidthRatio = typeWidthRatios.reduce((sum, ratio) => sum + ratio, 0) / typeWidthRatios.length;
           const avgTypeHeightRatio = typeHeightRatios.reduce((sum, ratio) => sum + ratio, 0) / typeHeightRatios.length;

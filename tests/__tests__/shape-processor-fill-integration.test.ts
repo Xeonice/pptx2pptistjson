@@ -4,6 +4,8 @@ import { IdGenerator } from '../../app/lib/services/utils/IdGenerator';
 import { ColorTestUtils } from '../helpers/color-test-utils';
 import { colorTestData } from '../fixtures/color-test-data';
 import { XmlNode } from '../../app/lib/models/xml/XmlNode';
+import { ProcessingContext } from '../../app/lib/services/interfaces/ProcessingContext';
+import JSZip from 'jszip';
 
 describe('ShapeProcessor Fill Integration Tests', () => {
   let shapeProcessor: ShapeProcessor;
@@ -20,8 +22,20 @@ describe('ShapeProcessor Fill Integration Tests', () => {
   const createMockXmlNode = (name: string, attributes: Record<string, string> = {}, children: XmlNode[] = []): XmlNode => ({
     name,
     attributes,
-    children,
-    namespaces: {}
+    children
+  });
+
+  // Helper to create mock ProcessingContext
+  const createMockContext = (overrides: Partial<ProcessingContext> = {}): ProcessingContext => ({
+    zip: {} as JSZip,
+    slideNumber: 1,
+    slideId: 'slide1',
+    relationships: new Map(),
+    basePath: '',
+    options: {},
+    warnings: [],
+    idGenerator,
+    ...overrides
   });
 
   const createMockShapeXml = (fillData: any, geometryType: string = 'rect'): XmlNode => {
@@ -52,11 +66,9 @@ describe('ShapeProcessor Fill Integration Tests', () => {
       ]);
 
       const mockXml = createMockShapeXml(solidFill);
-      const context = {
-        idGenerator,
-        theme: ColorTestUtils.createMockTheme({}),
-        slideSize: { width: 1000, height: 750 }
-      };
+      const context = createMockContext({
+        theme: ColorTestUtils.createMockTheme({})
+      });
 
       const result = await shapeProcessor.process(mockXml, context);
       const fill = result.getFill();
@@ -71,11 +83,9 @@ describe('ShapeProcessor Fill Integration Tests', () => {
       ]);
 
       const mockXml = createMockShapeXml(solidFill);
-      const context = {
-        idGenerator,
-        theme: ColorTestUtils.createMockTheme({}),
-        slideSize: { width: 1000, height: 750 }
-      };
+      const context = createMockContext({
+        theme: ColorTestUtils.createMockTheme({})
+      });
 
       const result = await shapeProcessor.process(mockXml, context);
       
@@ -86,11 +96,9 @@ describe('ShapeProcessor Fill Integration Tests', () => {
       const noFill = createMockXmlNode('a:noFill', {});
       const mockXml = createMockShapeXml(noFill);
       
-      const context = {
-        idGenerator,
-        theme: ColorTestUtils.createMockTheme({}),
-        slideSize: { width: 1000, height: 750 }
-      };
+      const context = createMockContext({
+        theme: ColorTestUtils.createMockTheme({})
+      });
 
       const result = await shapeProcessor.process(mockXml, context);
       const fill = result.getFill();
@@ -105,11 +113,9 @@ describe('ShapeProcessor Fill Integration Tests', () => {
       ]);
 
       const mockXml = createMockShapeXml(solidFill);
-      const context = {
-        idGenerator,
-        theme: ColorTestUtils.createMockTheme({}),
-        slideSize: { width: 1000, height: 750 }
-      };
+      const context = createMockContext({
+        theme: ColorTestUtils.createMockTheme({})
+      });
 
       const result = await shapeProcessor.process(mockXml, context);
       const json = result.toJSON();
@@ -123,11 +129,9 @@ describe('ShapeProcessor Fill Integration Tests', () => {
       ]);
 
       const mockXml = createMockShapeXml(themeFill);
-      const context = {
-        idGenerator,
-        theme: ColorTestUtils.createMockTheme({ accent1: '#FF0000' }),
-        slideSize: { width: 1000, height: 750 }
-      };
+      const context = createMockContext({
+        theme: ColorTestUtils.createMockTheme({ accent1: '#FF0000' })
+      });
 
       const result = await shapeProcessor.process(mockXml, context);
       const fill = result.getFill();
@@ -145,11 +149,9 @@ describe('ShapeProcessor Fill Integration Tests', () => {
       ]);
 
       const mockXml = createMockShapeXml(fillWithTransform);
-      const context = {
-        idGenerator,
-        theme: ColorTestUtils.createMockTheme({}),
-        slideSize: { width: 1000, height: 750 }
-      };
+      const context = createMockContext({
+        theme: ColorTestUtils.createMockTheme({})
+      });
 
       const result = await shapeProcessor.process(mockXml, context);
       const fill = result.getFill();
@@ -165,11 +167,9 @@ describe('ShapeProcessor Fill Integration Tests', () => {
       ]);
 
       const mockXml = createMockShapeXml(presetFill);
-      const context = {
-        idGenerator,
-        theme: ColorTestUtils.createMockTheme({}),
-        slideSize: { width: 1000, height: 750 }
-      };
+      const context = createMockContext({
+        theme: ColorTestUtils.createMockTheme({})
+      });
 
       const result = await shapeProcessor.process(mockXml, context);
       const fill = result.getFill();
@@ -188,11 +188,9 @@ describe('ShapeProcessor Fill Integration Tests', () => {
       ]);
 
       const mockXml = createMockShapeXml(hslFill);
-      const context = {
-        idGenerator,
-        theme: ColorTestUtils.createMockTheme({}),
-        slideSize: { width: 1000, height: 750 }
-      };
+      const context = createMockContext({
+        theme: ColorTestUtils.createMockTheme({})
+      });
 
       const result = await shapeProcessor.process(mockXml, context);
       const fill = result.getFill();
@@ -205,11 +203,9 @@ describe('ShapeProcessor Fill Integration Tests', () => {
   describe('Shape fill inheritance', () => {
     it('should fallback to default colors when no fill', async () => {
       const mockXml = createMockShapeXml(null); // No fill data
-      const context = {
-        idGenerator,
-        theme: ColorTestUtils.createMockTheme({}),
-        slideSize: { width: 1000, height: 750 }
-      };
+      const context = createMockContext({
+        theme: ColorTestUtils.createMockTheme({})
+      });
 
       const result = await shapeProcessor.process(mockXml, context);
       const json = result.toJSON();
@@ -225,11 +221,9 @@ describe('ShapeProcessor Fill Integration Tests', () => {
       ]);
 
       const mockXml = createMockShapeXml(solidFill);
-      const context = {
-        idGenerator,
-        theme: ColorTestUtils.createMockTheme({}),
-        slideSize: { width: 1000, height: 750 }
-      };
+      const context = createMockContext({
+        theme: ColorTestUtils.createMockTheme({})
+      });
 
       const result = await shapeProcessor.process(mockXml, context);
       const json = result.toJSON();
@@ -247,11 +241,9 @@ describe('ShapeProcessor Fill Integration Tests', () => {
         ]);
 
         const mockXml = createMockShapeXml(solidFill, shapeType);
-        const context = {
-          idGenerator,
-          theme: ColorTestUtils.createMockTheme({}),
-          slideSize: { width: 1000, height: 750 }
-        };
+        const context = createMockContext({
+          theme: ColorTestUtils.createMockTheme({})
+        });
 
         const result = await shapeProcessor.process(mockXml, context);
         
@@ -272,11 +264,9 @@ describe('ShapeProcessor Fill Integration Tests', () => {
       ]);
 
       const mockXml = createMockShapeXml(complexThemeFill);
-      const context = {
-        idGenerator,
-        theme: ColorTestUtils.createMockTheme({ accent1: '#FF0000' }),
-        slideSize: { width: 1000, height: 750 }
-      };
+      const context = createMockContext({
+        theme: ColorTestUtils.createMockTheme({ accent1: '#FF0000' })
+      });
 
       const result = await shapeProcessor.process(mockXml, context);
       const fill = result.getFill();
@@ -297,11 +287,9 @@ describe('ShapeProcessor Fill Integration Tests', () => {
       ]);
 
       const mockXml = createMockShapeXml(multiTransformFill);
-      const context = {
-        idGenerator,
-        theme: ColorTestUtils.createMockTheme({}),
-        slideSize: { width: 1000, height: 750 }
-      };
+      const context = createMockContext({
+        theme: ColorTestUtils.createMockTheme({})
+      });
 
       const result = await shapeProcessor.process(mockXml, context);
       const fill = result.getFill();
@@ -321,11 +309,9 @@ describe('ShapeProcessor Fill Integration Tests', () => {
       ]);
 
       const mockXml = createMockShapeXml(percentageFill);
-      const context = {
-        idGenerator,
-        theme: ColorTestUtils.createMockTheme({}),
-        slideSize: { width: 1000, height: 750 }
-      };
+      const context = createMockContext({
+        theme: ColorTestUtils.createMockTheme({})
+      });
 
       const result = await shapeProcessor.process(mockXml, context);
       const fill = result.getFill();
@@ -344,11 +330,9 @@ describe('ShapeProcessor Fill Integration Tests', () => {
       ]);
 
       const mockXml = createMockShapeXml(systemFill);
-      const context = {
-        idGenerator,
-        theme: ColorTestUtils.createMockTheme({}),
-        slideSize: { width: 1000, height: 750 }
-      };
+      const context = createMockContext({
+        theme: ColorTestUtils.createMockTheme({})
+      });
 
       const result = await shapeProcessor.process(mockXml, context);
       const fill = result.getFill();
@@ -365,11 +349,9 @@ describe('ShapeProcessor Fill Integration Tests', () => {
       ]);
 
       const mockXml = createMockShapeXml(malformedFill);
-      const context = {
-        idGenerator,
-        theme: ColorTestUtils.createMockTheme({}),
-        slideSize: { width: 1000, height: 750 }
-      };
+      const context = createMockContext({
+        theme: ColorTestUtils.createMockTheme({})
+      });
 
       const result = await shapeProcessor.process(mockXml, context);
       
@@ -384,11 +366,9 @@ describe('ShapeProcessor Fill Integration Tests', () => {
       ]);
 
       const mockXml = createMockShapeXml(themeFill);
-      const context = {
-        idGenerator,
-        theme: undefined, // No theme
-        slideSize: { width: 1000, height: 750 }
-      };
+      const context = createMockContext({
+        theme: undefined // No theme
+      });
 
       const result = await shapeProcessor.process(mockXml, context);
       
@@ -403,11 +383,9 @@ describe('ShapeProcessor Fill Integration Tests', () => {
       ]);
 
       const mockXml = createMockShapeXml(unknownPresetFill);
-      const context = {
-        idGenerator,
-        theme: ColorTestUtils.createMockTheme({}),
-        slideSize: { width: 1000, height: 750 }
-      };
+      const context = createMockContext({
+        theme: ColorTestUtils.createMockTheme({})
+      });
 
       const result = await shapeProcessor.process(mockXml, context);
       
@@ -423,11 +401,9 @@ describe('ShapeProcessor Fill Integration Tests', () => {
         createMockXmlNode('p:spPr', {}) // Empty spPr
       ]);
 
-      const context = {
-        idGenerator,
-        theme: ColorTestUtils.createMockTheme({}),
-        slideSize: { width: 1000, height: 750 }
-      };
+      const context = createMockContext({
+        theme: ColorTestUtils.createMockTheme({})
+      });
 
       const result = await shapeProcessor.process(mockXml, context);
       
@@ -446,11 +422,9 @@ describe('ShapeProcessor Fill Integration Tests', () => {
       ]);
 
       const mockXml = createMockShapeXml(solidFill);
-      const context = {
-        idGenerator,
-        theme: ColorTestUtils.createMockTheme({}),
-        slideSize: { width: 1000, height: 750 }
-      };
+      const context = createMockContext({
+        theme: ColorTestUtils.createMockTheme({})
+      });
 
       // Process multiple times to ensure consistency
       const results = [];
@@ -475,11 +449,9 @@ describe('ShapeProcessor Fill Integration Tests', () => {
         return createMockShapeXml(solidFill);
       });
 
-      const context = {
-        idGenerator,
-        theme: ColorTestUtils.createMockTheme({}),
-        slideSize: { width: 1000, height: 750 }
-      };
+      const context = createMockContext({
+        theme: ColorTestUtils.createMockTheme({})
+      });
 
       const startTime = performance.now();
       
@@ -506,11 +478,9 @@ describe('ShapeProcessor Fill Integration Tests', () => {
       ]);
 
       const mockXml = createMockShapeXml(solidFill, 'ellipse');
-      const context = {
-        idGenerator,
-        theme: ColorTestUtils.createMockTheme({}),
-        slideSize: { width: 1000, height: 750 }
-      };
+      const context = createMockContext({
+        theme: ColorTestUtils.createMockTheme({})
+      });
 
       const result = await shapeProcessor.process(mockXml, context);
       const json = result.toJSON();
@@ -534,11 +504,9 @@ describe('ShapeProcessor Fill Integration Tests', () => {
         ]);
 
         const mockXml = createMockShapeXml(solidFill, shapeType);
-        const context = {
-          idGenerator,
-          theme: ColorTestUtils.createMockTheme({}),
-          slideSize: { width: 1000, height: 750 }
-        };
+        const context = createMockContext({
+          theme: ColorTestUtils.createMockTheme({})
+        });
 
         const result = await shapeProcessor.process(mockXml, context);
         

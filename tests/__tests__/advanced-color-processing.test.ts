@@ -24,8 +24,20 @@ describe('Advanced Color Processing Tests', () => {
         
         // For darker modifications (lumMod < 1), colors should be darker
         if (lumMod < 1) {
-          const original = ColorUtils.parseRgba(rgbaColor);
-          const modified = ColorUtils.parseRgba(modifiedColor);
+          const originalMatch = rgbaColor.match(/rgba\((\d+),(\d+),(\d+),([\d.]+)\)/);
+          const modifiedMatch = modifiedColor.match(/rgba\((\d+),(\d+),(\d+),([\d.]+)\)/);
+          const original = originalMatch ? {
+            r: parseInt(originalMatch[1]),
+            g: parseInt(originalMatch[2]),
+            b: parseInt(originalMatch[3]),
+            a: parseFloat(originalMatch[4])
+          } : null;
+          const modified = modifiedMatch ? {
+            r: parseInt(modifiedMatch[1]),
+            g: parseInt(modifiedMatch[2]),
+            b: parseInt(modifiedMatch[3]),
+            a: parseFloat(modifiedMatch[4])
+          } : null;
           
           if (original && modified) {
             expect(modified.r).toBeLessThanOrEqual(original.r);
@@ -53,7 +65,13 @@ describe('Advanced Color Processing Tests', () => {
         // Should return valid rgba format
         expect(modifiedColor).toMatch(/^rgba\(\d+,\d+,\d+,[\d.]+\)$/);
         
-        const modified = ColorUtils.parseRgba(modifiedColor);
+        const modifiedMatch = modifiedColor.match(/rgba\((\d+),(\d+),(\d+),([\d.]+)\)/);
+        const modified = modifiedMatch ? {
+          r: parseInt(modifiedMatch[1]),
+          g: parseInt(modifiedMatch[2]),
+          b: parseInt(modifiedMatch[3]),
+          a: parseFloat(modifiedMatch[4])
+        } : null;
         if (modified) {
           // Values should be clamped to 0-255 range
           expect(modified.r).toBeGreaterThanOrEqual(0);
@@ -359,7 +377,13 @@ describe('Advanced Color Processing Tests', () => {
       expect(color).toMatch(/^rgba\(\d+,\d+,\d+,[\d.]+\)$/);
       
       // Parse final color to verify components
-      const parsed = ColorUtils.parseRgba(color);
+      const parsedMatch = color.match(/rgba\((\d+),(\d+),(\d+),([\d.]+)\)/);
+      const parsed = parsedMatch ? {
+        r: parseInt(parsedMatch[1]),
+        g: parseInt(parsedMatch[2]),
+        b: parseInt(parsedMatch[3]),
+        a: parseFloat(parsedMatch[4])
+      } : null;
       expect(parsed).toBeTruthy();
       
       if (parsed) {

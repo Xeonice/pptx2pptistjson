@@ -2,6 +2,7 @@ import { ImageDataService, ImageData } from '@/lib/services/images/ImageDataServ
 import { ImageElement } from '@/lib/models/domain/elements/ImageElement';
 import { Base64StorageStrategy } from '@/lib/services/images/interfaces/ImageStorageStrategy';
 import { ProcessingContext } from '@/lib/services/interfaces/ProcessingContext';
+import { IdGenerator } from '@/lib/services/utils/IdGenerator';
 
 describe('Image Base64 Processing', () => {
   describe('ImageDataService', () => {
@@ -193,16 +194,23 @@ describe('Image Base64 Processing', () => {
       // 模拟完整的图片处理流程
       const mockBuffer = Buffer.from([0xFF, 0xD8, 0xFF, 0xE0, 0x00, 0x10, 0x4A, 0x46]); // 完整JPEG header
       
+      const mockFileService = {
+        extractBinaryFile: jest.fn(),
+        extractBinaryFileAsBuffer: jest.fn().mockResolvedValue(mockBuffer)
+      };
+
       const mockContext: ProcessingContext = {
-        relationships: new Map([['rId1', '../media/image1.jpeg']]),
+        relationships: new Map([['rId1', { id: 'rId1', type: 'image', target: '../media/image1.jpeg' }]]),
         zip: {} as any,
-        fileService: {
-          extractBinaryFile: jest.fn(),
-          extractBinaryFileAsBuffer: jest.fn().mockResolvedValue(mockBuffer)
-        }
+        slideNumber: 1,
+        slideId: 'slide1',
+        basePath: '',
+        options: {},
+        warnings: [],
+        idGenerator: new IdGenerator()
       } as any;
 
-      const imageDataService = new ImageDataService(mockContext.fileService);
+      const imageDataService = new ImageDataService(mockFileService as any);
       const imageData = await imageDataService.extractImageData('rId1', mockContext);
 
       expect(imageData).not.toBeNull();
