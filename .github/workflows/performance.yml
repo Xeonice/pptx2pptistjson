@@ -47,7 +47,7 @@ jobs:
 
     - name: Run Jest performance tests
       run: |
-        npx jest --testPathPattern="(performance|dimension-analysis)" \
+        npx jest --testPathPatterns="(performance|dimension-analysis)" \
                  --verbose \
                  --runInBand \
                  --detectOpenHandles \

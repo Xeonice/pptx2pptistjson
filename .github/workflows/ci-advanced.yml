@@ -130,13 +130,13 @@ jobs:
     - name: Run unit tests
       run: |
         if [[ "${{ matrix.test-group }}" == "utils color" ]]; then
-          npx jest --testPathPattern="(utils|color)" --coverage --coverageReporters=lcov,text
+          npx jest --testPathPatterns="(utils|color)" --coverage --coverageReporters=lcov,text
         elif [[ "${{ matrix.test-group }}" == "models elements" ]]; then
-          npx jest --testPathPattern="(models|elements|shape-element)" --coverage --coverageReporters=lcov,text
+          npx jest --testPathPatterns="(models|elements|shape-element)" --coverage --coverageReporters=lcov,text
         elif [[ "${{ matrix.test-group }}" == "services processors" ]]; then
-          npx jest --testPathPattern="(services|processors|shape-processor)" --coverage --coverageReporters=lcov,text
+          npx jest --testPathPatterns="(services|processors|shape-processor)" --coverage --coverageReporters=lcov,text
         elif [[ "${{ matrix.test-group }}" == "integration" ]]; then
-          npx jest --testPathPattern="integration" --coverage --coverageReporters=lcov,text
+          npx jest --testPathPatterns="integration" --coverage --coverageReporters=lcov,text
         fi
       env:
         NODE_OPTIONS: --max_old_space_size=4096
@@ -180,7 +180,7 @@ jobs:
 
     - name: Run integration tests
       run: |
-        npx jest --testPathPattern="(integration|pptx-parser|output-comparison)" \
+        npx jest --testPathPatterns="(integration|pptx-parser|output-comparison)" \
                  --coverage \
                  --coverageReporters=lcov,text,html \
                  --verbose \
