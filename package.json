@@ -14,7 +14,7 @@
     "test:watch": "npx jest --watch",
     "test:coverage": "npx jest --coverage"
   },
-  "author": "pipipi_pikachu@163.com",
+  "author": "ad546971975@gmail.com",
   "repository": {
     "type": "git",
     "url": "https://github.com/Xeonice/pptx2pptistjson"
