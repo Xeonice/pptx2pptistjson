@@ -53,10 +53,10 @@ export async function POST(request: NextRequest) {
 
     // 调试位置信息
     if (jsonResult && jsonResult.slides && jsonResult.slides.length > 0) {
-      const firstSlide = jsonResult.slides[0] as any;
+      const firstSlide = jsonResult.slides[0];
       if (firstSlide.elements && firstSlide.elements.length > 0) {
         console.log("🔍 第一个幻灯片的前3个元素位置:");
-        firstSlide.elements.slice(0, 3).forEach((el: any, idx: number) => {
+        firstSlide.elements.slice(0, 3).forEach((el, idx) => {
           console.log(`元素 ${idx + 1}:`, {
             type: el.type,
             name: el.name,

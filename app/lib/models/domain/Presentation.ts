@@ -66,7 +66,7 @@ export class Presentation {
     return this.defaultTextStyle;
   }
 
-  toJSON(): any {
+  toJSON() {
     return {
       metadata: this.metadata,
       slideSize: this.slideSize,

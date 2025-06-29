@@ -1,4 +1,4 @@
-import { Element, ElementType } from "./Element";
+import { Element } from "./Element";
 
 export class TextElement extends Element {
   private content: TextContent[] = [];
@@ -55,7 +55,7 @@ export class TextElement extends Element {
         const styleAttrs: string[] = [];
 
         let colorType = "";
-        
+
         if (style?.color) {
           let colorValue = style.color;
           colorType = style.themeColorType || "";

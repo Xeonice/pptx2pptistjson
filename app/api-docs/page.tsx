@@ -58,7 +58,7 @@ export default function ApiDocs() {
           </div>
           <div className="parameter-item">
             <div className="parameter-name">format <span className="parameter-type">(string, 可选)</span></div>
-            <div>输出格式："json"（默认）或 "download"</div>
+            <div>输出格式：&quot;json&quot;（默认）或 &quot;download&quot;</div>
           </div>
 
           <h4>响应示例</h4>
