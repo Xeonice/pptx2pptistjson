@@ -262,6 +262,11 @@ Comprehensive TypeScript coverage with:
 - **File Attribute Reading**: 
   - 这里读取 pptx 文件属性时，不应该有默认值的概念，读不到就是读不到，不需要任何 fallback
 
+## Development Philosophy
+
+### Code Design Principles
+- **不应该为了符合目标输出而进行任何硬编码强制符合输出**
+
 This architecture supports both standalone library usage and full Next.js application deployment, with comprehensive testing and utility enhancements for accurate PPTX to PPTist conversion.
 
 ## PPTist Integration Focus

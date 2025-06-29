@@ -245,14 +245,15 @@ describe('Integration Tests', () => {
       const id1 = idGenerator.generateUniqueId('test', 'element');
       const id2 = idGenerator.generateUniqueId('test', 'element');
       
-      expect(id1).toBe('test');
-      expect(id2).toBe('test_1');
+      // For non-shape elements, should always generate new PPTist-style IDs
+      expect(id1).toMatch(/^[a-zA-Z0-9_-]{10}$/);
+      expect(id2).toMatch(/^[a-zA-Z0-9_-]{10}$/);
       expect(id1).not.toBe(id2);
       
       // Test ID tracking
       const usedIds = idGenerator.getUsedIds();
-      expect(usedIds).toContain('test');
-      expect(usedIds).toContain('test_1');
+      expect(usedIds).toContain(id1);
+      expect(usedIds).toContain(id2);
     });
   });
 
