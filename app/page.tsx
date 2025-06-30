@@ -158,6 +158,23 @@ export default function Home() {
       >
         <CdnFileUploader 
           onFileUpload={handleFileUpload} 
+          onUploadResult={(result) => {
+            console.log("📥 CDN 上传完成，处理结果:", result);
+            setUploadResult(result);
+            
+            // 检查是否是 JSON 结果存储到 CDN 的情况
+            if (result.cdnUrl && !result.data) {
+              console.log("✅ JSON 结果已上传到 CDN，URL:", result.cdnUrl);
+              // JSON CDN 模式下，不设置 jsonData，让 MonacoJsonLoader 从 URL 加载
+              setJsonData(null);
+            } else if (result.data) {
+              console.log("✅ 设置 JSON 数据到状态");
+              setJsonData(result.data);
+            } else {
+              console.log("❌ 数据为空，不设置状态");
+              alert("API 返回的数据为空，请检查文件格式");
+            }
+          }}
           loading={loading}
           lastResult={uploadResult || undefined}
           outputFormat={outputFormat}
@@ -384,8 +401,8 @@ export default function Home() {
               JSON 结果 - Monaco 编辑器
             </h2>
             
-            {uploadResult?.cdnUrl ? (
-              /* 从 CDN URL 加载 JSON */
+            {uploadResult?.cdnUrl && !jsonData ? (
+              /* 从 CDN URL 加载 JSON 结果 */
               <MonacoJsonLoader
                 source={{
                   type: 'url',
