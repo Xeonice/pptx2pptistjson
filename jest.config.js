@@ -1,7 +1,7 @@
 module.exports = {
   preset: 'ts-jest',
-  testEnvironment: 'node',
-  roots: ['<rootDir>/app', '<rootDir>/tests'],
+  testEnvironment: 'jsdom',
+  roots: ['<rootDir>/app', '<rootDir>/tests', '<rootDir>/components'],
   testMatch: [
     '**/__tests__/**/*.+(ts|tsx|js)',
     '**/*.(test|spec).+(ts|tsx|js)'
@@ -9,7 +9,7 @@ module.exports = {
   transform: {
     '^.+\\.(ts|tsx)$': ['ts-jest', {
       tsconfig: {
-        jsx: 'react',
+        jsx: 'react-jsx',
         esModuleInterop: true,
         allowSyntheticDefaultImports: true
       }
@@ -17,14 +17,16 @@ module.exports = {
   },
   collectCoverageFrom: [
     'app/**/*.{ts,tsx}',
+    'components/**/*.{ts,tsx}',
     '!app/**/*.d.ts',
-    '!app/**/index.ts'
+    '!app/**/index.ts',
+    '!components/**/*.d.ts'
   ],
   coverageDirectory: 'coverage',
   coverageReporters: ['text', 'lcov', 'html', 'json-summary'],
   moduleFileExtensions: ['ts', 'tsx', 'js', 'jsx', 'json', 'node'],
   setupFilesAfterEnv: ['<rootDir>/tests/setup.ts'],
   moduleNameMapper: {
-    '^@/(.*)$': '<rootDir>/app/$1'
+    '^@/(.*)$': '<rootDir>/$1'
   }
 };
