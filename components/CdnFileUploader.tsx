@@ -6,6 +6,7 @@
 "use client";
 
 import { useState, useRef } from "react";
+import { Switch } from "@/components/ui/switch";
 
 interface CdnUploadOptions {
   useCdn: boolean;
@@ -163,10 +164,9 @@ export function CdnFileUploader({
         <div className="upload-options" style={{ marginBottom: "15px" }}>
           <div style={{ marginBottom: "10px" }}>
             <label style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-              <input
-                type="checkbox"
+              <Switch
                 checked={uploadPptxToCdn}
-                onChange={(e) => setUploadPptxToCdn(e.target.checked)}
+                onCheckedChange={setUploadPptxToCdn}
                 disabled={loading || uploadingToCdn}
               />
               <span>Upload PPTX to CDN first (recommended for large PPTX files)</span>
@@ -175,10 +175,9 @@ export function CdnFileUploader({
           
           <div style={{ marginBottom: "10px" }}>
             <label style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-              <input
-                type="checkbox"
+              <Switch
                 checked={useCdn}
-                onChange={(e) => setUseCdn(e.target.checked)}
+                onCheckedChange={setUseCdn}
                 disabled={loading || uploadingToCdn}
               />
               <span>Upload JSON result to CDN (recommended for large outputs)</span>
