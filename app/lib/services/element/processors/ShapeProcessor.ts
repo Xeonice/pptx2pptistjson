@@ -13,8 +13,10 @@ export class ShapeProcessor implements IElementProcessor<ShapeElement> {
   constructor(private xmlParser: IXmlParseService) {}
 
   canProcess(xmlNode: XmlNode): boolean {
-    // Process shape nodes that don't contain text
-    return xmlNode.name.endsWith("sp") && !this.hasTextContent(xmlNode);
+    // Process shape nodes that don't contain text and don't have image fill
+    return xmlNode.name.endsWith("sp") && 
+           !this.hasTextContent(xmlNode) && 
+           !this.hasImageFill(xmlNode);
   }
 
   async process(xmlNode: XmlNode, context: ProcessingContext): Promise<ShapeElement> {
@@ -123,6 +125,15 @@ export class ShapeProcessor implements IElementProcessor<ShapeElement> {
     }
 
     return false;
+  }
+
+  private hasImageFill(xmlNode: XmlNode): boolean {
+    // Check if shape has blipFill (image fill)
+    const spPrNode = this.xmlParser.findNode(xmlNode, "spPr");
+    if (!spPrNode) return false;
+    
+    const blipFillNode = this.xmlParser.findNode(spPrNode, "blipFill");
+    return !!blipFillNode;
   }
 
   private mapGeometryToShapeType(prst: string): ShapeType {

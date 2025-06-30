@@ -69,10 +69,11 @@ export interface ThemeJSON {
  * PPTist compatible JSON format
  */
 export interface PPTistJSON {
+  width: number;
+  height: number;
   slides: SlideJSON[];
   theme: ThemeJSON;
   title: string;
-  slideSize: { width: number; height: number };
 }
 
 /**
@@ -143,13 +144,15 @@ export class InternalPPTXParser {
     options?: InternalParseOptions
   ): Promise<PPTistJSON> {
     const result = await this.parse(file, options);
+    const slideSize = result.presentation.getSlideSize();
 
-    // Convert to the expected output format
+    // Convert to the expected PPTist format with top-level width/height
     return {
+      width: slideSize.width,
+      height: slideSize.height,
       slides: result.presentation.getSlides().map((slide) => slide.toJSON()),
       theme: this.convertTheme(result.presentation.getTheme()),
       title: result.presentation.getMetadata().title || "Presentation",
-      slideSize: result.presentation.getSlideSize(),
     };
   }
 
