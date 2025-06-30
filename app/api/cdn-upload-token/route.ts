@@ -34,6 +34,7 @@ export async function POST(request: NextRequest) {
             'application/octet-stream'
           ],
           maximumSizeInBytes: 50 * 1024 * 1024, // 50MB
+          addRandomSuffix: true, // 避免文件名冲突
         };
       },
       onUploadCompleted: async ({ blob }) => {

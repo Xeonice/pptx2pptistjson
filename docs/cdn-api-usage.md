@@ -20,6 +20,12 @@ Parses PPTX files from direct upload or CDN URL.
 
 This endpoint follows Vercel Blob's client upload protocol. The request is handled automatically by the `@vercel/blob/client` library.
 
+**Features:**
+- Automatic random suffix generation to prevent filename conflicts
+- File type validation (only .pptx and .json files allowed)
+- File size limit: 50MB maximum
+- Public access for uploaded files
+
 ### Parse PPTX (`/api/parse-pptx`)
 
 **Form Data Fields:**
