@@ -35,8 +35,38 @@ export async function POST(request: NextRequest) {
           fileName = filenameMatch ? filenameMatch[1] : "downloaded.pptx";
         } else {
           // 从 URL 中提取文件名
-          const urlParts = cdnUrl.split("/");
-          fileName = urlParts[urlParts.length - 1] || "downloaded.pptx";
+          try {
+            const url = new URL(cdnUrl);
+            // 从路径中提取文件名，移除路径分隔符
+            let pathName = url.pathname;
+            const pathParts = pathName.split('/');
+            fileName = pathParts[pathParts.length - 1] || "downloaded.pptx";
+            
+            // 如果从路径无法得到有效文件名，尝试从 URL 片段中提取
+            if (!fileName || fileName === "download" || !fileName.includes('.')) {
+              // 对于 Vercel Blob URL，文件名可能在路径的其他位置
+              for (let i = pathParts.length - 1; i >= 0; i--) {
+                if (pathParts[i] && pathParts[i].includes('.pptx')) {
+                  fileName = pathParts[i];
+                  break;
+                }
+              }
+            }
+            
+            // 确保有默认文件名
+            if (!fileName || !fileName.includes('.')) {
+              fileName = "downloaded.pptx";
+            }
+          } catch (urlError) {
+            console.warn("无法解析 URL，使用默认文件名:", urlError);
+            fileName = "downloaded.pptx";
+          }
+        }
+
+        // 验证文件扩展名
+        if (!fileName.toLowerCase().endsWith(".pptx")) {
+          console.log("❌ CDN 文件类型错误:", fileName);
+          throw new Error("Invalid file type. Only .pptx files are supported from CDN.");
         }
 
         console.log("✅ CDN 文件下载成功:", {
@@ -93,7 +123,7 @@ export async function POST(request: NextRequest) {
 
     console.log("🔄 开始解析 PPTX 文件...");
     console.log("文件大小:", fileBuffer.byteLength);
-    console.log("文件名称:", file.name);
+    console.log("文件名称:", fileName);
     console.log("输出格式:", format);
 
     // Parse the PPTX file using our internal parser

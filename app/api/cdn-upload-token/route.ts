@@ -36,7 +36,7 @@ export async function POST(request: NextRequest) {
           maximumSizeInBytes: 50 * 1024 * 1024, // 50MB
         };
       },
-      onUploadCompleted: async ({ blob, tokenPayload }) => {
+      onUploadCompleted: async ({ blob }) => {
         // 文件上传完成后的处理
         console.log('✅ 文件上传完成:', blob.pathname);
         console.log('📊 文件信息:', {
