@@ -67,8 +67,15 @@ export function CdnFileUploader({
           const { upload } = await import('@vercel/blob/client');
           
           // Upload directly to CDN from client
-          const filename = cdnFilename || file.name;
-          const blob = await upload(filename, file, {
+          // 生成唯一文件名以避免冲突
+          const originalName = cdnFilename || file.name;
+          const fileExtension = originalName.substring(originalName.lastIndexOf('.'));
+          const baseName = originalName.substring(0, originalName.lastIndexOf('.'));
+          const timestamp = Date.now();
+          const randomSuffix = Math.random().toString(36).substring(2, 8);
+          const uniqueFilename = `${baseName}-${timestamp}-${randomSuffix}${fileExtension}`;
+          
+          const blob = await upload(uniqueFilename, file, {
             access: 'public',
             handleUploadUrl: '/api/cdn-upload-token',
           });

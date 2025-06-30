@@ -27,7 +27,7 @@ export async function POST(request: NextRequest) {
           throw new Error('Invalid file type. Only .pptx and .json files are allowed.');
         }
 
-        return {
+        const config = {
           allowedContentTypes: [
             'application/vnd.openxmlformats-officedocument.presentationml.presentation',
             'application/json',
@@ -35,7 +35,11 @@ export async function POST(request: NextRequest) {
           ],
           maximumSizeInBytes: 50 * 1024 * 1024, // 50MB
           addRandomSuffix: true, // 避免文件名冲突
+          allowOverwrite: false, // 明确禁止覆盖，强制使用随机后缀
         };
+        
+        console.log("🔧 返回配置:", config);
+        return config;
       },
       onUploadCompleted: async ({ blob }) => {
         // 文件上传完成后的处理
