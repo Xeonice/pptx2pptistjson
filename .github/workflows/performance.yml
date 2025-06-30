@@ -2,18 +2,18 @@ name: Performance Testing
 
 on:
   push:
-    branches: [ main, master ]
+    branches: [main, master]
   pull_request:
-    branches: [ main, master ]
+    branches: [main, master]
   schedule:
     # Run performance tests weekly on Sundays at 3 AM UTC
-    - cron: '0 3 * * 0'
+    - cron: "0 3 * * 0"
   workflow_dispatch:
     inputs:
       test_duration:
-        description: 'Test duration in minutes'
+        description: "Test duration in minutes"
         required: true
-        default: '5'
+        default: "5"
         type: string
 
 jobs:
@@ -23,118 +23,118 @@ jobs:
     timeout-minutes: 30
 
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-    - name: Setup Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: '20.x'
-        cache: 'npm'
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20.x"
+          cache: "npm"
 
-    - name: Install dependencies
-      run: npm ci
+      - name: Install dependencies
+        run: npm ci
 
-    - name: Create performance test samples
-      run: |
-        mkdir -p performance-tests/samples
-        # Copy test samples for performance testing
-        cp sample/input.pptx performance-tests/samples/
-        # Create multiple file sizes for testing
-        for i in {1..5}; do
-          cp sample/input.pptx "performance-tests/samples/test-${i}.pptx"
-        done
+      - name: Create performance test samples
+        run: |
+          mkdir -p performance-tests/samples
+          # Copy test samples for performance testing
+          cp sample/basic/input.pptx performance-tests/samples/
+          # Create multiple file sizes for testing
+          for i in {1..5}; do
+            cp sample/basic/input.pptx "performance-tests/samples/test-${i}.pptx"
+          done
 
-    - name: Run Jest performance tests
-      run: |
-        npx jest --testPathPatterns="(performance|dimension-analysis)" \
-                 --verbose \
-                 --runInBand \
-                 --detectOpenHandles \
-                 --forceExit \
-                 --testTimeout=30000
-      env:
-        NODE_OPTIONS: --max_old_space_size=4096
-        PERFORMANCE_TEST: true
+      - name: Run Jest performance tests
+        run: |
+          npx jest --testPathPatterns="(performance|dimension-analysis)" \
+                   --verbose \
+                   --runInBand \
+                   --detectOpenHandles \
+                   --forceExit \
+                   --testTimeout=30000
+        env:
+          NODE_OPTIONS: --max_old_space_size=4096
+          PERFORMANCE_TEST: true
 
-    - name: Memory usage test
-      run: |
-        echo "🧠 Checking basic memory usage..."
-        echo "Initial memory usage:"
-        node -e "console.log(process.memoryUsage())"
-        
-        echo "Running basic test suite to check memory..."
-        npm test -- --testNamePattern="should parse" --maxWorkers=1 || echo "Basic test completed"
-        
-        echo "Final memory usage:"
-        node -e "console.log(process.memoryUsage())"
-        
-        echo "✅ Memory usage test completed"
-      continue-on-error: true
+      - name: Memory usage test
+        run: |
+          echo "🧠 Checking basic memory usage..."
+          echo "Initial memory usage:"
+          node -e "console.log(process.memoryUsage())"
 
-    - name: Simple load test
-      run: |
-        echo "🔥 Running simple load test..."
-        
-        # Build first
-        npm run build
-        
-        # Start server
-        npm start &
-        SERVER_PID=$!
-        
-        # Wait for server
-        sleep 15
-        
-        # Simple health check
-        for i in {1..3}; do
-          echo "Request $i:"
-          curl -f http://localhost:3000 || echo "Request $i failed"
-          sleep 2
-        done
-        
-        # Clean up
-        kill $SERVER_PID || true
-        
-        echo "✅ Simple load test completed"
-      continue-on-error: true
+          echo "Running basic test suite to check memory..."
+          npm test -- --testNamePattern="should parse" --maxWorkers=1 || echo "Basic test completed"
 
-    - name: Performance regression check
-      run: |
-        echo "📈 Running basic performance check..."
-        
-        # Run a simple timing test
-        echo "Timing basic test execution..."
-        time npm test -- --testNamePattern="should parse.*pptx" --maxWorkers=1 || echo "Performance test completed"
-        
-        echo "✅ Performance regression check completed"
-      continue-on-error: true
+          echo "Final memory usage:"
+          node -e "console.log(process.memoryUsage())"
 
-    - name: Upload performance results
-      if: always()
-      uses: actions/upload-artifact@v4
-      with:
-        name: performance-results
-        path: |
-          performance-baseline.json
-          performance-tests/
-        retention-days: 30
+          echo "✅ Memory usage test completed"
+        continue-on-error: true
 
-    - name: Comment performance results on PR
-      if: github.event_name == 'pull_request'
-      uses: marocchino/sticky-pull-request-comment@v2
-      with:
-        recreate: true
-        message: |
-          ## 🚀 Performance Test Results
-          
-          Performance tests have been completed for this PR. 
-          
-          **Test Summary:**
-          - ✅ Memory Usage Test: Completed
-          - ✅ Load Test Simulation: Completed  
-          - ✅ Performance Regression Check: Completed
-          
-          Check the workflow logs for detailed performance metrics.
-          
-          [View detailed results](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
+      - name: Simple load test
+        run: |
+          echo "🔥 Running simple load test..."
+
+          # Build first
+          npm run build
+
+          # Start server
+          npm start &
+          SERVER_PID=$!
+
+          # Wait for server
+          sleep 15
+
+          # Simple health check
+          for i in {1..3}; do
+            echo "Request $i:"
+            curl -f http://localhost:3000 || echo "Request $i failed"
+            sleep 2
+          done
+
+          # Clean up
+          kill $SERVER_PID || true
+
+          echo "✅ Simple load test completed"
+        continue-on-error: true
+
+      - name: Performance regression check
+        run: |
+          echo "📈 Running basic performance check..."
+
+          # Run a simple timing test
+          echo "Timing basic test execution..."
+          time npm test -- --testNamePattern="should parse.*pptx" --maxWorkers=1 || echo "Performance test completed"
+
+          echo "✅ Performance regression check completed"
+        continue-on-error: true
+
+      - name: Upload performance results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: performance-results
+          path: |
+            performance-baseline.json
+            performance-tests/
+          retention-days: 30
+
+      - name: Comment performance results on PR
+        if: github.event_name == 'pull_request'
+        uses: marocchino/sticky-pull-request-comment@v2
+        with:
+          recreate: true
+          message: |
+            ## 🚀 Performance Test Results
+
+            Performance tests have been completed for this PR. 
+
+            **Test Summary:**
+            - ✅ Memory Usage Test: Completed
+            - ✅ Load Test Simulation: Completed  
+            - ✅ Performance Regression Check: Completed
+
+            Check the workflow logs for detailed performance metrics.
+
+            [View detailed results](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})

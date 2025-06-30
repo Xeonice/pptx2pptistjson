@@ -27,7 +27,7 @@ describe('尺寸转换逻辑分析', () => {
   describe('尺寸转换问题诊断', () => {
     it('应该分析所有元素的尺寸转换比例', () => {
       if (!actualOutput || !expectedOutput) {
-        pending('示例文件不可用');
+        console.warn('示例文件不可用');
         return;
       }
 
@@ -188,7 +188,7 @@ describe('尺寸转换逻辑分析', () => {
       const analysisResult = (global as any).dimensionAnalysisResult;
       
       if (!analysisResult) {
-        pending('需要先运行尺寸分析测试');
+        console.warn('需要先运行尺寸分析测试');
         return;
       }
 
