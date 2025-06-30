@@ -30,6 +30,7 @@ export function MonacoJsonLoader({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loadedSource, setLoadedSource] = useState<JsonSource | null>(null);
+  const [refreshKey, setRefreshKey] = useState(0);
 
   // Load JSON from source
   useEffect(() => {
@@ -43,11 +44,47 @@ export function MonacoJsonLoader({
         if (source.type === 'url' && source.url) {
           console.log("Loading JSON from URL:", source.url);
           
-          const response = await fetch(source.url);
-          if (!response.ok) {
-            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-          }
+          // 添加超时和重试机制
+          const fetchWithTimeout = async (url: string, timeout = 30000, retries = 3): Promise<Response> => {
+            for (let attempt = 1; attempt <= retries; attempt++) {
+              try {
+                console.log(`Attempt ${attempt}/${retries} to fetch JSON from CDN`);
+                
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), timeout);
+                
+                const response = await fetch(url, {
+                  signal: controller.signal,
+                  headers: {
+                    'Cache-Control': 'no-cache',
+                    'Pragma': 'no-cache'
+                  }
+                });
+                
+                clearTimeout(timeoutId);
+                
+                if (!response.ok) {
+                  throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                return response;
+              } catch (error) {
+                console.warn(`Fetch attempt ${attempt} failed:`, error);
+                
+                if (attempt === retries) {
+                  throw error;
+                }
+                
+                // 等待后重试 (指数退避)
+                const delay = Math.min(1000 * Math.pow(2, attempt - 1), 5000);
+                console.log(`Retrying in ${delay}ms...`);
+                await new Promise(resolve => setTimeout(resolve, delay));
+              }
+            }
+            throw new Error('All retry attempts failed');
+          };
           
+          const response = await fetchWithTimeout(source.url);
           const data = await response.json();
           const formattedJson = JSON.stringify(data, null, 2);
           setJsonContent(formattedJson);
@@ -68,7 +105,7 @@ export function MonacoJsonLoader({
     };
 
     loadJson();
-  }, [source]);
+  }, [source, refreshKey]);
 
   const downloadJson = () => {
     if (!jsonContent || typeof document === 'undefined') return;
@@ -101,12 +138,10 @@ export function MonacoJsonLoader({
   };
 
   const refreshFromUrl = () => {
-    if (loadedSource?.type === 'url' && loadedSource.url) {
-      // Force refresh by clearing and reloading
-      setJsonContent("");
-      setError(null);
-      // Trigger reload by updating source reference
-      setLoadedSource({ ...loadedSource });
+    if (source?.type === 'url' && source.url) {
+      console.log("🔄 Manual refresh triggered for CDN URL");
+      // Trigger reload by incrementing refresh key
+      setRefreshKey(prev => prev + 1);
     }
   };
 
@@ -231,7 +266,30 @@ export function MonacoJsonLoader({
           color: "#c62828",
         }}>
           <h4 style={{ margin: "0 0 10px 0" }}>❌ Loading Error</h4>
-          <div style={{ fontSize: "14px" }}>{error}</div>
+          <div style={{ fontSize: "14px", marginBottom: "10px" }}>{error}</div>
+          
+          {loadedSource?.type === 'url' && (
+            <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
+              <button
+                onClick={refreshFromUrl}
+                disabled={loading}
+                style={{
+                  padding: "6px 12px",
+                  backgroundColor: "#f44336",
+                  color: "white",
+                  border: "none",
+                  borderRadius: "4px",
+                  cursor: loading ? "not-allowed" : "pointer",
+                  fontSize: "12px",
+                }}
+              >
+                🔄 Retry Loading
+              </button>
+              <span style={{ fontSize: "12px", color: "#666" }}>
+                Network timeout or CDN access issue - try again
+              </span>
+            </div>
+          )}
         </div>
       )}
 

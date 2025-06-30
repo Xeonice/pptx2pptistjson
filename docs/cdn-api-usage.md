@@ -167,6 +167,13 @@ const result = await response.json();
 ### 3. Improved Reliability
 - **Reduced Server Load**: No large file handling on server
 - **CDN Benefits**: Better global distribution and caching
+- **Automatic Retry**: Built-in timeout handling and retry mechanism for CDN access
+
+### 4. Robust Error Handling
+- **30-second timeout** per request with automatic retry
+- **3 retry attempts** with exponential backoff (1s, 2s, 4s delays)
+- **Manual retry button** for failed CDN loads
+- **Clear error messages** and recovery instructions
 
 ## Error Handling
 
