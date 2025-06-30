@@ -301,7 +301,15 @@ export function CdnFileUploader({
                       border: "1px solid #ccc",
                       borderRadius: "4px",
                       backgroundColor: "#f9f9f9",
+                      fontFamily: "monospace",
+                      fontSize: "12px",
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                      whiteSpace: "nowrap",
+                      cursor: "pointer",
                     }}
+                    onClick={() => copyToClipboard(lastResult.cdnUrl!)}
+                    title={lastResult.cdnUrl}
                   />
                   <button
                     onClick={() => copyToClipboard(lastResult.cdnUrl!)}

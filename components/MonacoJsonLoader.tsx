@@ -164,8 +164,57 @@ export function MonacoJsonLoader({
                 <strong>Source:</strong> {loadedSource.type === 'url' ? 'CDN URL' : 'Direct Data'}
               </div>
               {loadedSource.url && (
-                <div style={{ fontSize: "12px", wordBreak: "break-all" }}>
-                  <strong>URL:</strong> {loadedSource.url}
+                <div style={{ 
+                  fontSize: "12px", 
+                  marginTop: "4px",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "8px"
+                }}>
+                  <strong>URL:</strong>
+                  <div 
+                    title={loadedSource.url}
+                    style={{
+                      flex: 1,
+                      fontFamily: "monospace",
+                      fontSize: "11px",
+                      backgroundColor: "#f8f9fa",
+                      border: "1px solid #e9ecef",
+                      borderRadius: "3px",
+                      padding: "2px 6px",
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                      whiteSpace: "nowrap",
+                      maxWidth: "300px",
+                      cursor: "pointer",
+                    }}
+                    onClick={() => {
+                      if (typeof navigator !== 'undefined' && navigator.clipboard) {
+                        navigator.clipboard.writeText(loadedSource.url || '');
+                        alert('URL copied to clipboard!');
+                      }
+                    }}
+                  >
+                    {loadedSource.url}
+                  </div>
+                  <button
+                    onClick={() => {
+                      if (typeof window !== 'undefined') {
+                        window.open(loadedSource.url, '_blank');
+                      }
+                    }}
+                    style={{
+                      padding: "2px 6px",
+                      backgroundColor: "#007bff",
+                      color: "white",
+                      border: "none",
+                      borderRadius: "3px",
+                      fontSize: "10px",
+                      cursor: "pointer"
+                    }}
+                  >
+                    🔗
+                  </button>
                 </div>
               )}
               {loadedSource.filename && (
