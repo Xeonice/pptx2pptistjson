@@ -1,6 +1,35 @@
 {
+  "title": "未命名演示文稿",
   "width": 1350,
   "height": 759.375,
+  "theme": {
+    "themeColors": [
+      "#002F71",
+      "#FFFFFF",
+      "#c3c3c3",
+      "#e1e1e1",
+      "#FBAE01",
+      "#c5dcffff",
+      "#1450b0ff"
+    ],
+    "fontColor": "#333",
+    "fontName": "",
+    "backgroundColor": "#fff",
+    "shadow": { "h": 3, "v": 3, "blur": 2, "color": "#808080" },
+    "outline": { "width": 2, "color": "#525252", "style": "solid" },
+    "themeColor": {
+      "dk1": "#002F71",
+      "lt1": "#FFFFFF",
+      "dk2": "#c3c3c3",
+      "lt2": "#e1e1e1",
+      "accent1": "#002F71",
+      "accent2": "#FBAE01",
+      "accent3": "#002F71",
+      "accent4": "#c5dcffff",
+      "accent5": "#1450b0ff",
+      "accent6": "#FFFFFF"
+    }
+  },
   "slides": [
     {
       "id": "0rIjJ4N55t",
@@ -51,16 +80,13 @@
           "left": 841.3176902887137,
           "top": 268.12976377952754,
           "width": 387.5520209973753,
-          "height": 47,
+          "height": 47.203125,
           "content": "<p style=\"text-align: left;\"><span style=\"color: #002F71;font-size: 26.7px;font-family: 方正尚酷简体;\">Data&nbsp;Driven&nbsp;Future</span></p>",
           "rotate": 0,
           "defaultFontName": "",
           "vertical": false,
           "fit": "resize",
-          "defaultColor": {
-            "color": "#333",
-            "colorType": "dk1"
-          },
+          "defaultColor": { "color": "#333", "colorType": "dk1" },
           "lineHeight": 1,
           "enableShrink": true
         },
@@ -70,16 +96,13 @@
           "left": 828.1999999999999,
           "top": 299.66666666666663,
           "width": 465.73333333333335,
-          "height": 204,
+          "height": 203.703125,
           "content": "<p style=\"text-align: left;\"><span style=\"color: #002F71;font-size: 106.7px;font-family: +mn-ea;font-weight: bold;\">智子云</span><span style=\"color: #002F71;font-size: 72.0px;font-family: +mn-ea;font-weight: bold;\">&nbsp;</span></p><p style=\"text-align: left;\"><span style=\"color: #002F71;font-size: 72.0px;font-family: +mn-ea;\">数据驱动未来</span></p>",
           "rotate": 0,
           "defaultFontName": "",
           "vertical": false,
           "fit": "resize",
-          "defaultColor": {
-            "color": "#333",
-            "colorType": "dk1"
-          },
+          "defaultColor": { "color": "#333", "colorType": "dk1" },
           "lineHeight": 1,
           "wordSpace": 0,
           "enableShrink": true
@@ -90,16 +113,13 @@
           "left": 118.56797900262467,
           "top": 338.6130183727034,
           "width": 264.8641469816273,
-          "height": 127,
+          "height": 128.703125,
           "content": "<p style=\"text-align: center;\"><span style=\"color: #002F71;font-size: 106.7px;font-family: Impact;\">2024</span></p>",
           "rotate": 0,
           "defaultFontName": "",
           "vertical": false,
           "fit": "resize",
-          "defaultColor": {
-            "color": "#333",
-            "colorType": "dk1"
-          },
+          "defaultColor": { "color": "#333", "colorType": "dk1" },
           "lineHeight": 1,
           "enableShrink": true
         }
@@ -141,27 +161,7 @@
           "viewBox": [200, 200],
           "path": "M 0 0 L 200 0 L 200 200 L 0 200 Z",
           "enableShrink": true,
-          "themeFill": {
-            "color": "rgba(255,219,65,1)"
-          }
-        },
-        {
-          "type": "text",
-          "id": "3xqJrxBhsq_text",
-          "left": 9.729238845144355,
-          "top": 734.9817322834645,
-          "width": 375.1666141732283,
-          "height": 50,
-          "content": "<ul><li style=\"text-align: left;\"><span style=\"color: #595959;font-size: 13.3px;font-family: 微软雅黑;\">智子科技</span><span style=\"color: #595959;font-size: 13.3px;font-family: 微软雅黑;\">www.zhiziyun.com</span><span style=\"color: #595959;font-size: 13.3px;font-family: 微软雅黑;\">&nbsp;</span><span style=\"color: #595959;font-size: 13.3px;font-family: 微软雅黑;\">&nbsp;</span></li>",
-          "rotate": 0,
-          "defaultFontName": "",
-          "vertical": false,
-          "fit": "resize",
-          "enableShrink": true,
-          "defaultColor": {
-            "color": "#333",
-            "colorType": "dk1"
-          }
+          "themeFill": { "color": "rgba(255,219,65,1)" }
         },
         {
           "type": "shape",
@@ -175,27 +175,7 @@
           "viewBox": [200, 200],
           "path": "M 0 0 L 200 0 L 200 200 L 0 200 Z",
           "enableShrink": true,
-          "themeFill": {
-            "color": "rgba(91,155,213,1)"
-          }
-        },
-        {
-          "type": "text",
-          "id": "oi36XdfOR7_text",
-          "left": 556.7222047244094,
-          "top": 731.5841469816273,
-          "width": 207.5683989501312,
-          "height": 50,
-          "content": "<p style=\"text-align: left;\"><span style=\"color: #595959;font-size: 13.3px;font-family: 微软雅黑;\">上海智子信息科技股份有限公司</span></p>",
-          "rotate": 0,
-          "defaultFontName": "",
-          "vertical": false,
-          "fit": "resize",
-          "enableShrink": true,
-          "defaultColor": {
-            "color": "#333",
-            "colorType": "dk1"
-          }
+          "themeFill": { "color": "rgba(91,155,213,1)" }
         },
         {
           "type": "image",
@@ -228,10 +208,9 @@
           "fixedRatio": false,
           "viewBox": [461.4982677165354, 71.53900262467191],
           "path": "M 35.769501312335954 0 L 425.72876640419946 0 Q 461.4982677165354 0 461.4982677165354 35.769501312335954 L 461.4982677165354 35.769501312335954 Q 461.4982677165354 71.53900262467191 425.72876640419946 71.53900262467191 L 35.769501312335954 71.53900262467191 Q 0 71.53900262467191 0 35.769501312335954 L 0 35.769501312335954 Q 0 0 35.769501312335954 0 Z",
-          "themeFill": {
-            "color": "#FBAE01"
-          },
-          "enableShrink": true
+          "themeFill": { "color": "#FBAE01" },
+          "enableShrink": true,
+          "fill": "rgb(251, 174, 1)"
         },
         {
           "type": "text",
@@ -239,17 +218,14 @@
           "left": 761.8040944881889,
           "top": 540.2149081364829,
           "width": 461.4982677165354,
-          "height": 76,
+          "height": 75,
           "content": "<p style=\"text-align: center;\"><strong><span style=\"font-size: 36px;\"><span style=\"font-family: Arial;\"><span style=\"color: rgb(255, 255, 255);\">独有优势技术</span></span></span></strong></p>",
           "rotate": 0,
           "defaultFontName": "",
           "vertical": false,
           "fit": "resize",
           "enableShrink": true,
-          "defaultColor": {
-            "color": "#333",
-            "colorType": "dk1"
-          }
+          "defaultColor": { "color": "#333", "colorType": "dk1" }
         },
         {
           "type": "line",
@@ -261,9 +237,7 @@
           "end": [259.0873490813648, 0],
           "style": "dotted",
           "color": "#FBAE01",
-          "themeColor": {
-            "color": "#FBAE01"
-          },
+          "themeColor": { "color": "#FBAE01" },
           "points": ["", "arrow"]
         },
         {
@@ -276,9 +250,7 @@
           "end": [260.6693963254593, 0],
           "style": "dotted",
           "color": "#FBAE01",
-          "themeColor": {
-            "color": "#FBAE01"
-          },
+          "themeColor": { "color": "#FBAE01" },
           "points": ["", "arrow"]
         },
         {
@@ -291,9 +263,7 @@
           "end": [248.8925984251968, 38.84556430446194],
           "style": "dotted",
           "color": "#FBAE01",
-          "themeColor": {
-            "color": "#FBAE01"
-          },
+          "themeColor": { "color": "#FBAE01" },
           "points": ["", "arrow"]
         },
         {
@@ -306,9 +276,7 @@
           "end": [238.5220997375328, 139.21112860892387],
           "style": "dotted",
           "color": "#FBAE01",
-          "themeColor": {
-            "color": "#FBAE01"
-          },
+          "themeColor": { "color": "#FBAE01" },
           "points": ["", "arrow"]
         },
         {
@@ -322,10 +290,9 @@
           "fixedRatio": false,
           "viewBox": [461.4982677165354, 71.71485564304461],
           "path": "M 35.85742782152231 0 L 425.6408398950131 0 Q 461.4982677165354 0 461.4982677165354 35.85742782152231 L 461.4982677165354 35.85742782152231 Q 461.4982677165354 71.71485564304461 425.6408398950131 71.71485564304461 L 35.85742782152231 71.71485564304461 Q 0 71.71485564304461 0 35.85742782152231 L 0 35.85742782152231 Q 0 0 35.85742782152231 0 Z",
-          "themeFill": {
-            "color": "#002F71"
-          },
-          "enableShrink": true
+          "themeFill": { "color": "#002F71" },
+          "enableShrink": true,
+          "fill": "rgba(0,47,113,1)"
         },
         {
           "type": "text",
@@ -333,17 +300,14 @@
           "left": 765.7374278215223,
           "top": 226.8735958005249,
           "width": 461.4982677165354,
-          "height": 76,
+          "height": 75,
           "content": "<p style=\"text-align: center;\"><strong><span style=\"font-size: 36px;\"><span style=\"font-family: Arial;\"><span style=\"color: rgb(255, 255, 255);\">1.关于智子云</span></span></span></strong></p>",
           "rotate": 0,
           "defaultFontName": "",
           "vertical": false,
           "fit": "resize",
           "enableShrink": true,
-          "defaultColor": {
-            "color": "#333",
-            "colorType": "dk1"
-          }
+          "defaultColor": { "color": "#333", "colorType": "dk1" }
         },
         {
           "type": "shape",
@@ -356,10 +320,9 @@
           "fixedRatio": false,
           "viewBox": [461.4982677165354, 71.71485564304461],
           "path": "M 35.85742782152231 0 L 425.6408398950131 0 Q 461.4982677165354 0 461.4982677165354 35.85742782152231 L 461.4982677165354 35.85742782152231 Q 461.4982677165354 71.71485564304461 425.6408398950131 71.71485564304461 L 35.85742782152231 71.71485564304461 Q 0 71.71485564304461 0 35.85742782152231 L 0 35.85742782152231 Q 0 0 35.85742782152231 0 Z",
-          "themeFill": {
-            "color": "#FBAE01"
-          },
-          "enableShrink": true
+          "themeFill": { "color": "#FBAE01" },
+          "enableShrink": true,
+          "fill": "rgba(251,174,1,1)"
         },
         {
           "type": "text",
@@ -367,17 +330,14 @@
           "left": 761.8040944881889,
           "top": 322.60965879265086,
           "width": 461.4982677165354,
-          "height": 76,
+          "height": 75,
           "content": "<p style=\"text-align: center;\"><strong><span style=\"font-size: 36px;\"><span style=\"font-family: Arial;\"><span style=\"color: rgb(255, 255, 255);\">一、海量媒体资源</span></span></span></strong></p>",
           "rotate": 0,
           "defaultFontName": "",
           "vertical": false,
           "fit": "resize",
           "enableShrink": true,
-          "defaultColor": {
-            "color": "#333",
-            "colorType": "dk1"
-          }
+          "defaultColor": { "color": "#333", "colorType": "dk1" }
         },
         {
           "type": "shape",
@@ -390,10 +350,9 @@
           "fixedRatio": false,
           "viewBox": [461.4982677165354, 71.53910761154854],
           "path": "M 35.76955380577427 0 L 425.72871391076114 0 Q 461.4982677165354 0 461.4982677165354 35.76955380577427 L 461.4982677165354 35.76955380577427 Q 461.4982677165354 71.53910761154854 425.72871391076114 71.53910761154854 L 35.76955380577427 71.53910761154854 Q 0 71.53910761154854 0 35.76955380577427 L 0 35.76955380577427 Q 0 0 35.76955380577427 0 Z",
-          "themeFill": {
-            "color": "#002F71"
-          },
-          "enableShrink": true
+          "themeFill": { "color": "#002F71" },
+          "enableShrink": true,
+          "fill": "rgba(0,47,113,1)"
         },
         {
           "type": "text",
@@ -401,17 +360,14 @@
           "left": 761.8040944881889,
           "top": 431.4122834645669,
           "width": 461.4982677165354,
-          "height": 76,
+          "height": 75,
           "content": "<p style=\"text-align: center;\"><strong><span style=\"font-size: 36px;\"><span style=\"font-family: Arial;\"><span style=\"color: rgb(255, 255, 255);\">亿级真人数据</span></span></span></strong></p>",
           "rotate": 0,
           "defaultFontName": "",
           "vertical": false,
           "fit": "resize",
           "enableShrink": true,
-          "defaultColor": {
-            "color": "#333",
-            "colorType": "dk1"
-          }
+          "defaultColor": { "color": "#333", "colorType": "dk1" }
         },
         {
           "type": "shape",
@@ -424,10 +380,9 @@
           "fixedRatio": false,
           "viewBox": [200, 200],
           "path": "M 100 0 A 50 50 0 1 1 100 200 A 50 50 0 1 1 100 0 Z",
-          "themeFill": {
-            "color": "#002f71cc"
-          },
-          "enableShrink": true
+          "themeFill": { "color": "#002f71cc" },
+          "enableShrink": true,
+          "fill": "#1e497b"
         },
         {
           "type": "text",
@@ -435,36 +390,17 @@
           "left": 148.15937007874015,
           "top": 339.44855643044616,
           "width": 212.71958005249343,
-          "height": 131,
+          "height": 130.5,
           "content": "<p style=\"text-align: center;\"><span style=\"color: #FFFFFF;font-size: 72.0px;font-family: Arial;\">目录</span></p>",
           "rotate": 0,
           "defaultFontName": "",
           "vertical": false,
           "fit": "resize",
           "enableShrink": true,
-          "defaultColor": {
-            "color": "#333",
-            "colorType": "dk1"
-          }
+          "defaultColor": { "color": "#333", "colorType": "dk1" }
         }
       ],
       "remark": ""
     }
-  ],
-  "theme": {
-    "fontName": "",
-    "themeColor": {
-      "dk1": "#002F71",
-      "lt1": "#FFFFFF",
-      "dk2": "#c3c3c3",
-      "lt2": "#e1e1e1",
-      "accent1": "#002F71",
-      "accent2": "#FBAE01",
-      "accent3": "#002F71",
-      "accent4": "#c5dcffff",
-      "accent5": "#1450b0ff",
-      "accent6": "#FFFFFF"
-    }
-  },
-  "title": "未命名演示文稿"
+  ]
 }
