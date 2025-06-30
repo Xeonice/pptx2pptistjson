@@ -167,6 +167,7 @@ export function MonacoJsonLoader({
         const errorMessage = err instanceof Error ? err.message : String(err);
         console.error("Failed to load JSON:", errorMessage);
         setError(`Failed to load JSON: ${errorMessage}`);
+        setLoadedSource(source); // 保存source以便显示重试按钮
       } finally {
         setLoading(false);
         setLoadingProgress("");

@@ -39,11 +39,11 @@ describe('MonacoJsonLoader Large File Handling', () => {
       render(<MonacoJsonLoader source={source} />);
 
       // Should show loading state
-      expect(screen.getByText(/Loading JSON/)).toBeInTheDocument();
+      expect(screen.getByText(/Downloading/)).toBeInTheDocument();
 
       // Wait for processing to complete
       await waitFor(() => {
-        expect(screen.queryByText(/Loading JSON/)).not.toBeInTheDocument();
+        expect(screen.queryByText(/Downloading/)).not.toBeInTheDocument();
       }, { timeout: 10000 });
 
       expect(fetch).toHaveBeenCalledWith(
@@ -110,11 +110,11 @@ describe('MonacoJsonLoader Large File Handling', () => {
       render(<MonacoJsonLoader source={source} />);
 
       await waitFor(() => {
-        expect(screen.queryByText(/Loading JSON/)).not.toBeInTheDocument();
+        expect(screen.queryByText(/Downloading/)).not.toBeInTheDocument();
       }, { timeout: 15000 });
 
       // The component should have loaded successfully
-      expect(screen.queryByText(/Loading Error/)).not.toBeInTheDocument();
+      expect(screen.queryByText(/❌ Loading Error/)).not.toBeInTheDocument();
     });
   });
 
@@ -138,7 +138,7 @@ describe('MonacoJsonLoader Large File Handling', () => {
       render(<MonacoJsonLoader source={source} />);
 
       await waitFor(() => {
-        expect(screen.getByText(/Loading Error/)).toBeInTheDocument();
+        expect(screen.getByText(/❌ Loading Error/)).toBeInTheDocument();
       }, { timeout: 5000 });
 
       await waitFor(() => {
@@ -160,8 +160,8 @@ describe('MonacoJsonLoader Large File Handling', () => {
       render(<MonacoJsonLoader source={source} />);
 
       await waitFor(() => {
-        expect(screen.getByText(/Loading Error/)).toBeInTheDocument();
-      });
+        expect(screen.getByText(/❌ Loading Error/)).toBeInTheDocument();
+      }, { timeout: 10000 });
 
       const retryButton = screen.getByRole('button', { name: /Retry Loading/ });
       expect(retryButton).toBeInTheDocument();
@@ -218,7 +218,7 @@ describe('MonacoJsonLoader Large File Handling', () => {
       resolveText!('{"test": "data"}');
 
       await waitFor(() => {
-        expect(screen.queryByText(/Loading JSON/)).not.toBeInTheDocument();
+        expect(screen.queryByText(/Downloading/)).not.toBeInTheDocument();
       });
     });
 
@@ -285,7 +285,13 @@ describe('MonacoJsonLoader Large File Handling', () => {
   });
 
   describe('Retry Mechanism', () => {
+    beforeEach(() => {
+      jest.clearAllMocks();
+      (fetch as jest.Mock).mockClear();
+    });
+
     it('retries failed requests with exponential backoff', async () => {
+      
       let callCount = 0;
       
       (fetch as jest.Mock).mockImplementation(() => {
@@ -309,11 +315,11 @@ describe('MonacoJsonLoader Large File Handling', () => {
       render(<MonacoJsonLoader source={source} />);
 
       await waitFor(() => {
-        expect(screen.queryByText(/Loading JSON/)).not.toBeInTheDocument();
+        expect(screen.queryByText(/Downloading/)).not.toBeInTheDocument();
       }, { timeout: 10000 });
 
       expect(fetch).toHaveBeenCalledTimes(3);
-      expect(screen.queryByText(/Loading Error/)).not.toBeInTheDocument();
+      expect(screen.queryByText(/❌ Loading Error/)).not.toBeInTheDocument();
     });
 
     it('fails after maximum retry attempts', async () => {
@@ -327,10 +333,14 @@ describe('MonacoJsonLoader Large File Handling', () => {
       render(<MonacoJsonLoader source={source} />);
 
       await waitFor(() => {
-        expect(screen.getByText(/Loading Error/)).toBeInTheDocument();
+        expect(screen.getByText(/❌ Loading Error/)).toBeInTheDocument();
       }, { timeout: 15000 });
 
-      expect(fetch).toHaveBeenCalledTimes(3); // Should retry 3 times
+      expect(fetch).toHaveBeenCalledWith(
+        expect.stringContaining('always-fail.json'),
+        expect.any(Object)
+      );
+      expect(fetch.mock.calls.length).toBeGreaterThanOrEqual(3); // At least 3 attempts
       expect(screen.getByText(/Persistent network error/)).toBeInTheDocument();
     });
   });

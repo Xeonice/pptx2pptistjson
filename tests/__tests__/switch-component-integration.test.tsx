@@ -177,20 +177,24 @@ describe('Switch Component Integration', () => {
 
   describe('Component Composition', () => {
     it('can be used in forms', () => {
-      const [checked, setChecked] = React.useState(false);
+      const FormWithSwitch = () => {
+        const [checked, setChecked] = React.useState(false);
+        
+        return (
+          <form>
+            <label htmlFor="test-switch">
+              Test Setting
+            </label>
+            <Switch
+              id="test-switch"
+              checked={checked}
+              onCheckedChange={setChecked}
+            />
+          </form>
+        );
+      };
       
-      render(
-        <form>
-          <label htmlFor="test-switch">
-            Test Setting
-          </label>
-          <Switch
-            id="test-switch"
-            checked={checked}
-            onCheckedChange={setChecked}
-          />
-        </form>
-      );
+      render(<FormWithSwitch />);
       
       const switchElement = screen.getByRole('switch');
       const label = screen.getByText('Test Setting');

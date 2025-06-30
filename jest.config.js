@@ -27,6 +27,8 @@ module.exports = {
   moduleFileExtensions: ['ts', 'tsx', 'js', 'jsx', 'json', 'node'],
   setupFilesAfterEnv: ['<rootDir>/tests/setup.ts'],
   moduleNameMapper: {
-    '^@/(.*)$': '<rootDir>/$1'
+    '^@/components/(.*)$': '<rootDir>/components/$1',
+    '^@/(.*)$': '<rootDir>/app/$1',
+    '^monaco-editor$': '<rootDir>/tests/__mocks__/monaco-editor.js'
   }
 };
