@@ -313,7 +313,7 @@ ${rightJson}
                     wordWrap: "on",
                     minimap: { enabled: false },
                     scrollBeyondLastLine: false,
-                    automaticLayout: true,
+                    automaticLayout: false,
                     formatOnPaste: true,
                     formatOnType: true,
                   }}
@@ -359,7 +359,7 @@ ${rightJson}
                     wordWrap: "on",
                     minimap: { enabled: false },
                     scrollBeyondLastLine: false,
-                    automaticLayout: true,
+                    automaticLayout: false,
                     formatOnPaste: true,
                     formatOnType: true,
                   }}

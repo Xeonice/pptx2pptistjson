@@ -61,6 +61,14 @@ export interface ProcessingContext {
    * ID generator for ensuring unique element IDs
    */
   idGenerator: IdGenerator;
+
+  /**
+   * Slide size information
+   */
+  slideSize?: {
+    width: number;
+    height: number;
+  };
 }
 
 export interface RelationshipInfo {

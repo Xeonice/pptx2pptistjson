@@ -9,6 +9,8 @@ export class ImageElement extends Element {
   private format?: string;
   private mimeType?: string;
   private originalSize?: number;
+  private aspectRatio?: number;
+  private offsetInfo?: ImageOffsetInfo;
 
   constructor(id: string, src: string) {
     super(id, "image");
@@ -63,6 +65,22 @@ export class ImageElement extends Element {
     return !!(this.imageData && this.dataUrl);
   }
 
+  setAspectRatio(ratio: number): void {
+    this.aspectRatio = ratio;
+  }
+
+  getAspectRatio(): number | undefined {
+    return this.aspectRatio;
+  }
+
+  setOffsetInfo(offsetInfo: ImageOffsetInfo): void {
+    this.offsetInfo = offsetInfo;
+  }
+
+  getOffsetInfo(): ImageOffsetInfo | undefined {
+    return this.offsetInfo;
+  }
+
   toJSON(): any {
     const baseOutput = {
       type: this.type,
@@ -78,6 +96,28 @@ export class ImageElement extends Element {
         range: this.crop ? this.convertCropToRange() : [[0, 0], [100, 100]],
       },
       loading: false,
+      // 偏移信息 - 供编辑器使用
+      offsetInfo: this.offsetInfo ? {
+        // 绝对偏移量(points)
+        leftOffset: this.offsetInfo.leftOffset,
+        topOffset: this.offsetInfo.topOffset,
+        rightOffset: this.offsetInfo.rightOffset,
+        bottomOffset: this.offsetInfo.bottomOffset,
+        // 百分比偏移量(类似PowerPoint Stretch Offset)
+        leftOffsetPercent: this.offsetInfo.leftOffsetPercent,
+        topOffsetPercent: this.offsetInfo.topOffsetPercent,
+        rightOffsetPercent: this.offsetInfo.rightOffsetPercent,
+        bottomOffsetPercent: this.offsetInfo.bottomOffsetPercent,
+        // 原始和转换后位置
+        originalPosition: {
+          x: this.offsetInfo.originalX,
+          y: this.offsetInfo.originalY
+        },
+        convertedPosition: {
+          x: this.offsetInfo.convertedX,
+          y: this.offsetInfo.convertedY
+        }
+      } : undefined,
     };
 
     // 根据是否有图片数据决定输出格式
@@ -123,6 +163,21 @@ export class ImageElement extends Element {
       [100 - this.crop.right, 100 - this.crop.bottom]
     ];
   }
+}
+
+export interface ImageOffsetInfo {
+  originalX: number;        // 原始EMU单位的X坐标
+  originalY: number;        // 原始EMU单位的Y坐标
+  convertedX: number;       // 转换后的X坐标(points)
+  convertedY: number;       // 转换后的Y坐标(points)
+  leftOffset: number;       // 向左偏移量(points)
+  topOffset: number;        // 向上偏移量(points)
+  rightOffset: number;      // 向右偏移量(points)
+  bottomOffset: number;     // 向下偏移量(points)
+  leftOffsetPercent: number;    // 向左偏移百分比
+  topOffsetPercent: number;     // 向上偏移百分比
+  rightOffsetPercent: number;   // 向右偏移百分比
+  bottomOffsetPercent: number;  // 向下偏移百分比
 }
 
 export interface ImageCrop {

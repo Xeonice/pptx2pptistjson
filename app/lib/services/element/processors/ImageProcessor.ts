@@ -13,21 +13,49 @@ export class ImageProcessor implements IElementProcessor<ImageElement> {
   ) {}
 
   canProcess(xmlNode: XmlNode): boolean {
-    // Process pic nodes (images)
-    return xmlNode.name.endsWith('pic');
+    // Process pic nodes and shapes with image fill
+    if (xmlNode.name.endsWith('pic')) {
+      return true;
+    }
+    
+    // Check if it's a shape with blipFill (most common case)
+    if (xmlNode.name.endsWith('sp')) {
+      const spPrNode = this.xmlParser.findNode(xmlNode, 'spPr');
+      if (spPrNode) {
+        const blipFillNode = this.xmlParser.findNode(spPrNode, 'blipFill');
+        return !!blipFillNode;
+      }
+    }
+    
+    return false;
   }
 
   async process(xmlNode: XmlNode, context: ProcessingContext): Promise<ImageElement> {
-    // Extract image ID
-    const nvPicPrNode = this.xmlParser.findNode(xmlNode, 'nvPicPr');
-    const cNvPrNode = nvPicPrNode ? this.xmlParser.findNode(nvPicPrNode, 'cNvPr') : undefined;
+    // Handle both p:pic and p:sp with blipFill
+    let cNvPrNode: XmlNode | undefined;
+    let blipFillNode: XmlNode | undefined;
+    let spPrNode: XmlNode | undefined;
+    
+    if (xmlNode.name.endsWith('pic')) {
+      // Traditional p:pic element
+      const nvPicPrNode = this.xmlParser.findNode(xmlNode, 'nvPicPr');
+      cNvPrNode = nvPicPrNode ? this.xmlParser.findNode(nvPicPrNode, 'cNvPr') : undefined;
+      blipFillNode = this.xmlParser.findNode(xmlNode, 'blipFill');
+      spPrNode = this.xmlParser.findNode(xmlNode, 'spPr');
+    } else if (xmlNode.name.endsWith('sp')) {
+      // Shape with image fill (more common)
+      const nvSpPrNode = this.xmlParser.findNode(xmlNode, 'nvSpPr');
+      cNvPrNode = nvSpPrNode ? this.xmlParser.findNode(nvSpPrNode, 'cNvPr') : undefined;
+      spPrNode = this.xmlParser.findNode(xmlNode, 'spPr');
+      blipFillNode = spPrNode ? this.xmlParser.findNode(spPrNode, 'blipFill') : undefined;
+    }
+    
     const originalId = cNvPrNode ? this.xmlParser.getAttribute(cNvPrNode, 'id') : undefined;
     
     // Generate unique ID
     const id = context.idGenerator.generateUniqueId(originalId, 'image');
     
     // Extract image reference
-    const blipFillNode = this.xmlParser.findNode(xmlNode, 'blipFill');
     const blipNode = blipFillNode ? this.xmlParser.findNode(blipFillNode, 'blip') : undefined;
     const embedId = blipNode ? this.xmlParser.getAttribute(blipNode, 'r:embed') : undefined;
     
@@ -56,34 +84,88 @@ export class ImageProcessor implements IElementProcessor<ImageElement> {
       }
     }
     
-    // Extract position and size
-    const spPrNode = this.xmlParser.findNode(xmlNode, 'spPr');
+    // Extract position and size (spPrNode already extracted above)
     if (spPrNode) {
       const xfrmNode = this.xmlParser.findNode(spPrNode, 'xfrm');
       if (xfrmNode) {
-        // Position
+        // Position with detailed offset information
         const offNode = this.xmlParser.findNode(xfrmNode, 'off');
         if (offNode) {
           const x = this.xmlParser.getAttribute(offNode, 'x');
           const y = this.xmlParser.getAttribute(offNode, 'y');
           if (x && y) {
+            const originalX = parseInt(x);
+            const originalY = parseInt(y);
+            const convertedX = UnitConverter.emuToPoints(originalX);
+            const convertedY = UnitConverter.emuToPoints(originalY);
+            
             imageElement.setPosition({
-              x: UnitConverter.emuToPoints(parseInt(x)),
-              y: UnitConverter.emuToPoints(parseInt(y))
+              x: convertedX,
+              y: convertedY
+            });
+            
+            // Store detailed offset information for debugging/adjustment
+            const slideWidth = context.slideSize?.width || 1350; // 默认幻灯片宽度
+            const slideHeight = context.slideSize?.height || 759.375; // 默认幻灯片高度
+            
+            // 计算偏移量
+            const leftOffset = convertedX; // 向左偏移量 (距离左边界)
+            const topOffset = convertedY;  // 向上偏移量 (距离上边界)
+            const rightOffset = slideWidth - convertedX;  // 向右偏移量 (距离右边界)
+            const bottomOffset = slideHeight - convertedY; // 向下偏移量 (距离下边界)
+            
+            // 计算百分比偏移量 (类似PowerPoint Stretch Offset)
+            const leftOffsetPercent = (leftOffset / slideWidth) * 100;
+            const topOffsetPercent = (topOffset / slideHeight) * 100;
+            const rightOffsetPercent = (rightOffset / slideWidth) * 100;
+            const bottomOffsetPercent = (bottomOffset / slideHeight) * 100;
+            
+            imageElement.setOffsetInfo({
+              originalX: originalX,
+              originalY: originalY,
+              convertedX: convertedX,
+              convertedY: convertedY,
+              leftOffset: leftOffset,
+              topOffset: topOffset,
+              rightOffset: rightOffset,
+              bottomOffset: bottomOffset,
+              leftOffsetPercent: leftOffsetPercent,
+              topOffsetPercent: topOffsetPercent,
+              rightOffsetPercent: rightOffsetPercent,
+              bottomOffsetPercent: bottomOffsetPercent
             });
           }
         }
         
-        // Size
+        // Size with aspect ratio preservation
         const extNode = this.xmlParser.findNode(xfrmNode, 'ext');
         if (extNode) {
           const cx = this.xmlParser.getAttribute(extNode, 'cx');
           const cy = this.xmlParser.getAttribute(extNode, 'cy');
           if (cx && cy) {
+            const originalCx = parseInt(cx);
+            const originalCy = parseInt(cy);
+            
+            // Calculate original aspect ratio for validation
+            const originalRatio = originalCx / originalCy;
+            
+            // Convert EMU to points with precise calculation
+            const width = UnitConverter.emuToPointsPrecise(originalCx);
+            const height = UnitConverter.emuToPointsPrecise(originalCy);
+            
+            // Verify aspect ratio is preserved (tolerance for floating point)
+            const convertedRatio = width / height;
+            if (Math.abs(originalRatio - convertedRatio) > 0.001) {
+              console.warn(`Image aspect ratio mismatch: original=${originalRatio.toFixed(4)}, converted=${convertedRatio.toFixed(4)}`);
+            }
+            
             imageElement.setSize({
-              width: UnitConverter.emuToPoints(parseInt(cx)),
-              height: UnitConverter.emuToPoints(parseInt(cy))
+              width: width,
+              height: height
             });
+            
+            // Store original aspect ratio for reference
+            imageElement.setAspectRatio(originalRatio);
           }
         }
         

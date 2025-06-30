@@ -40,6 +40,8 @@ export async function parseToPPTist(file: ArrayBuffer | Blob): Promise<any> {
 
   // Convert to PPTist-like format
   return {
+    width: result.width,
+    height: result.height,
     slides: result.slides.map((slide: any, index: number) => ({
       id: slide.id || `slide-${index + 1}`,
       elements: slide.elements.map((element: any) => ({
@@ -52,7 +54,6 @@ export async function parseToPPTist(file: ArrayBuffer | Blob): Promise<any> {
         ...element,
       })),
     })),
-    slideSize: result.slideSize,
     theme: result.theme,
   };
 }
