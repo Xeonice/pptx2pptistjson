@@ -160,6 +160,7 @@ export default function Home() {
           onFileUpload={handleFileUpload} 
           loading={loading}
           lastResult={uploadResult || undefined}
+          outputFormat={outputFormat}
         />
 
         {/* 格式选择器 */}

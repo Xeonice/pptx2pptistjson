@@ -10,6 +10,7 @@ import { useState, useRef } from "react";
 interface CdnUploadOptions {
   useCdn: boolean;
   cdnFilename?: string;
+  uploadPptxToCdn?: boolean;
 }
 
 interface CdnUploadResult {
@@ -33,26 +34,89 @@ interface CdnFileUploaderProps {
   onUploadResult?: (result: CdnUploadResult) => void;
   loading: boolean;
   lastResult?: CdnUploadResult;
+  outputFormat?: string;
 }
 
 export function CdnFileUploader({ 
   onFileUpload, 
   onUploadResult,
   loading, 
-  lastResult 
+  lastResult,
+  outputFormat = "pptist" 
 }: CdnFileUploaderProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [useCdn, setUseCdn] = useState(false);
   const [cdnFilename, setCdnFilename] = useState("");
+  const [uploadPptxToCdn, setUploadPptxToCdn] = useState(false);
+  const [uploadingToCdn, setUploadingToCdn] = useState(false);
 
-  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
       const options: CdnUploadOptions = {
         useCdn,
         cdnFilename: cdnFilename.trim() || undefined,
+        uploadPptxToCdn,
       };
-      onFileUpload(file, options);
+      
+      // If uploadPptxToCdn is enabled, upload the PPTX file to CDN first
+      if (uploadPptxToCdn) {
+        setUploadingToCdn(true);
+        try {
+          // Upload PPTX to CDN
+          const formData = new FormData();
+          formData.append("file", file);
+          if (cdnFilename) {
+            formData.append("filename", cdnFilename);
+          }
+          
+          const response = await fetch("/api/upload-pptx-to-cdn", {
+            method: "POST",
+            body: formData,
+          });
+          
+          if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.error || "Failed to upload PPTX to CDN");
+          }
+          
+          const result = await response.json();
+          console.log("✅ PPTX uploaded to CDN:", result.cdnUrl);
+          
+          // Now parse the PPTX from CDN URL
+          const parseFormData = new FormData();
+          parseFormData.append("cdnUrl", result.cdnUrl);
+          parseFormData.append("format", outputFormat); // Use the current format
+          parseFormData.append("useCdn", options.useCdn.toString());
+          if (options.cdnFilename) {
+            parseFormData.append("cdnFilename", options.cdnFilename);
+          }
+          
+          // Call the parse API with CDN URL
+          const parseResponse = await fetch("/api/parse-pptx", {
+            method: "POST",
+            body: parseFormData,
+          });
+          
+          if (!parseResponse.ok) {
+            const error = await parseResponse.json();
+            throw new Error(error.error || "Failed to parse PPTX from CDN");
+          }
+          
+          const parseResult = await parseResponse.json();
+          if (onUploadResult) {
+            onUploadResult(parseResult);
+          }
+        } catch (error) {
+          console.error("Error uploading PPTX to CDN:", error);
+          alert(`Failed to upload PPTX to CDN: ${error instanceof Error ? error.message : String(error)}`);
+        } finally {
+          setUploadingToCdn(false);
+        }
+      } else {
+        // Normal file upload flow
+        onFileUpload(file, options);
+      }
     }
   };
 
@@ -102,11 +166,23 @@ export function CdnFileUploader({
             <label style={{ display: "flex", alignItems: "center", gap: "8px" }}>
               <input
                 type="checkbox"
+                checked={uploadPptxToCdn}
+                onChange={(e) => setUploadPptxToCdn(e.target.checked)}
+                disabled={loading || uploadingToCdn}
+              />
+              <span>Upload PPTX to CDN first (recommended for large PPTX files)</span>
+            </label>
+          </div>
+          
+          <div style={{ marginBottom: "10px" }}>
+            <label style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+              <input
+                type="checkbox"
                 checked={useCdn}
                 onChange={(e) => setUseCdn(e.target.checked)}
-                disabled={loading}
+                disabled={loading || uploadingToCdn}
               />
-              <span>Upload JSON to CDN (recommended for large files)</span>
+              <span>Upload JSON result to CDN (recommended for large outputs)</span>
             </label>
           </div>
           
@@ -134,24 +210,36 @@ export function CdnFileUploader({
 
         <button
           onClick={handleClick}
-          disabled={loading}
+          disabled={loading || uploadingToCdn}
           style={{
             width: "300px",
             height: "80px",
-            backgroundColor: loading ? "#999" : "#d14424",
+            backgroundColor: loading || uploadingToCdn ? "#999" : "#d14424",
             color: "white",
             border: "none",
             borderRadius: "8px",
             fontSize: "18px",
             fontWeight: "bold",
-            cursor: loading ? "not-allowed" : "pointer",
+            cursor: loading || uploadingToCdn ? "not-allowed" : "pointer",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
             gap: "10px",
           }}
         >
-          {loading ? (
+          {uploadingToCdn ? (
+            <>
+              <div className="spinner" style={{
+                width: "20px",
+                height: "20px",
+                border: "2px solid #ffffff40",
+                borderTop: "2px solid #ffffff",
+                borderRadius: "50%",
+                animation: "spin 1s linear infinite",
+              }} />
+              Uploading to CDN...
+            </>
+          ) : loading ? (
             <>
               <div className="spinner" style={{
                 width: "20px",
@@ -166,7 +254,7 @@ export function CdnFileUploader({
           ) : (
             <>
               📁 Choose PPTX File
-              {useCdn && <span style={{ fontSize: "14px" }}>☁️</span>}
+              {(useCdn || uploadPptxToCdn) && <span style={{ fontSize: "14px" }}>☁️</span>}
             </>
           )}
         </button>

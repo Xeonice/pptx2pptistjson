@@ -1,13 +1,30 @@
 # CDN API Usage Guide
 
-The `parsePPTX` API now supports downloading PPTX files from CDN URLs.
+The system now supports full CDN integration for both PPTX input and JSON output.
 
-## API Endpoint
+## API Endpoints
+
+### 1. Upload PPTX to CDN
+`POST /api/upload-pptx-to-cdn`
+
+Uploads a PPTX file to CDN for later processing.
+
+### 2. Parse PPTX
 `POST /api/parse-pptx`
+
+Parses PPTX files from direct upload or CDN URL.
 
 ## Request Parameters
 
-### Form Data Fields:
+### Upload PPTX to CDN (`/api/upload-pptx-to-cdn`)
+
+**Form Data Fields:**
+- `file` (File, required): The PPTX file to upload
+- `filename` (string, optional): Custom filename for the CDN storage
+
+### Parse PPTX (`/api/parse-pptx`)
+
+**Form Data Fields:**
 - `file` (File, optional): The PPTX file to upload directly
 - `cdnUrl` (string, optional): URL of the PPTX file stored on CDN
 - `format` (string, optional): Output format - "pptist" or "legacy" (default: "legacy")
@@ -18,7 +35,39 @@ The `parsePPTX` API now supports downloading PPTX files from CDN URLs.
 
 ## Usage Examples
 
-### 1. Upload PPTX from CDN URL
+### 1. Two-Step CDN Workflow (Upload PPTX to CDN, then parse)
+
+**Step 1: Upload PPTX to CDN**
+```javascript
+const formData = new FormData();
+formData.append('file', pptxFile);
+formData.append('filename', 'my-presentation.pptx'); // optional
+
+const uploadResponse = await fetch('/api/upload-pptx-to-cdn', {
+  method: 'POST',
+  body: formData
+});
+
+const uploadResult = await uploadResponse.json();
+// Returns: { success: true, cdnUrl: "https://cdn.example.com/...", ... }
+```
+
+**Step 2: Parse from CDN URL**
+```javascript
+const parseFormData = new FormData();
+parseFormData.append('cdnUrl', uploadResult.cdnUrl);
+parseFormData.append('format', 'pptist');
+parseFormData.append('useCdn', 'true'); // Also upload JSON result to CDN
+
+const parseResponse = await fetch('/api/parse-pptx', {
+  method: 'POST',
+  body: parseFormData
+});
+
+const parseResult = await parseResponse.json();
+```
+
+### 2. Direct Parse from CDN URL
 ```javascript
 const formData = new FormData();
 formData.append('cdnUrl', 'https://cdn.example.com/presentation.pptx');
@@ -33,7 +82,7 @@ const response = await fetch('/api/parse-pptx', {
 const result = await response.json();
 ```
 
-### 2. Direct File Upload (existing functionality)
+### 3. Direct File Upload (existing functionality)
 ```javascript
 const formData = new FormData();
 formData.append('file', pptxFile);
@@ -48,9 +97,27 @@ const response = await fetch('/api/parse-pptx', {
 const result = await response.json();
 ```
 
-## Response Format
+## Response Formats
 
-### When CDN upload is successful:
+### Upload PPTX to CDN Response:
+```json
+{
+  "success": true,
+  "cdnUrl": "https://cdn.example.com/my-presentation.pptx",
+  "cdnId": "unique-cdn-id",
+  "filename": "presentation.pptx",
+  "size": 54321,
+  "contentType": "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+  "metadata": {
+    "originalFilename": "presentation.pptx",
+    "uploadedAt": "2024-01-01T00:00:00.000Z",
+    "fileSize": 54321
+  },
+  "provider": "vercel-blob"
+}
+```
+
+### Parse PPTX - When JSON CDN upload is successful:
 ```json
 {
   "success": true,
@@ -72,7 +139,7 @@ const result = await response.json();
 }
 ```
 
-### When CDN upload is disabled or fails:
+### Parse PPTX - When JSON CDN upload is disabled or fails:
 ```json
 {
   "success": true,
