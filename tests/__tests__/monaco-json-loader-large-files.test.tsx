@@ -340,7 +340,7 @@ describe('MonacoJsonLoader Large File Handling', () => {
         expect.stringContaining('always-fail.json'),
         expect.any(Object)
       );
-      expect(fetch.mock.calls.length).toBeGreaterThanOrEqual(3); // At least 3 attempts
+      expect((fetch as jest.Mock).mock.calls.length).toBeGreaterThanOrEqual(3); // At least 3 attempts
       expect(screen.getByText(/Persistent network error/)).toBeInTheDocument();
     });
   });
