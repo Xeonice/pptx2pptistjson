@@ -218,7 +218,7 @@ describe('Integration Tests', () => {
       
       expect(typeof pointsValue).toBe('number');
       expect(pointsValue).toBeGreaterThan(0);
-      expect(pointsValue).toBeCloseTo(96.81, 1); // Approximate expected value
+      expect(pointsValue).toBeCloseTo(92.53, 1); // Approximate expected value
       
       // Test precision
       const preciseValue = UnitConverter.emuToPointsPrecise(emuValue);

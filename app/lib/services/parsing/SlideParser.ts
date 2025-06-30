@@ -176,6 +176,20 @@ export class SlideParser {
   }
 
   private async processNode(node: XmlNode, context: ProcessingContext): Promise<Element | undefined> {
+    // Debug logging for node processing
+    if (node.name.endsWith('sp') || node.name.endsWith('pic')) {
+      const cNvPrNode = this.xmlParser.findNode(node, 'cNvPr');
+      const name = cNvPrNode ? this.xmlParser.getAttribute(cNvPrNode, 'name') : 'unnamed';
+      const id = cNvPrNode ? this.xmlParser.getAttribute(cNvPrNode, 'id') : 'no-id';
+      
+      // Check for blipFill
+      const hasBlipFill = !!this.xmlParser.findNode(node, 'blipFill') || 
+                          (this.xmlParser.findNode(node, 'spPr') && 
+                           !!this.xmlParser.findNode(this.xmlParser.findNode(node, 'spPr')!, 'blipFill'));
+      
+      console.log(`[Slide ${context.slideNumber}] Processing ${node.name} - Name: "${name}", ID: ${id}, HasBlipFill: ${hasBlipFill}`);
+    }
+    
     // Find a processor that can handle this node
     const processors = Array.from(this.elementProcessors.values());
     
@@ -183,6 +197,7 @@ export class SlideParser {
       if (processor.canProcess(node)) {
         try {
           const result = await processor.process(node, context);
+          console.log(`[Slide ${context.slideNumber}] Processed as ${processor.getElementType()}`);
           return result;
         } catch (error) {
           console.error(`处理器 ${processor.getElementType()} 处理 ${node.name} 失败:`, error);

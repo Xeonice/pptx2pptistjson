@@ -15,8 +15,11 @@ export class TextProcessor implements IElementProcessor<TextElement> {
   constructor(private xmlParser: IXmlParseService) {}
 
   canProcess(xmlNode: XmlNode): boolean {
-    // Process shape nodes that contain text
-    return xmlNode.name.endsWith("sp") && this.hasTextContent(xmlNode);
+    // Process shape nodes that contain text but don't have image fill
+    // Image fill takes priority over text content
+    return xmlNode.name.endsWith("sp") && 
+           this.hasTextContent(xmlNode) && 
+           !this.hasImageFill(xmlNode);
   }
 
   async process(
@@ -113,6 +116,15 @@ export class TextProcessor implements IElementProcessor<TextElement> {
     }
 
     return false;
+  }
+
+  private hasImageFill(xmlNode: XmlNode): boolean {
+    // Check if shape has blipFill (image fill)
+    const spPrNode = this.xmlParser.findNode(xmlNode, "spPr");
+    if (!spPrNode) return false;
+    
+    const blipFillNode = this.xmlParser.findNode(spPrNode, "blipFill");
+    return !!blipFillNode;
   }
 
   private extractParagraphContent(
