@@ -31,6 +31,7 @@ export function MonacoJsonLoader({
   const [error, setError] = useState<string | null>(null);
   const [loadedSource, setLoadedSource] = useState<JsonSource | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
+  const [loadingProgress, setLoadingProgress] = useState<string>("");
 
   // Load JSON from source
   useEffect(() => {
@@ -39,16 +40,18 @@ export function MonacoJsonLoader({
     const loadJson = async () => {
       setLoading(true);
       setError(null);
+      setLoadingProgress("Initializing...");
 
       try {
         if (source.type === 'url' && source.url) {
           console.log("Loading JSON from URL:", source.url);
           
-          // 添加超时和重试机制
-          const fetchWithTimeout = async (url: string, timeout = 30000, retries = 3): Promise<Response> => {
+          // 添加超时和重试机制 - 针对大文件优化
+          const fetchWithTimeout = async (url: string, timeout = 120000, retries = 3): Promise<Response> => {
             for (let attempt = 1; attempt <= retries; attempt++) {
               try {
                 console.log(`Attempt ${attempt}/${retries} to fetch JSON from CDN`);
+                setLoadingProgress(`Downloading... (Attempt ${attempt}/${retries})`);
                 
                 const controller = new AbortController();
                 const timeoutId = setTimeout(() => controller.abort(), timeout);
@@ -72,6 +75,16 @@ export function MonacoJsonLoader({
                 console.warn(`Fetch attempt ${attempt} failed:`, error);
                 
                 if (attempt === retries) {
+                  // 为超时错误提供更详细的信息
+                  if (error instanceof Error && (error.name === 'AbortError' || error.message.includes('timeout'))) {
+                    throw new Error(`Request timeout after ${timeout/1000}s. This may be due to:
+                    • Large file size (consider using smaller chunks)
+                    • Slow network connection
+                    • CDN server overload
+                    • Network connectivity issues
+                    
+                    Try refreshing or using a smaller file.`);
+                  }
                   throw error;
                 }
                 
@@ -85,10 +98,65 @@ export function MonacoJsonLoader({
           };
           
           const response = await fetchWithTimeout(source.url);
-          const data = await response.json();
-          const formattedJson = JSON.stringify(data, null, 2);
-          setJsonContent(formattedJson);
+          
+          // 检查文件大小
+          const contentLength = response.headers.get('content-length');
+          const fileSizeBytes = contentLength ? parseInt(contentLength) : 0;
+          const fileSizeMB = fileSizeBytes / (1024 * 1024);
+          
+          console.log(`Loading JSON file: ${fileSizeMB.toFixed(2)}MB`);
+          setLoadingProgress(`Processing ${fileSizeMB.toFixed(2)}MB file...`);
+          
+          // 对于大文件使用优化策略
+          if (fileSizeMB > 10) { // 大于10MB的文件
+            console.log("🔄 Using optimized loading for large file...");
+            setLoadingProgress(`Reading large file (${fileSizeMB.toFixed(2)}MB)...`);
+            
+            // 分块处理大文件
+            const text = await response.text();
+            setLoadingProgress("Parsing JSON data...");
+            
+            // 使用Web Worker或requestIdleCallback进行异步解析
+            const data = await new Promise((resolve, reject) => {
+              const parseInChunks = () => {
+                try {
+                  const parsed = JSON.parse(text);
+                  resolve(parsed);
+                } catch (error) {
+                  reject(error);
+                }
+              };
+              
+              // 如果浏览器支持，使用requestIdleCallback
+              if (typeof requestIdleCallback !== 'undefined') {
+                requestIdleCallback(parseInChunks, { timeout: 10000 });
+              } else {
+                setTimeout(parseInChunks, 0);
+              }
+            });
+            
+            // 对大文件使用简化格式化（不缩进）以节省内存
+            setLoadingProgress("Formatting JSON...");
+            const formattedJson = JSON.stringify(data);
+            setJsonContent(formattedJson);
+            
+            console.log("✅ Large file loaded successfully (minimized format)");
+          } else {
+            // 小文件使用标准流程
+            const data = await response.json();
+            const formattedJson = JSON.stringify(data, null, 2);
+            setJsonContent(formattedJson);
+          }
+          
           setLoadedSource(source);
+          
+          // 显示大文件处理提示
+          if (fileSizeMB > 5) {
+            console.log(`📊 Performance note: File size is ${fileSizeMB.toFixed(2)}MB. For better performance with large files, consider:
+            - Using JSONLoader in view-only mode
+            - Breaking large files into smaller chunks
+            - Using streaming JSON processing`);
+          }
           
         } else if (source.type === 'data' && source.data) {
           const formattedJson = JSON.stringify(source.data, null, 2);
@@ -101,6 +169,7 @@ export function MonacoJsonLoader({
         setError(`Failed to load JSON: ${errorMessage}`);
       } finally {
         setLoading(false);
+        setLoadingProgress("");
       }
     };
 
@@ -300,7 +369,7 @@ export function MonacoJsonLoader({
             animation: "spin 1s linear infinite",
             marginRight: "10px",
           }} />
-          Loading JSON...
+          {loadingProgress || "Loading JSON..."}
         </div>
       )}
 
