@@ -84,7 +84,7 @@
     "jest": "^30.0.3",
     "postcss": "^8.5.6",
     "rollup": "^3.3.0",
-    "rollup-plugin-node-builtins": "^2.1.2",
+    "rollup-plugin-node-builtins": "^2.0.0",
     "rollup-plugin-node-globals": "^1.4.0",
     "ts-jest": "^29.4.0",
     "typescript": "^5.0.0"
