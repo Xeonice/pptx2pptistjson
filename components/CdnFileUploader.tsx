@@ -63,29 +63,21 @@ export function CdnFileUploader({
       if (uploadPptxToCdn) {
         setUploadingToCdn(true);
         try {
-          // Upload PPTX to CDN
-          const formData = new FormData();
-          formData.append("file", file);
-          if (cdnFilename) {
-            formData.append("filename", cdnFilename);
-          }
+          // Import the upload function dynamically to avoid SSR issues
+          const { upload } = await import('@vercel/blob/client');
           
-          const response = await fetch("/api/upload-pptx-to-cdn", {
-            method: "POST",
-            body: formData,
+          // Upload directly to CDN from client
+          const filename = cdnFilename || file.name;
+          const blob = await upload(filename, file, {
+            access: 'public',
+            handleUploadUrl: '/api/cdn-upload-token',
           });
           
-          if (!response.ok) {
-            const error = await response.json();
-            throw new Error(error.error || "Failed to upload PPTX to CDN");
-          }
-          
-          const result = await response.json();
-          console.log("✅ PPTX uploaded to CDN:", result.cdnUrl);
+          console.log("✅ PPTX uploaded to CDN:", blob.url);
           
           // Now parse the PPTX from CDN URL
           const parseFormData = new FormData();
-          parseFormData.append("cdnUrl", result.cdnUrl);
+          parseFormData.append("cdnUrl", blob.url);
           parseFormData.append("format", outputFormat); // Use the current format
           parseFormData.append("useCdn", options.useCdn.toString());
           if (options.cdnFilename) {

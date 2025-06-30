@@ -1,13 +1,13 @@
 # CDN API Usage Guide
 
-The system now supports full CDN integration for both PPTX input and JSON output.
+The system now supports full CDN integration for both PPTX input and JSON output, with client-side direct uploads to avoid Vercel's payload size limits.
 
 ## API Endpoints
 
-### 1. Upload PPTX to CDN
-`POST /api/upload-pptx-to-cdn`
+### 1. CDN Upload Token
+`POST /api/cdn-upload-token`
 
-Uploads a PPTX file to CDN for later processing.
+Generates secure upload tokens for client-side direct uploads to CDN. This endpoint uses Vercel Blob's secure client upload mechanism.
 
 ### 2. Parse PPTX
 `POST /api/parse-pptx`
@@ -16,11 +16,9 @@ Parses PPTX files from direct upload or CDN URL.
 
 ## Request Parameters
 
-### Upload PPTX to CDN (`/api/upload-pptx-to-cdn`)
+### CDN Upload Token (`/api/cdn-upload-token`)
 
-**Form Data Fields:**
-- `file` (File, required): The PPTX file to upload
-- `filename` (string, optional): Custom filename for the CDN storage
+This endpoint follows Vercel Blob's client upload protocol. The request is handled automatically by the `@vercel/blob/client` library.
 
 ### Parse PPTX (`/api/parse-pptx`)
 
@@ -35,27 +33,26 @@ Parses PPTX files from direct upload or CDN URL.
 
 ## Usage Examples
 
-### 1. Two-Step CDN Workflow (Upload PPTX to CDN, then parse)
+### 1. Client-Side Direct CDN Upload Workflow
 
-**Step 1: Upload PPTX to CDN**
+**Step 1: Upload PPTX directly to CDN from browser**
 ```javascript
-const formData = new FormData();
-formData.append('file', pptxFile);
-formData.append('filename', 'my-presentation.pptx'); // optional
+import { upload } from '@vercel/blob/client';
 
-const uploadResponse = await fetch('/api/upload-pptx-to-cdn', {
-  method: 'POST',
-  body: formData
+// Upload file directly from browser to CDN
+const blob = await upload(file.name, file, {
+  access: 'public',
+  handleUploadUrl: '/api/cdn-upload-token',
 });
 
-const uploadResult = await uploadResponse.json();
-// Returns: { success: true, cdnUrl: "https://cdn.example.com/...", ... }
+console.log('File uploaded to:', blob.url);
+// Returns: { url: "https://...vercel-storage.com/...", ... }
 ```
 
 **Step 2: Parse from CDN URL**
 ```javascript
 const parseFormData = new FormData();
-parseFormData.append('cdnUrl', uploadResult.cdnUrl);
+parseFormData.append('cdnUrl', blob.url);
 parseFormData.append('format', 'pptist');
 parseFormData.append('useCdn', 'true'); // Also upload JSON result to CDN
 
@@ -99,21 +96,15 @@ const result = await response.json();
 
 ## Response Formats
 
-### Upload PPTX to CDN Response:
+### Client Upload Response (from @vercel/blob/client):
 ```json
 {
-  "success": true,
-  "cdnUrl": "https://cdn.example.com/my-presentation.pptx",
-  "cdnId": "unique-cdn-id",
-  "filename": "presentation.pptx",
-  "size": 54321,
+  "pathname": "my-presentation.pptx",
   "contentType": "application/vnd.openxmlformats-officedocument.presentationml.presentation",
-  "metadata": {
-    "originalFilename": "presentation.pptx",
-    "uploadedAt": "2024-01-01T00:00:00.000Z",
-    "fileSize": 54321
-  },
-  "provider": "vercel-blob"
+  "contentDisposition": "attachment; filename=\"my-presentation.pptx\"",
+  "url": "https://xxxxxx.public.blob.vercel-storage.com/my-presentation-xxxxxx.pptx",
+  "downloadUrl": "https://xxxxxx.public.blob.vercel-storage.com/my-presentation-xxxxxx.pptx?download=1",
+  "size": 54321
 }
 ```
 
@@ -154,9 +145,23 @@ const result = await response.json();
 }
 ```
 
+## Key Benefits
+
+### 1. No Payload Size Limits
+- **Problem**: Vercel has a 4.5MB request body limit
+- **Solution**: Client uploads directly to CDN, bypassing the server
+
+### 2. Better Performance
+- **Direct Upload**: Files go straight to CDN without server processing
+- **Parallel Processing**: Upload and parsing can happen concurrently
+
+### 3. Improved Reliability
+- **Reduced Server Load**: No large file handling on server
+- **CDN Benefits**: Better global distribution and caching
+
 ## Error Handling
 
-### CDN Download Error:
+### CDN Upload Error:
 ```json
 {
   "error": "Failed to download file from CDN",
