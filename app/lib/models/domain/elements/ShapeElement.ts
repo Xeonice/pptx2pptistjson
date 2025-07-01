@@ -9,6 +9,7 @@ export class ShapeElement extends Element {
   private stroke?: StrokeProperties;
   private flip?: { horizontal: boolean; vertical: boolean };
   private connectionInfo?: ConnectionInfo;
+  private adjustmentValues?: Record<string, number>;
 
   constructor(id: string, shapeType: ShapeType) {
     super(id, "shape");
@@ -35,6 +36,14 @@ export class ShapeElement extends Element {
     return this.pathFormula;
   }
 
+  setAdjustmentValues(adjustmentValues: Record<string, number>): void {
+    this.adjustmentValues = adjustmentValues;
+  }
+
+  getAdjustmentValues(): Record<string, number> {
+    return this.adjustmentValues || {};
+  }
+
   /**
    * Get the SVG path for JSON serialization (expose private method for testing)
    */
@@ -45,12 +54,29 @@ export class ShapeElement extends Element {
   private getShapePathInternal(): string {
     // Generate SVG path based on shape type
     switch (this.shapeType) {
-      case "ellipse":
-        return "M 100 0 A 50 50 0 1 1 100 200 A 50 50 0 1 1 100 0 Z";
-      case "rect":
-        return "M 0 0 L 200 0 L 200 200 L 0 200 Z";
-      case "roundRect":
-        return "M 20 0 L 180 0 Q 200 0 200 20 L 200 180 Q 200 200 180 200 L 20 200 Q 0 200 0 180 L 0 20 Q 0 0 20 0 Z";
+      case "ellipse": {
+        const w = this.size?.width || 200;
+        const h = this.size?.height || 200;
+        const cx = w / 2;
+        const rx = w / 2;
+        const ry = h / 2;
+        return `M ${cx} 0 A ${rx} ${ry} 0 1 1 ${cx} ${h} A ${rx} ${ry} 0 1 1 ${cx} 0 Z`;
+      }
+      case "rect": {
+        const w = this.size?.width || 200;
+        const h = this.size?.height || 200;
+        return `M 0 0 L ${w} 0 L ${w} ${h} L 0 ${h} Z`;
+      }
+      case "roundRect": {
+        const adjustValues = this.getAdjustmentValues();
+        const adjValue = adjustValues.adj !== undefined ? adjustValues.adj : 0.1;
+        const w = this.size?.width || 200;
+        const h = this.size?.height || 200;
+        const roundRectRx = Math.min(w, h) * adjValue;
+        
+        // Always generate rounded rectangle path (no circle conversion)
+        return `M ${roundRectRx} 0 L ${w - roundRectRx} 0 Q ${w} 0 ${w} ${roundRectRx} L ${w} ${h - roundRectRx} Q ${w} ${h} ${w - roundRectRx} ${h} L ${roundRectRx} ${h} Q 0 ${h} 0 ${h - roundRectRx} L 0 ${roundRectRx} Q 0 0 ${roundRectRx} 0 Z`;
+      }
       case "triangle":
         return "M 100 0 L 200 200 L 0 200 Z";
       case "diamond":
@@ -113,7 +139,7 @@ export class ShapeElement extends Element {
       top: this.position?.y || 0,
       width: this.size?.width || 0,
       height: this.size?.height || 0,
-      viewBox: [200, 200],
+      viewBox: [this.size?.width || 200, this.size?.height || 200],
       path: this.path || this.getShapePathInternal(),
       pathFormula: this.pathFormula,
       shape: this.shapeType,
@@ -126,7 +152,10 @@ export class ShapeElement extends Element {
 
     // Add keypoints property for roundRect shapes
     if (this.shapeType === "roundRect") {
-      result.keypoints = [];
+      const adjustValues = this.getAdjustmentValues();
+      // Use 'adj' adjustment value, default to 0.5 if not found
+      const adjValue = adjustValues.adj !== undefined ? adjustValues.adj : 0.5;
+      result.keypoints = [adjValue];
     }
 
     return result;
@@ -134,18 +163,13 @@ export class ShapeElement extends Element {
 
 
   private getThemeFill(): { color: string; debug?: any } {
-    console.log(`ShapeElement ${this.id}: fill=${JSON.stringify(this.fill)}`);
-    
     // Return actual fill color if available, prioritizing extracted colors
     if (this.fill && this.fill.color && this.fill.color !== 'rgba(0,0,0,0)') {
-      console.log(`ShapeElement ${this.id}: using extracted fill color ${this.fill.color}`);
       return { 
         color: this.fill.color,
         debug: `Extracted from fill: ${this.fill.color}`
       };
     }
-
-    console.log(`ShapeElement ${this.id}: no valid fill found, using fallback`);
     
     // Generate fallback colors for better visual compatibility (RGBA format)
     const colors = [
@@ -163,7 +187,6 @@ export class ShapeElement extends Element {
     }
     const index = Math.abs(hash) % colors.length;
     const fallbackColor = colors[index];
-    console.log(`ShapeElement ${this.id}: using fallback color ${fallbackColor}`);
     return { 
       color: fallbackColor,
       debug: `Fallback color - no extracted fill. Original fill was: ${JSON.stringify(this.fill)}. ID: ${this.id}`
