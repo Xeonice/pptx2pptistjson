@@ -1,0 +1,438 @@
+npm warn Unknown user config "home". This will stop working in the next major version of npm.
+
+> pptx2pptistjson@2.1.0 dev
+> next dev
+
+  ▲ Next.js 14.2.30
+  - Local:        http://localhost:3000
+  - Experiments (use with caution):
+    · serverSourceMaps
+
+ ✓ Starting...
+ ✓ Ready in 1814ms
+ ○ Compiling / ...
+ ✓ Compiled / in 7.7s (4118 modules)
+ GET / 200 in 7941ms
+ ✓ Compiled in 329ms (1440 modules)
+ ○ Compiling /api/parse-pptx ...
+ ✓ Compiled /api/parse-pptx in 1028ms (1678 modules)
+🔄 开始处理 PPTX 解析请求...
+📁 接收到文件: {
+  name: 'input.pptx',
+  size: 1754247,
+  type: 'application/vnd.openxmlformats-officedocument.presentationml.presentation'
+}
+📦 文件转换为 ArrayBuffer, 大小: 1754247
+🎯 输出格式: legacy
+☁️ 使用 CDN 存储: false
+🔄 开始解析 PPTX 文件...
+文件大小: 1754247
+文件名称: input.pptx
+输出格式: legacy
+📊 使用内部解析器解析...
+[Slide 1] Processing p:sp - Name: "矩形 6", ID: 7, HasBlipFill: true, HasText: false, HasShapeBackground: false
+[Slide 1] Processed as image
+[Slide 1] Processing p:sp - Name: "TextBox 84", ID: 6, HasBlipFill: false, HasText: true, HasShapeBackground: false
+[Slide 1] Processed as text
+[Slide 1] Processing p:sp - Name: "TextBox 84", ID: 10, HasBlipFill: false, HasText: true, HasShapeBackground: false
+[Slide 1] Processed as text
+[Slide 1] Processing p:sp - Name: "TextBox 84", ID: 13, HasBlipFill: false, HasText: true, HasShapeBackground: false
+[Slide 1] Processed as text
+[Slide 2] Processing p:sp - Name: "矩形 6", ID: 7, HasBlipFill: true, HasText: false, HasShapeBackground: false
+[Slide 2] Processed as image
+[Slide 2] Processing p:sp - Name: "MH_SubTitle_4", ID: 5, HasBlipFill: false, HasText: true, HasShapeBackground: true
+[Slide 2] Processed as text
+[Slide 2] Processed as shape
+[Slide 2] Processing p:sp - Name: "MH_Other_1", ID: 6, HasBlipFill: false, HasText: false, HasShapeBackground: true
+[Slide 2] Processed as shape
+[Slide 2] Processing p:sp - Name: "MH_Other_2", ID: 8, HasBlipFill: false, HasText: false, HasShapeBackground: true
+[Slide 2] Processed as shape
+[Slide 2] Processing p:sp - Name: "MH_Other_3", ID: 9, HasBlipFill: false, HasText: false, HasShapeBackground: true
+[Slide 2] Processed as shape
+[Slide 2] Processing p:sp - Name: "MH_Other_4", ID: 11, HasBlipFill: false, HasText: false, HasShapeBackground: true
+[Slide 2] Processed as shape
+[Slide 2] Processing p:sp - Name: "MH_SubTitle_1", ID: 12, HasBlipFill: false, HasText: true, HasShapeBackground: true
+[Slide 2] Processed as text
+[Slide 2] Processed as shape
+[Slide 2] Processing p:sp - Name: "MH_SubTitle_2", ID: 14, HasBlipFill: false, HasText: true, HasShapeBackground: true
+[Slide 2] Processed as text
+[Slide 2] Processed as shape
+[Slide 2] Processing p:sp - Name: "MH_SubTitle_3", ID: 15, HasBlipFill: false, HasText: true, HasShapeBackground: true
+[Slide 2] Processed as text
+[Slide 2] Processed as shape
+[Slide 2] Processing p:sp - Name: "MH_Title_1", ID: 17, HasBlipFill: false, HasText: true, HasShapeBackground: true
+[Slide 2] Processed as text
+[Slide 2] Processed as shape
+✅ 解析完成
+解析结果类型: object
+解析结果键名: [ 'width', 'height', 'slides', 'theme', 'title' ]
+🔍 第一个幻灯片的前3个元素位置:
+元素 1: {
+  type: 'image',
+  name: undefined,
+  left: 0.02,
+  top: 0.04,
+  width: 1349.9629058834726,
+  height: 759.2916345610157
+}
+元素 2: {
+  type: 'text',
+  name: undefined,
+  left: 841.32,
+  top: 268.13,
+  width: 387.55,
+  height: 32.31
+}
+元素 3: {
+  type: 'text',
+  name: undefined,
+  left: 828.2,
+  top: 299.67,
+  width: 465.73,
+  height: 216.47
+}
+🎉 API 响应准备完成
+ POST /api/parse-pptx 200 in 1216ms
+ GET / 200 in 428ms
+🔄 开始处理 PPTX 解析请求...
+📁 接收到文件: {
+  name: 'sample-background.pptx',
+  size: 1754247,
+  type: 'application/vnd.openxmlformats-officedocument.presentationml.presentation'
+}
+📦 文件转换为 ArrayBuffer, 大小: 1754247
+🎯 输出格式: pptist
+☁️ 使用 CDN 存储: false
+🔄 开始解析 PPTX 文件...
+文件大小: 1754247
+文件名称: sample-background.pptx
+输出格式: pptist
+📊 使用内部解析器解析...
+[Slide 1] Processing p:sp - Name: "矩形 6", ID: 7, HasBlipFill: true, HasText: false, HasShapeBackground: false
+[Slide 1] Processed as image
+[Slide 1] Processing p:sp - Name: "TextBox 84", ID: 6, HasBlipFill: false, HasText: true, HasShapeBackground: false
+[Slide 1] Processed as text
+[Slide 1] Processing p:sp - Name: "TextBox 84", ID: 10, HasBlipFill: false, HasText: true, HasShapeBackground: false
+[Slide 1] Processed as text
+[Slide 1] Processing p:sp - Name: "TextBox 84", ID: 13, HasBlipFill: false, HasText: true, HasShapeBackground: false
+[Slide 1] Processed as text
+[Slide 2] Processing p:sp - Name: "矩形 6", ID: 7, HasBlipFill: true, HasText: false, HasShapeBackground: false
+[Slide 2] Processed as image
+[Slide 2] Processing p:sp - Name: "MH_SubTitle_4", ID: 5, HasBlipFill: false, HasText: true, HasShapeBackground: true
+[Slide 2] Processed as text
+[Slide 2] Processed as shape
+[Slide 2] Processing p:sp - Name: "MH_Other_1", ID: 6, HasBlipFill: false, HasText: false, HasShapeBackground: true
+[Slide 2] Processed as shape
+[Slide 2] Processing p:sp - Name: "MH_Other_2", ID: 8, HasBlipFill: false, HasText: false, HasShapeBackground: true
+[Slide 2] Processed as shape
+[Slide 2] Processing p:sp - Name: "MH_Other_3", ID: 9, HasBlipFill: false, HasText: false, HasShapeBackground: true
+[Slide 2] Processed as shape
+[Slide 2] Processing p:sp - Name: "MH_Other_4", ID: 11, HasBlipFill: false, HasText: false, HasShapeBackground: true
+[Slide 2] Processed as shape
+[Slide 2] Processing p:sp - Name: "MH_SubTitle_1", ID: 12, HasBlipFill: false, HasText: true, HasShapeBackground: true
+[Slide 2] Processed as text
+[Slide 2] Processed as shape
+[Slide 2] Processing p:sp - Name: "MH_SubTitle_2", ID: 14, HasBlipFill: false, HasText: true, HasShapeBackground: true
+[Slide 2] Processed as text
+[Slide 2] Processed as shape
+[Slide 2] Processing p:sp - Name: "MH_SubTitle_3", ID: 15, HasBlipFill: false, HasText: true, HasShapeBackground: true
+[Slide 2] Processed as text
+[Slide 2] Processed as shape
+[Slide 2] Processing p:sp - Name: "MH_Title_1", ID: 17, HasBlipFill: false, HasText: true, HasShapeBackground: true
+[Slide 2] Processed as text
+[Slide 2] Processed as shape
+✅ 解析完成
+解析结果类型: object
+解析结果键名: [ 'width', 'height', 'slides', 'theme', 'title' ]
+🔍 第一个幻灯片的前3个元素位置:
+元素 1: {
+  type: 'image',
+  name: undefined,
+  left: 0.02,
+  top: 0.04,
+  width: 1349.9629058834726,
+  height: 759.2916345610157
+}
+元素 2: {
+  type: 'text',
+  name: undefined,
+  left: 841.32,
+  top: 268.13,
+  width: 387.55,
+  height: 32.31
+}
+元素 3: {
+  type: 'text',
+  name: undefined,
+  left: 828.2,
+  top: 299.67,
+  width: 465.73,
+  height: 216.47
+}
+🎉 API 响应准备完成
+ POST /api/parse-pptx 200 in 129ms
+ ○ Compiling /json-diff ...
+ ✓ Compiled /json-diff in 1199ms (3130 modules)
+ GET /json-diff 200 in 1340ms
+ ✓ Compiled in 604ms (2907 modules)
+ ○ Compiling /_not-found ...
+ ✓ Compiled /_not-found in 581ms (2896 modules)
+ GET /json-diff 404 in 681ms
+ GET /_next/static/css/app/layout.css?v=1751343712612 404 in 18ms
+ GET / 404 in 21ms
+ GET /_next/static/chunks/main-app.js?v=1751343712612 404 in 39ms
+ GET /_next/static/chunks/app-pages-internals.js 404 in 41ms
+ GET /_next/static/css/app/layout.css?v=1751343712793 404 in 30ms
+ GET /_next/static/chunks/app/layout.js 404 in 29ms
+ GET /_next/static/chunks/main-app.js?v=1751343712793 404 in 29ms
+ GET /_next/static/chunks/app-pages-internals.js 404 in 22ms
+ GET /_next/static/chunks/app/layout.js 404 in 25ms
+ GET / 404 in 21ms
+ GET /_next/static/css/app/layout.css?v=1751343714670 404 in 40ms
+ GET /_next/static/chunks/main-app.js?v=1751343714670 404 in 35ms
+ GET /_next/static/chunks/app/layout.js 404 in 35ms
+ GET /_next/static/chunks/app-pages-internals.js 404 in 35ms
+<w> [webpack.cache.PackFileCacheStrategy] Caching failed for pack: Error: ENOENT: no such file or directory, lstat '/home/hhtang/ExploreProject/pptxtojson/.next/server/app/_not-found'
+<w> [webpack.cache.PackFileCacheStrategy/webpack.FileSystemInfo] Resolving '../../../../.next/server/app/_not-found/page' in /home/hhtang/ExploreProject/pptxtojson/node_modules/next/dist/server for build dependencies doesn't lead to expected result '/home/hhtang/ExploreProject/pptxtojson/.next/server/app/_not-found/page.js', but to 'Error: Can't resolve '../../../../.next/server/app/_not-found/page' in '/home/hhtang/ExploreProject/pptxtojson/node_modules/next/dist/server'' instead. Resolving dependencies are ignored for this path.
+<w>  at resolve commonjs file ../../../../.next/server/app/_not-found/page (expected /home/hhtang/ExploreProject/pptxtojson/.next/server/app/_not-found/page.js)
+<w>  at file dependencies /home/hhtang/ExploreProject/pptxtojson/node_modules/next/dist/server/require.js
+<w>  at file /home/hhtang/ExploreProject/pptxtojson/node_modules/next/dist/server/require.js
+<w>  at file dependencies /home/hhtang/ExploreProject/pptxtojson/node_modules/next/dist/server/load-components.js
+<w>  at file /home/hhtang/ExploreProject/pptxtojson/node_modules/next/dist/server/load-components.js
+<w>  at file dependencies /home/hhtang/ExploreProject/pptxtojson/node_modules/next/dist/build/utils.js
+<w>  at file /home/hhtang/ExploreProject/pptxtojson/node_modules/next/dist/build/utils.js
+<w>  at file dependencies /home/hhtang/ExploreProject/pptxtojson/node_modules/next/dist/build/webpack/loaders/next-app-loader.js
+<w>  at file /home/hhtang/ExploreProject/pptxtojson/node_modules/next/dist/build/webpack/loaders/next-app-loader.js
+<w>  at file dependencies /home/hhtang/ExploreProject/pptxtojson/node_modules/next/dist/compiled/loader-runner/LoaderRunner.js
+<w>  at file /home/hhtang/ExploreProject/pptxtojson/node_modules/next/dist/compiled/loader-runner/LoaderRunner.js
+<w>  at file dependencies /home/hhtang/ExploreProject/pptxtojson/node_modules/next/dist/compiled/webpack/bundle5.js
+<w>  at file /home/hhtang/ExploreProject/pptxtojson/node_modules/next/dist/compiled/webpack/bundle5.js
+<w>  at file dependencies /home/hhtang/ExploreProject/pptxtojson/node_modules/next/dist/compiled/webpack/webpack.js
+<w>  at file /home/hhtang/ExploreProject/pptxtojson/node_modules/next/dist/compiled/webpack/webpack.js
+<w>  at file dependencies /home/hhtang/ExploreProject/pptxtojson/node_modules/next/dist/build/webpack/plugins/define-env-plugin.js
+<w>  at file /home/hhtang/ExploreProject/pptxtojson/node_modules/next/dist/build/webpack/plugins/define-env-plugin.js
+<w>  at file dependencies /home/hhtang/ExploreProject/pptxtojson/node_modules/next/dist/build/swc/index.js
+<w>  at file /home/hhtang/ExploreProject/pptxtojson/node_modules/next/dist/build/swc/index.js
+<w>  at file dependencies /home/hhtang/ExploreProject/pptxtojson/node_modules/next/dist/build/webpack/loaders/next-barrel-loader.js
+<w>  at file /home/hhtang/ExploreProject/pptxtojson/node_modules/next/dist/build/webpack/loaders/next-barrel-loader.js
+<w>  at resolve commonjs /home/hhtang/ExploreProject/pptxtojson/node_modules/next/dist/build/webpack/loaders/next-barrel-loader.js
+ ✓ Compiled in 609ms (1452 modules)
+<w> [webpack.cache.PackFileCacheStrategy] Caching failed for pack: Error: ENOENT: no such file or directory, lstat '/home/hhtang/ExploreProject/pptxtojson/.next/server/vendor-chunks'
+<w> [webpack.cache.PackFileCacheStrategy/webpack.FileSystemInfo] Resolving './vendor-chunks/@vercel' in /home/hhtang/ExploreProject/pptxtojson/.next/server for build dependencies doesn't lead to expected result '/home/hhtang/ExploreProject/pptxtojson/.next/server/vendor-chunks/@vercel.js', but to 'Error: Can't resolve './vendor-chunks/@vercel' in '/home/hhtang/ExploreProject/pptxtojson/.next/server'' instead. Resolving dependencies are ignored for this path.
+<w>  at resolve commonjs file ./vendor-chunks/@vercel (expected /home/hhtang/ExploreProject/pptxtojson/.next/server/vendor-chunks/@vercel.js)
+<w>  at file dependencies /home/hhtang/ExploreProject/pptxtojson/.next/server/webpack-runtime.js
+<w>  at file /home/hhtang/ExploreProject/pptxtojson/.next/server/webpack-runtime.js
+<w>  at file dependencies /home/hhtang/ExploreProject/pptxtojson/.next/server/app/_not-found/page.js
+<w>  at file /home/hhtang/ExploreProject/pptxtojson/.next/server/app/_not-found/page.js
+<w>  at file dependencies /home/hhtang/ExploreProject/pptxtojson/node_modules/next/dist/server/require.js
+<w>  at file /home/hhtang/ExploreProject/pptxtojson/node_modules/next/dist/server/require.js
+<w>  at file dependencies /home/hhtang/ExploreProject/pptxtojson/node_modules/next/dist/server/load-components.js
+<w>  at file /home/hhtang/ExploreProject/pptxtojson/node_modules/next/dist/server/load-components.js
+<w>  at file dependencies /home/hhtang/ExploreProject/pptxtojson/node_modules/next/dist/build/utils.js
+<w>  at file /home/hhtang/ExploreProject/pptxtojson/node_modules/next/dist/build/utils.js
+<w>  at file dependencies /home/hhtang/ExploreProject/pptxtojson/node_modules/next/dist/build/webpack/plugins/flight-client-entry-plugin.js
+<w>  at file /home/hhtang/ExploreProject/pptxtojson/node_modules/next/dist/build/webpack/plugins/flight-client-entry-plugin.js
+<w>  at file dependencies /home/hhtang/ExploreProject/pptxtojson/node_modules/next/dist/build/webpack-config.js
+<w>  at file /home/hhtang/ExploreProject/pptxtojson/node_modules/next/dist/build/webpack-config.js
+<w>  at file dependencies /home/hhtang/ExploreProject/pptxtojson/node_modules/next/dist/build/webpack/loaders/next-swc-loader.js
+<w>  at file /home/hhtang/ExploreProject/pptxtojson/node_modules/next/dist/build/webpack/loaders/next-swc-loader.js
+<w>  at file dependencies /home/hhtang/ExploreProject/pptxtojson/node_modules/next/dist/compiled/loader-runner/LoaderRunner.js
+<w>  at file /home/hhtang/ExploreProject/pptxtojson/node_modules/next/dist/compiled/loader-runner/LoaderRunner.js
+<w>  at file dependencies /home/hhtang/ExploreProject/pptxtojson/node_modules/next/dist/compiled/webpack/bundle5.js
+<w>  at file /home/hhtang/ExploreProject/pptxtojson/node_modules/next/dist/compiled/webpack/bundle5.js
+<w>  at file dependencies /home/hhtang/ExploreProject/pptxtojson/node_modules/next/dist/compiled/webpack/webpack.js
+<w>  at file /home/hhtang/ExploreProject/pptxtojson/node_modules/next/dist/compiled/webpack/webpack.js
+<w>  at file dependencies /home/hhtang/ExploreProject/pptxtojson/node_modules/next/dist/build/webpack/plugins/define-env-plugin.js
+<w>  at file /home/hhtang/ExploreProject/pptxtojson/node_modules/next/dist/build/webpack/plugins/define-env-plugin.js
+<w>  at file dependencies /home/hhtang/ExploreProject/pptxtojson/node_modules/next/dist/build/swc/index.js
+<w>  at file /home/hhtang/ExploreProject/pptxtojson/node_modules/next/dist/build/swc/index.js
+<w>  at file dependencies /home/hhtang/ExploreProject/pptxtojson/node_modules/next/dist/build/webpack/loaders/next-barrel-loader.js
+<w>  at file /home/hhtang/ExploreProject/pptxtojson/node_modules/next/dist/build/webpack/loaders/next-barrel-loader.js
+<w>  at resolve commonjs /home/hhtang/ExploreProject/pptxtojson/node_modules/next/dist/build/webpack/loaders/next-barrel-loader.js
+<w> [webpack.cache.PackFileCacheStrategy/webpack.FileSystemInfo] Resolving './vendor-chunks/@swc' in /home/hhtang/ExploreProject/pptxtojson/.next/server for build dependencies doesn't lead to expected result '/home/hhtang/ExploreProject/pptxtojson/.next/server/vendor-chunks/@swc.js', but to 'Error: Can't resolve './vendor-chunks/@swc' in '/home/hhtang/ExploreProject/pptxtojson/.next/server'' instead. Resolving dependencies are ignored for this path.
+<w>  at resolve commonjs file ./vendor-chunks/@swc (expected /home/hhtang/ExploreProject/pptxtojson/.next/server/vendor-chunks/@swc.js)
+<w>  at file dependencies /home/hhtang/ExploreProject/pptxtojson/.next/server/webpack-runtime.js
+<w>  at file /home/hhtang/ExploreProject/pptxtojson/.next/server/webpack-runtime.js
+<w>  at file dependencies /home/hhtang/ExploreProject/pptxtojson/.next/server/app/_not-found/page.js
+<w>  at file /home/hhtang/ExploreProject/pptxtojson/.next/server/app/_not-found/page.js
+<w>  at file dependencies /home/hhtang/ExploreProject/pptxtojson/node_modules/next/dist/server/require.js
+<w>  at file /home/hhtang/ExploreProject/pptxtojson/node_modules/next/dist/server/require.js
+<w>  at file dependencies /home/hhtang/ExploreProject/pptxtojson/node_modules/next/dist/server/load-components.js
+<w>  at file /home/hhtang/ExploreProject/pptxtojson/node_modules/next/dist/server/load-components.js
+<w>  at file dependencies /home/hhtang/ExploreProject/pptxtojson/node_modules/next/dist/build/utils.js
+<w>  at file /home/hhtang/ExploreProject/pptxtojson/node_modules/next/dist/build/utils.js
+<w>  at file dependencies /home/hhtang/ExploreProject/pptxtojson/node_modules/next/dist/build/webpack/plugins/flight-client-entry-plugin.js
+<w>  at file /home/hhtang/ExploreProject/pptxtojson/node_modules/next/dist/build/webpack/plugins/flight-client-entry-plugin.js
+<w>  at file dependencies /home/hhtang/ExploreProject/pptxtojson/node_modules/next/dist/build/webpack-config.js
+<w>  at file /home/hhtang/ExploreProject/pptxtojson/node_modules/next/dist/build/webpack-config.js
+<w>  at file dependencies /home/hhtang/ExploreProject/pptxtojson/node_modules/next/dist/build/webpack/loaders/next-swc-loader.js
+<w>  at file /home/hhtang/ExploreProject/pptxtojson/node_modules/next/dist/build/webpack/loaders/next-swc-loader.js
+<w>  at file dependencies /home/hhtang/ExploreProject/pptxtojson/node_modules/next/dist/compiled/loader-runner/LoaderRunner.js
+<w>  at file /home/hhtang/ExploreProject/pptxtojson/node_modules/next/dist/compiled/loader-runner/LoaderRunner.js
+<w>  at file dependencies /home/hhtang/ExploreProject/pptxtojson/node_modules/next/dist/compiled/webpack/bundle5.js
+<w>  at file /home/hhtang/ExploreProject/pptxtojson/node_modules/next/dist/compiled/webpack/bundle5.js
+<w>  at file dependencies /home/hhtang/ExploreProject/pptxtojson/node_modules/next/dist/compiled/webpack/webpack.js
+<w>  at file /home/hhtang/ExploreProject/pptxtojson/node_modules/next/dist/compiled/webpack/webpack.js
+<w>  at file dependencies /home/hhtang/ExploreProject/pptxtojson/node_modules/next/dist/build/webpack/plugins/define-env-plugin.js
+<w>  at file /home/hhtang/ExploreProject/pptxtojson/node_modules/next/dist/build/webpack/plugins/define-env-plugin.js
+<w>  at file dependencies /home/hhtang/ExploreProject/pptxtojson/node_modules/next/dist/build/swc/index.js
+<w>  at file /home/hhtang/ExploreProject/pptxtojson/node_modules/next/dist/build/swc/index.js
+<w>  at file dependencies /home/hhtang/ExploreProject/pptxtojson/node_modules/next/dist/build/webpack/loaders/next-barrel-loader.js
+<w>  at file /home/hhtang/ExploreProject/pptxtojson/node_modules/next/dist/build/webpack/loaders/next-barrel-loader.js
+<w>  at resolve commonjs /home/hhtang/ExploreProject/pptxtojson/node_modules/next/dist/build/webpack/loaders/next-barrel-loader.js
+<w> [webpack.cache.PackFileCacheStrategy/webpack.FileSystemInfo] Resolving './vendor-chunks/next' in /home/hhtang/ExploreProject/pptxtojson/.next/server for build dependencies doesn't lead to expected result '/home/hhtang/ExploreProject/pptxtojson/.next/server/vendor-chunks/next.js', but to 'Error: Can't resolve './vendor-chunks/next' in '/home/hhtang/ExploreProject/pptxtojson/.next/server'' instead. Resolving dependencies are ignored for this path.
+<w>  at resolve commonjs file ./vendor-chunks/next (expected /home/hhtang/ExploreProject/pptxtojson/.next/server/vendor-chunks/next.js)
+<w>  at file dependencies /home/hhtang/ExploreProject/pptxtojson/.next/server/webpack-runtime.js
+<w>  at file /home/hhtang/ExploreProject/pptxtojson/.next/server/webpack-runtime.js
+<w>  at file dependencies /home/hhtang/ExploreProject/pptxtojson/.next/server/app/_not-found/page.js
+<w>  at file /home/hhtang/ExploreProject/pptxtojson/.next/server/app/_not-found/page.js
+<w>  at file dependencies /home/hhtang/ExploreProject/pptxtojson/node_modules/next/dist/server/require.js
+<w>  at file /home/hhtang/ExploreProject/pptxtojson/node_modules/next/dist/server/require.js
+<w>  at file dependencies /home/hhtang/ExploreProject/pptxtojson/node_modules/next/dist/server/load-components.js
+<w>  at file /home/hhtang/ExploreProject/pptxtojson/node_modules/next/dist/server/load-components.js
+<w>  at file dependencies /home/hhtang/ExploreProject/pptxtojson/node_modules/next/dist/build/utils.js
+<w>  at file /home/hhtang/ExploreProject/pptxtojson/node_modules/next/dist/build/utils.js
+<w>  at file dependencies /home/hhtang/ExploreProject/pptxtojson/node_modules/next/dist/build/webpack/plugins/flight-client-entry-plugin.js
+<w>  at file /home/hhtang/ExploreProject/pptxtojson/node_modules/next/dist/build/webpack/plugins/flight-client-entry-plugin.js
+<w>  at file dependencies /home/hhtang/ExploreProject/pptxtojson/node_modules/next/dist/build/webpack-config.js
+<w>  at file /home/hhtang/ExploreProject/pptxtojson/node_modules/next/dist/build/webpack-config.js
+<w>  at file dependencies /home/hhtang/ExploreProject/pptxtojson/node_modules/next/dist/build/webpack/loaders/next-swc-loader.js
+<w>  at file /home/hhtang/ExploreProject/pptxtojson/node_modules/next/dist/build/webpack/loaders/next-swc-loader.js
+<w>  at file dependencies /home/hhtang/ExploreProject/pptxtojson/node_modules/next/dist/compiled/loader-runner/LoaderRunner.js
+<w>  at file /home/hhtang/ExploreProject/pptxtojson/node_modules/next/dist/compiled/loader-runner/LoaderRunner.js
+<w>  at file dependencies /home/hhtang/ExploreProject/pptxtojson/node_modules/next/dist/compiled/webpack/bundle5.js
+<w>  at file /home/hhtang/ExploreProject/pptxtojson/node_modules/next/dist/compiled/webpack/bundle5.js
+<w>  at file dependencies /home/hhtang/ExploreProject/pptxtojson/node_modules/next/dist/compiled/webpack/webpack.js
+<w>  at file /home/hhtang/ExploreProject/pptxtojson/node_modules/next/dist/compiled/webpack/webpack.js
+<w>  at file dependencies /home/hhtang/ExploreProject/pptxtojson/node_modules/next/dist/build/webpack/plugins/define-env-plugin.js
+<w>  at file /home/hhtang/ExploreProject/pptxtojson/node_modules/next/dist/build/webpack/plugins/define-env-plugin.js
+<w>  at file dependencies /home/hhtang/ExploreProject/pptxtojson/node_modules/next/dist/build/swc/index.js
+<w>  at file /home/hhtang/ExploreProject/pptxtojson/node_modules/next/dist/build/swc/index.js
+<w>  at file dependencies /home/hhtang/ExploreProject/pptxtojson/node_modules/next/dist/build/webpack/loaders/next-barrel-loader.js
+<w>  at file /home/hhtang/ExploreProject/pptxtojson/node_modules/next/dist/build/webpack/loaders/next-barrel-loader.js
+<w>  at resolve commonjs /home/hhtang/ExploreProject/pptxtojson/node_modules/next/dist/build/webpack/loaders/next-barrel-loader.js
+ ✓ Compiled in 2.4s (2907 modules)
+ ✓ Compiled in 272ms (1452 modules)
+ ✓ Compiled in 240ms (1452 modules)
+<w> [webpack.cache.PackFileCacheStrategy] Caching failed for pack: Error: ENOENT: no such file or directory, rename '/home/hhtang/ExploreProject/pptxtojson/.next/cache/webpack/server-development/0.pack.gz_' -> '/home/hhtang/ExploreProject/pptxtojson/.next/cache/webpack/server-development/0.pack.gz'
+ ✓ Compiled in 367ms (1452 modules)
+ ✓ Compiled in 205ms (1452 modules)
+<w> [webpack.cache.PackFileCacheStrategy] Caching failed for pack: Error: ENOENT: no such file or directory, rename '/home/hhtang/ExploreProject/pptxtojson/.next/cache/webpack/client-development/1.pack.gz_' -> '/home/hhtang/ExploreProject/pptxtojson/.next/cache/webpack/client-development/1.pack.gz'
+ ✓ Compiled in 283ms (1452 modules)
+ ✓ Compiled in 191ms (1452 modules)
+ ✓ Compiled in 386ms (1452 modules)
+ ✓ Compiled in 310ms (1452 modules)
+ ✓ Compiled in 222ms (1452 modules)
+ ✓ Compiled in 233ms (1452 modules)
+ ✓ Compiled in 240ms (1452 modules)
+ ✓ Compiled in 903ms (1452 modules)
+<w> [webpack.cache.PackFileCacheStrategy] Caching failed for pack: Error: ENOENT: no such file or directory, lstat '/home/hhtang/ExploreProject/pptxtojson/.next/server/app/_not-found'
+<w> [webpack.cache.PackFileCacheStrategy/webpack.FileSystemInfo] Resolving '../../../../.next/server/app/_not-found/page' in /home/hhtang/ExploreProject/pptxtojson/node_modules/next/dist/server for build dependencies doesn't lead to expected result '/home/hhtang/ExploreProject/pptxtojson/.next/server/app/_not-found/page.js', but to 'Error: Can't resolve '../../../../.next/server/app/_not-found/page' in '/home/hhtang/ExploreProject/pptxtojson/node_modules/next/dist/server'' instead. Resolving dependencies are ignored for this path.
+<w>  at resolve commonjs file ../../../../.next/server/app/_not-found/page (expected /home/hhtang/ExploreProject/pptxtojson/.next/server/app/_not-found/page.js)
+<w>  at file dependencies /home/hhtang/ExploreProject/pptxtojson/node_modules/next/dist/server/require.js
+<w>  at file /home/hhtang/ExploreProject/pptxtojson/node_modules/next/dist/server/require.js
+<w>  at file dependencies /home/hhtang/ExploreProject/pptxtojson/node_modules/next/dist/server/load-components.js
+<w>  at file /home/hhtang/ExploreProject/pptxtojson/node_modules/next/dist/server/load-components.js
+<w>  at file dependencies /home/hhtang/ExploreProject/pptxtojson/node_modules/next/dist/build/utils.js
+<w>  at file /home/hhtang/ExploreProject/pptxtojson/node_modules/next/dist/build/utils.js
+<w>  at file dependencies /home/hhtang/ExploreProject/pptxtojson/node_modules/next/dist/build/webpack/loaders/next-route-loader/index.js
+<w>  at file /home/hhtang/ExploreProject/pptxtojson/node_modules/next/dist/build/webpack/loaders/next-route-loader/index.js
+<w>  at file dependencies /home/hhtang/ExploreProject/pptxtojson/node_modules/next/dist/build/entries.js
+<w>  at file /home/hhtang/ExploreProject/pptxtojson/node_modules/next/dist/build/entries.js
+<w>  at file dependencies /home/hhtang/ExploreProject/pptxtojson/node_modules/next/dist/build/webpack/plugins/next-types-plugin/index.js
+<w>  at file /home/hhtang/ExploreProject/pptxtojson/node_modules/next/dist/build/webpack/plugins/next-types-plugin/index.js
+<w>  at file dependencies /home/hhtang/ExploreProject/pptxtojson/node_modules/next/dist/build/webpack-config.js
+<w>  at file /home/hhtang/ExploreProject/pptxtojson/node_modules/next/dist/build/webpack-config.js
+<w>  at file dependencies /home/hhtang/ExploreProject/pptxtojson/node_modules/next/dist/build/webpack/loaders/next-swc-loader.js
+<w>  at file /home/hhtang/ExploreProject/pptxtojson/node_modules/next/dist/build/webpack/loaders/next-swc-loader.js
+<w>  at file dependencies /home/hhtang/ExploreProject/pptxtojson/node_modules/next/dist/compiled/loader-runner/LoaderRunner.js
+<w>  at file /home/hhtang/ExploreProject/pptxtojson/node_modules/next/dist/compiled/loader-runner/LoaderRunner.js
+<w>  at file dependencies /home/hhtang/ExploreProject/pptxtojson/node_modules/next/dist/compiled/webpack/bundle5.js
+<w>  at file /home/hhtang/ExploreProject/pptxtojson/node_modules/next/dist/compiled/webpack/bundle5.js
+<w>  at file dependencies /home/hhtang/ExploreProject/pptxtojson/node_modules/next/dist/compiled/webpack/webpack.js
+<w>  at file /home/hhtang/ExploreProject/pptxtojson/node_modules/next/dist/compiled/webpack/webpack.js
+<w>  at file dependencies /home/hhtang/ExploreProject/pptxtojson/node_modules/next/dist/build/webpack/plugins/define-env-plugin.js
+<w>  at file /home/hhtang/ExploreProject/pptxtojson/node_modules/next/dist/build/webpack/plugins/define-env-plugin.js
+<w>  at file dependencies /home/hhtang/ExploreProject/pptxtojson/node_modules/next/dist/build/swc/index.js
+<w>  at file /home/hhtang/ExploreProject/pptxtojson/node_modules/next/dist/build/swc/index.js
+<w>  at file dependencies /home/hhtang/ExploreProject/pptxtojson/node_modules/next/dist/build/webpack/loaders/next-barrel-loader.js
+<w>  at file /home/hhtang/ExploreProject/pptxtojson/node_modules/next/dist/build/webpack/loaders/next-barrel-loader.js
+<w>  at resolve commonjs /home/hhtang/ExploreProject/pptxtojson/node_modules/next/dist/build/webpack/loaders/next-barrel-loader.js
+ ✓ Compiled in 433ms (1452 modules)
+ ○ Compiling /api/parse-pptx ...
+ ✓ Compiled /api/parse-pptx in 579ms (1695 modules)
+🔄 开始处理 PPTX 解析请求...
+📁 接收到文件: { name: 'input.pptx', size: 1754247, type: 'application/octet-stream' }
+📦 文件转换为 ArrayBuffer, 大小: 1754247
+🎯 输出格式: legacy
+☁️ 使用 CDN 存储: false
+🔄 开始解析 PPTX 文件...
+文件大小: 1754247
+文件名称: input.pptx
+输出格式: legacy
+📊 使用内部解析器解析...
+[Slide 1] Processing p:sp - Name: "矩形 6", ID: 7, HasBlipFill: true, HasText: false, HasShapeBackground: false
+[Slide 1] Processed as image
+[Slide 1] Processing p:sp - Name: "TextBox 84", ID: 6, HasBlipFill: false, HasText: true, HasShapeBackground: false
+[Slide 1] Processed as text
+[Slide 1] Processing p:sp - Name: "TextBox 84", ID: 10, HasBlipFill: false, HasText: true, HasShapeBackground: false
+[Slide 1] Processed as text
+[Slide 1] Processing p:sp - Name: "TextBox 84", ID: 13, HasBlipFill: false, HasText: true, HasShapeBackground: false
+[Slide 1] Processed as text
+[Slide 2] Processing p:sp - Name: "矩形 6", ID: 7, HasBlipFill: true, HasText: false, HasShapeBackground: false
+[Slide 2] Processed as image
+[Slide 2] Processing p:sp - Name: "MH_SubTitle_4", ID: 5, HasBlipFill: false, HasText: true, HasShapeBackground: true
+[Slide 2] Processed as text
+[Slide 2] Processed as shape
+[Slide 2] Processing p:sp - Name: "MH_Other_1", ID: 6, HasBlipFill: false, HasText: false, HasShapeBackground: true
+[Slide 2] Processed as shape
+[Slide 2] Processing p:sp - Name: "MH_Other_2", ID: 8, HasBlipFill: false, HasText: false, HasShapeBackground: true
+[Slide 2] Processed as shape
+[Slide 2] Processing p:sp - Name: "MH_Other_3", ID: 9, HasBlipFill: false, HasText: false, HasShapeBackground: true
+[Slide 2] Processed as shape
+[Slide 2] Processing p:sp - Name: "MH_Other_4", ID: 11, HasBlipFill: false, HasText: false, HasShapeBackground: true
+[Slide 2] Processed as shape
+[Slide 2] Processing p:sp - Name: "MH_SubTitle_1", ID: 12, HasBlipFill: false, HasText: true, HasShapeBackground: true
+[Slide 2] Processed as text
+[Slide 2] Processed as shape
+[Slide 2] Processing p:sp - Name: "MH_SubTitle_2", ID: 14, HasBlipFill: false, HasText: true, HasShapeBackground: true
+[Slide 2] Processed as text
+[Slide 2] Processed as shape
+[Slide 2] Processing p:sp - Name: "MH_SubTitle_3", ID: 15, HasBlipFill: false, HasText: true, HasShapeBackground: true
+[Slide 2] Processed as text
+[Slide 2] Processed as shape
+[Slide 2] Processing p:sp - Name: "MH_Title_1", ID: 17, HasBlipFill: false, HasText: true, HasShapeBackground: true
+[Slide 2] Processed as text
+[Slide 2] Processed as shape
+✅ 解析完成
+解析结果类型: object
+解析结果键名: [ 'width', 'height', 'slides', 'theme', 'title' ]
+🔍 第一个幻灯片的前3个元素位置:
+元素 1: {
+  type: 'image',
+  name: undefined,
+  left: 0.02,
+  top: 0.04,
+  width: 1349.9629058834726,
+  height: 759.2916345610157
+}
+元素 2: {
+  type: 'text',
+  name: undefined,
+  left: 841.32,
+  top: 268.13,
+  width: 387.55,
+  height: 32.31
+}
+元素 3: {
+  type: 'text',
+  name: undefined,
+  left: 828.2,
+  top: 299.67,
+  width: 465.73,
+  height: 216.47
+}
+🎉 API 响应准备完成
+ POST /api/parse-pptx 200 in 1100ms
+<w> [webpack.cache.PackFileCacheStrategy] Caching failed for pack: Error: ENOENT: no such file or directory, rename '/home/hhtang/ExploreProject/pptxtojson/.next/cache/webpack/client-development/4.pack.gz_' -> '/home/hhtang/ExploreProject/pptxtojson/.next/cache/webpack/client-development/4.pack.gz'
+[?25h

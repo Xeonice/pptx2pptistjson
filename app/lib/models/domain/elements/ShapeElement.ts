@@ -3,8 +3,13 @@ import { Element } from "./Element";
 export class ShapeElement extends Element {
   private shapeType: ShapeType;
   private path?: string;
+  private pathFormula?: string;
   private text?: TextContent;
   private fill?: { color: string };
+  private stroke?: StrokeProperties;
+  private flip?: { horizontal: boolean; vertical: boolean };
+  private connectionInfo?: ConnectionInfo;
+  private adjustmentValues?: Record<string, number>;
 
   constructor(id: string, shapeType: ShapeType) {
     super(id, "shape");
@@ -23,21 +28,55 @@ export class ShapeElement extends Element {
     return this.path;
   }
 
+  setPathFormula(pathFormula: string): void {
+    this.pathFormula = pathFormula;
+  }
+
+  getPathFormula(): string | undefined {
+    return this.pathFormula;
+  }
+
+  setAdjustmentValues(adjustmentValues: Record<string, number>): void {
+    this.adjustmentValues = adjustmentValues;
+  }
+
+  getAdjustmentValues(): Record<string, number> {
+    return this.adjustmentValues || {};
+  }
+
   /**
    * Get the SVG path for JSON serialization (expose private method for testing)
    */
   getShapePath(): string {
-    return this.getShapePathInternal();
+    return this.path || this.getShapePathInternal();
   }
 
   private getShapePathInternal(): string {
     // Generate SVG path based on shape type
     switch (this.shapeType) {
-      case "ellipse":
-        return "M 100 0 A 50 50 0 1 1 100 200 A 50 50 0 1 1 100 0 Z";
-      case "rect":
-      case "roundRect":
-        return "M 0 0 L 200 0 L 200 200 L 0 200 Z";
+      case "ellipse": {
+        const w = this.size?.width || 200;
+        const h = this.size?.height || 200;
+        const cx = w / 2;
+        const rx = w / 2;
+        const ry = h / 2;
+        return `M ${cx} 0 A ${rx} ${ry} 0 1 1 ${cx} ${h} A ${rx} ${ry} 0 1 1 ${cx} 0 Z`;
+      }
+      case "rect": {
+        const w = this.size?.width || 200;
+        const h = this.size?.height || 200;
+        return `M 0 0 L ${w} 0 L ${w} ${h} L 0 ${h} Z`;
+      }
+      case "roundRect": {
+        const adjustValues = this.getAdjustmentValues();
+        const adjValue = adjustValues.adj !== undefined ? adjustValues.adj : 0.1;
+        const w = this.size?.width || 200;
+        const h = this.size?.height || 200;
+        const roundRectRx = Math.min(w, h) * adjValue;
+        
+        // Always generate rounded rectangle path (no circle conversion)
+        return `M ${roundRectRx} 0 L ${w - roundRectRx} 0 Q ${w} 0 ${w} ${roundRectRx} L ${w} ${h - roundRectRx} Q ${w} ${h} ${w - roundRectRx} ${h} L ${roundRectRx} ${h} Q 0 ${h} 0 ${h - roundRectRx} L 0 ${roundRectRx} Q 0 0 ${roundRectRx} 0 Z`;
+      }
       case "triangle":
         return "M 100 0 L 200 200 L 0 200 Z";
       case "diamond":
@@ -63,37 +102,82 @@ export class ShapeElement extends Element {
     return this.fill;
   }
 
+  setStroke(stroke: StrokeProperties): void {
+    this.stroke = stroke;
+  }
+
+  getStroke(): StrokeProperties | undefined {
+    return this.stroke;
+  }
+
+  setFlip(flip: { horizontal: boolean; vertical: boolean }): void {
+    this.flip = flip;
+  }
+
+  getFlip(): { horizontal: boolean; vertical: boolean } | undefined {
+    return this.flip;
+  }
+
+  setConnectionInfo(connectionInfo: ConnectionInfo): void {
+    this.connectionInfo = connectionInfo;
+  }
+
+  getConnectionInfo(): ConnectionInfo | undefined {
+    return this.connectionInfo;
+  }
+
+  setTextContent(content: string): void {
+    this.text = { content };
+  }
+
   toJSON(): any {
-    return {
+    const themeFill = this.getThemeFill();
+    const result: any = {
       type: this.type,
       id: this.id,
       left: this.position?.x || 0,
       top: this.position?.y || 0,
       width: this.size?.width || 0,
       height: this.size?.height || 0,
-      viewBox: [200, 200],
-      path: this.getShapePathInternal(),
-      themeFill: this.getThemeFill(),
+      viewBox: [this.size?.width || 200, this.size?.height || 200],
+      path: this.path || this.getShapePathInternal(),
+      pathFormula: this.pathFormula,
+      shape: this.shapeType,
+      fill: themeFill.color, // String format for frontend rendering
+      themeFill: themeFill,  // Object format for theme management
       fixedRatio: false,
       rotate: this.rotation || 0,
       enableShrink: true,
     };
+
+    // Add keypoints property for roundRect shapes
+    if (this.shapeType === "roundRect") {
+      const adjustValues = this.getAdjustmentValues();
+      // Use 'adj' adjustment value, default to 0.5 if not found
+      const adjValue = adjustValues.adj !== undefined ? adjustValues.adj : 0.5;
+      result.keypoints = [adjValue];
+    }
+
+    return result;
   }
 
 
-  private getThemeFill(): { color: string } {
-    // Use actual fill color if available, otherwise fallback to default
-    if (this.fill) {
-      return this.fill;
+  private getThemeFill(): { color: string; debug?: any } {
+    // Return actual fill color if available, prioritizing extracted colors
+    if (this.fill && this.fill.color && this.fill.color !== 'rgba(0,0,0,0)') {
+      return { 
+        color: this.fill.color,
+        debug: `Extracted from fill: ${this.fill.color}`
+      };
     }
-
-    // Generate random-ish colors for shapes as fallback
+    
+    // Generate fallback colors for better visual compatibility (RGBA format)
     const colors = [
-      "rgba(255,137,137,1)",
-      "rgba(216,241,255,1)",
-      "rgba(255,219,65,1)",
-      "rgba(144,238,144,1)",
-      "rgba(255,182,193,1)",
+      "rgba(255,137,137,1)",   // Red
+      "rgba(216,241,255,1)",   // Light Blue  
+      "rgba(255,219,65,1)",    // Yellow
+      "rgba(144,238,144,1)",   // Light Green
+      "rgba(255,182,193,1)",   // Light Pink
     ];
     
     // Create a simple hash from the ID to get consistent color selection
@@ -102,7 +186,11 @@ export class ShapeElement extends Element {
       hash = ((hash << 5) - hash + this.id.charCodeAt(i)) & 0xffffffff;
     }
     const index = Math.abs(hash) % colors.length;
-    return { color: colors[index] };
+    const fallbackColor = colors[index];
+    return { 
+      color: fallbackColor,
+      debug: `Fallback color - no extracted fill. Original fill was: ${JSON.stringify(this.fill)}. ID: ${this.id}`
+    };
   }
 }
 
@@ -120,7 +208,11 @@ export type ShapeType =
   | "star"
   | "arrow"
   | "callout"
-  | "custom";
+  | "custom"
+  | "line"
+  | "bentConnector"
+  | "curvedConnector"
+  | "doubleArrow";
 
 export interface TextContent {
   content: string;
@@ -132,5 +224,31 @@ export interface TextContent {
     color?: string;
     align?: "left" | "center" | "right";
     valign?: "top" | "middle" | "bottom";
+  };
+}
+
+export interface StrokeProperties {
+  width?: number;
+  cap?: string;
+  compound?: string;
+  dashType?: string;
+  headArrow?: ArrowProperties;
+  tailArrow?: ArrowProperties;
+}
+
+export interface ArrowProperties {
+  type: string;
+  width?: string;
+  length?: string;
+}
+
+export interface ConnectionInfo {
+  startConnection?: {
+    id: string;
+    index?: string;
+  };
+  endConnection?: {
+    id: string;
+    index?: string;
   };
 }

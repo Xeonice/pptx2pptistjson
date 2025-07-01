@@ -5,6 +5,8 @@ import { ColorTestUtils } from '../helpers/color-test-utils';
 import { colorTestData } from '../fixtures/color-test-data';
 import { XmlNode } from '../../app/lib/models/xml/XmlNode';
 import { ProcessingContext } from '../../app/lib/services/interfaces/ProcessingContext';
+import { TextElement } from '../../app/lib/models/domain/elements/TextElement';
+import { ShapeElement } from '../../app/lib/models/domain/elements/ShapeElement';
 import JSZip from 'jszip';
 
 describe('TextProcessor Color Integration Tests', () => {
@@ -38,6 +40,14 @@ describe('TextProcessor Color Integration Tests', () => {
     idGenerator,
     ...overrides
   });
+
+  // Helper to check if result is TextElement and get content
+  const getTextContent = (result: TextElement | ShapeElement) => {
+    if (result instanceof TextElement) {
+      return result.getContent();
+    }
+    throw new Error('Expected TextElement but got ShapeElement');
+  };
 
   const createMockTextShapeXml = (colorData: any, text: string = 'Test Text'): XmlNode => {
     return createMockXmlNode('p:sp', {}, [
@@ -78,7 +88,7 @@ describe('TextProcessor Color Integration Tests', () => {
       });
 
       const result = await textProcessor.process(mockXml, context);
-      const textContent = result.getContent();
+      const textContent = getTextContent(result);
 
       expect(textContent).toHaveLength(1);
       expect(textContent[0].style?.color).toBe('rgba(255,0,0,1)');
@@ -100,7 +110,7 @@ describe('TextProcessor Color Integration Tests', () => {
       });
 
       const result = await textProcessor.process(mockXml, context);
-      const textContent = result.getContent();
+      const textContent = getTextContent(result);
 
       expect(textContent).toHaveLength(1);
       expect(textContent[0].style?.color).toBe('rgba(255,0,0,1)');
@@ -125,7 +135,7 @@ describe('TextProcessor Color Integration Tests', () => {
       });
 
       const result = await textProcessor.process(mockXml, context);
-      const textContent = result.getContent();
+      const textContent = getTextContent(result);
 
       expect(textContent).toHaveLength(1);
       expect(textContent[0].style?.color).toBe('rgba(255,0,0,0.5)');
@@ -171,7 +181,7 @@ describe('TextProcessor Color Integration Tests', () => {
       });
 
       const result = await textProcessor.process(mockXml, context);
-      const textContent = result.getContent();
+      const textContent = getTextContent(result);
 
       expect(textContent).toHaveLength(2);
       expect(textContent[0].text).toBe('Red ');
@@ -199,7 +209,7 @@ describe('TextProcessor Color Integration Tests', () => {
       });
 
       const result = await textProcessor.process(mockXml, context);
-      const textContent = result.getContent();
+      const textContent = getTextContent(result);
 
       expect(textContent).toHaveLength(1);
       expect(ColorTestUtils.isValidRgbaFormat(textContent[0].style?.color || '')).toBe(true);
@@ -231,7 +241,7 @@ describe('TextProcessor Color Integration Tests', () => {
       });
 
       const result = await textProcessor.process(mockXml, context);
-      const textContent = result.getContent();
+      const textContent = getTextContent(result);
 
       expect(textContent).toHaveLength(1);
       expect(textContent[0].style?.color).toBe('rgba(255,0,0,1)');
@@ -254,7 +264,7 @@ describe('TextProcessor Color Integration Tests', () => {
       });
 
       const result = await textProcessor.process(mockXml, context);
-      const textContent = result.getContent();
+      const textContent = getTextContent(result);
 
       expect(textContent).toHaveLength(1);
       // Should handle missing theme gracefully
@@ -292,7 +302,7 @@ describe('TextProcessor Color Integration Tests', () => {
         });
 
         const result = await textProcessor.process(mockXml, context);
-        const textContent = result.getContent();
+        const textContent = getTextContent(result);
 
         expect(textContent).toHaveLength(1);
         expect(ColorTestUtils.isValidRgbaFormat(textContent[0].style?.color || '')).toBe(true);
@@ -321,7 +331,7 @@ describe('TextProcessor Color Integration Tests', () => {
       });
 
       const result = await textProcessor.process(mockXml, context);
-      const textContent = result.getContent();
+      const textContent = getTextContent(result);
 
       expect(textContent).toHaveLength(1);
       expect(ColorTestUtils.isValidRgbaFormat(textContent[0].style?.color || '')).toBe(true);
@@ -352,7 +362,7 @@ describe('TextProcessor Color Integration Tests', () => {
       });
 
       const result = await textProcessor.process(mockXml, context);
-      const textContent = result.getContent();
+      const textContent = getTextContent(result);
 
       expect(textContent).toHaveLength(1);
       const style = textContent[0].style;
@@ -404,7 +414,7 @@ describe('TextProcessor Color Integration Tests', () => {
       });
 
       const result = await textProcessor.process(mockXml, context);
-      const textContent = result.getContent();
+      const textContent = getTextContent(result);
 
       expect(textContent).toHaveLength(2);
       
@@ -442,7 +452,7 @@ describe('TextProcessor Color Integration Tests', () => {
       });
 
       const result = await textProcessor.process(mockXml, context);
-      const textContent = result.getContent();
+      const textContent = getTextContent(result);
 
       expect(textContent).toHaveLength(1);
       expect(textContent[0].style?.color).toBe('rgba(255,0,0,0.8)');
@@ -467,7 +477,7 @@ describe('TextProcessor Color Integration Tests', () => {
       });
 
       const result = await textProcessor.process(mockXml, context);
-      const textContent = result.getContent();
+      const textContent = getTextContent(result);
 
       expect(textContent).toHaveLength(1);
       expect(ColorTestUtils.isValidRgbaFormat(textContent[0].style?.color || '')).toBe(true);
@@ -495,7 +505,7 @@ describe('TextProcessor Color Integration Tests', () => {
       });
 
       const result = await textProcessor.process(mockXml, context);
-      const textContent = result.getContent();
+      const textContent = getTextContent(result);
 
       expect(textContent).toHaveLength(1);
       expect(textContent[0].style?.color).toBe('rgba(255,0,0,1)');
@@ -517,7 +527,7 @@ describe('TextProcessor Color Integration Tests', () => {
       });
 
       const result = await textProcessor.process(mockXml, context);
-      const textContent = result.getContent();
+      const textContent = getTextContent(result);
 
       expect(textContent).toHaveLength(1);
       expect(textContent[0].style?.color).toBeUndefined();
@@ -539,7 +549,7 @@ describe('TextProcessor Color Integration Tests', () => {
       });
 
       const result = await textProcessor.process(mockXml, context);
-      const textContent = result.getContent();
+      const textContent = getTextContent(result);
 
       expect(textContent).toHaveLength(1);
       // Should handle gracefully without throwing

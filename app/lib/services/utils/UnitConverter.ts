@@ -75,4 +75,23 @@ export class UnitConverter {
   static normalizePosition(value: number, precision: number = 2): number {
     return Math.round(value * Math.pow(10, precision)) / Math.pow(10, precision);
   }
+
+  /**
+   * Converts PowerPoint angle units to degrees
+   * PowerPoint uses 60000 units per degree
+   * @param angleEmu Angle in PowerPoint EMU units
+   * @returns Angle in degrees
+   */
+  static angleToDegreesFromEmu(angleEmu: number): number {
+    return angleEmu / 60000;
+  }
+
+  /**
+   * Converts degrees to PowerPoint angle units
+   * @param degrees Angle in degrees
+   * @returns Angle in PowerPoint EMU units
+   */
+  static degreesToAngleEmu(degrees: number): number {
+    return degrees * 60000;
+  }
 }

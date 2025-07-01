@@ -61,6 +61,7 @@ export type ElementType =
   | 'text'
   | 'shape'
   | 'image'
+  | 'line'
   | 'video'
   | 'audio'
   | 'table'

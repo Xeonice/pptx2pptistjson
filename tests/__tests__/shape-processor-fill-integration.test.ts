@@ -140,6 +140,41 @@ describe('ShapeProcessor Fill Integration Tests', () => {
       expect(fill?.color).toBe('rgba(255,0,0,1)');
     });
 
+    it('should extract accent4 color correctly', async () => {
+      const accent4Fill = createMockXmlNode('a:solidFill', {}, [
+        createMockXmlNode('a:schemeClr', { val: 'accent4' })
+      ]);
+
+      const mockXml = createMockShapeXml(accent4Fill);
+      
+      // Use real theme colors like in your PPTX
+      const realThemeColors = {
+        "accent1": "#002F71",
+        "accent2": "#FBAE01",
+        "accent3": "#002F71",
+        "accent4": "#FBAE01",
+        "accent5": "#002F71",
+        "accent6": "#FBAE01",
+        "dk1": "#000000",
+        "dk2": "#002F71",
+        "lt1": "#FFFFFF",
+        "lt2": "#E7E6E6",
+        "hyperlink": "#002F71",
+        "followedHyperlink": "#FBAE01"
+      };
+      
+      const context = createMockContext({
+        theme: ColorTestUtils.createMockTheme(realThemeColors)
+      });
+
+      const result = await shapeProcessor.process(mockXml, context);
+      const fill = result.getFill();
+
+      expect(fill).toBeDefined();
+      // accent4 should be #FBAE01 which is rgba(251,174,1,1)
+      expect(fill?.color).toBe('rgba(251,174,1,1)');
+    });
+
     it('should apply transformations to shape fill colors', async () => {
       const fillWithTransform = createMockXmlNode('a:solidFill', {}, [
         createMockXmlNode('a:srgbClr', { val: 'FF0000' }, [
@@ -370,11 +405,10 @@ describe('ShapeProcessor Fill Integration Tests', () => {
         theme: undefined // No theme
       });
 
-      const result = await shapeProcessor.process(mockXml, context);
-      
-      // Should handle missing theme gracefully
-      expect(result).toBeDefined();
-      expect(result.getFill()).toBeUndefined();
+      // Should throw error when theme colors are referenced but no theme is available
+      await expect(shapeProcessor.process(mockXml, context))
+        .rejects
+        .toThrow('ShapeProcessor: ProcessingContext.theme is null/undefined - cannot process scheme colors. Found schemeClr reference but no theme available.');
     });
 
     it('should handle unknown preset colors', async () => {

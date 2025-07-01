@@ -166,16 +166,20 @@ export class SlideParser {
     }
 
     for (const child of spTreeNode.children) {
-      const element = await this.processNode(child, context);
-      if (element) {
-        elements.push(element);
+      const nodeElements = await this.processNode(child, context);
+      if (nodeElements) {
+        if (Array.isArray(nodeElements)) {
+          elements.push(...nodeElements);
+        } else {
+          elements.push(nodeElements);
+        }
       }
     }
 
     return elements;
   }
 
-  private async processNode(node: XmlNode, context: ProcessingContext): Promise<Element | undefined> {
+  private async processNode(node: XmlNode, context: ProcessingContext): Promise<Element | Element[] | undefined> {
     // Debug logging for node processing
     if (node.name.endsWith('sp') || node.name.endsWith('pic')) {
       const cNvPrNode = this.xmlParser.findNode(node, 'cNvPr');
@@ -187,10 +191,47 @@ export class SlideParser {
                           (this.xmlParser.findNode(node, 'spPr') && 
                            !!this.xmlParser.findNode(this.xmlParser.findNode(node, 'spPr')!, 'blipFill'));
       
-      console.log(`[Slide ${context.slideNumber}] Processing ${node.name} - Name: "${name}", ID: ${id}, HasBlipFill: ${hasBlipFill}`);
+      // Check for text content
+      const hasTextContent = this.hasTextContent(node);
+      
+      // Check for shape background
+      const hasShapeBackground = this.hasShapeBackground(node);
+      
+      console.log(`[Slide ${context.slideNumber}] Processing ${node.name} - Name: "${name}", ID: ${id}, HasBlipFill: ${hasBlipFill}, HasText: ${hasTextContent}, HasShapeBackground: ${hasShapeBackground}`);
     }
     
-    // Find a processor that can handle this node
+    // Check for dual processing (both text and shape background)
+    if (node.name.endsWith('sp') && this.hasTextContent(node) && this.hasShapeBackground(node) && !this.hasImageFill(node)) {
+      const elements: Element[] = [];
+      
+      // Process as text first
+      const textProcessor = Array.from(this.elementProcessors.values()).find(p => p.getElementType() === 'text');
+      if (textProcessor && textProcessor.canProcess(node)) {
+        try {
+          const textElement = await textProcessor.process(node, context);
+          elements.push(textElement);
+          console.log(`[Slide ${context.slideNumber}] Processed as ${textProcessor.getElementType()}`);
+        } catch (error) {
+          console.error(`处理器 text 处理 ${node.name} 失败:`, error);
+        }
+      }
+      
+      // Process as shape
+      const shapeProcessor = Array.from(this.elementProcessors.values()).find(p => p.getElementType() === 'shape');
+      if (shapeProcessor && shapeProcessor.canProcess(node)) {
+        try {
+          const shapeElement = await shapeProcessor.process(node, context);
+          elements.push(shapeElement);
+          console.log(`[Slide ${context.slideNumber}] Processed as ${shapeProcessor.getElementType()}`);
+        } catch (error) {
+          console.error(`处理器 shape 处理 ${node.name} 失败:`, error);
+        }
+      }
+      
+      return elements.length > 0 ? elements : undefined;
+    }
+    
+    // Single processor handling
     const processors = Array.from(this.elementProcessors.values());
     
     for (const processor of processors) {
@@ -216,15 +257,59 @@ export class SlideParser {
       for (const child of node.children) {
         const element = await this.processNode(child, context);
         if (element) {
-          groupElements.push(element);
+          if (Array.isArray(element)) {
+            groupElements.push(...element);
+          } else {
+            groupElements.push(element);
+          }
         }
       }
       // For now, we'll flatten groups - in a full implementation,
       // we'd create a GroupElement to maintain hierarchy
-      return groupElements.length > 0 ? groupElements[0] : undefined;
+      return groupElements.length > 0 ? groupElements : undefined;
     }
 
     return undefined;
+  }
+
+  private hasTextContent(xmlNode: XmlNode): boolean {
+    const txBodyNode = this.xmlParser.findNode(xmlNode, "txBody");
+    if (!txBodyNode) return false;
+
+    const paragraphs = this.xmlParser.findNodes(txBodyNode, "p");
+    for (const pNode of paragraphs) {
+      const runs = this.xmlParser.findNodes(pNode, "r");
+      for (const rNode of runs) {
+        const tNode = this.xmlParser.findNode(rNode, "t");
+        if (tNode && this.xmlParser.getTextContent(tNode).trim()) {
+          return true;
+        }
+      }
+    }
+
+    return false;
+  }
+
+  private hasImageFill(xmlNode: XmlNode): boolean {
+    // Check if shape has blipFill (image fill)
+    const spPrNode = this.xmlParser.findNode(xmlNode, "spPr");
+    if (!spPrNode) return false;
+    
+    const blipFillNode = this.xmlParser.findNode(spPrNode, "blipFill");
+    return !!blipFillNode;
+  }
+
+  private hasShapeBackground(xmlNode: XmlNode): boolean {
+    // Check if shape has fill background (solid fill, gradient, etc.)
+    const spPrNode = this.xmlParser.findNode(xmlNode, "spPr");
+    if (!spPrNode) return false;
+    
+    // Check for any fill type
+    const solidFillNode = this.xmlParser.findNode(spPrNode, "solidFill");
+    const gradFillNode = this.xmlParser.findNode(spPrNode, "gradFill");
+    const pattFillNode = this.xmlParser.findNode(spPrNode, "pattFill");
+    
+    return !!(solidFillNode || gradFillNode || pattFillNode);
   }
 
   private extractColor(fillNode: XmlNode): string | undefined {
