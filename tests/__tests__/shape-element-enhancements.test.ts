@@ -38,8 +38,8 @@ describe('ShapeElement Enhancements', () => {
         top: 121.94,
         width: 20.09,
         height: 20.09,
-        viewBox: [200, 200],
-        path: 'M 100 0 A 50 50 0 1 1 100 200 A 50 50 0 1 1 100 0 Z',
+        viewBox: [20.09, 20.09],
+        path: 'M 10.045 0 A 10.045 10.045 0 1 1 10.045 20.09 A 10.045 10.045 0 1 1 10.045 0 Z',
         pathFormula: undefined,
         shape: 'ellipse',
         fill: 'rgba(255,137,137,1)',
@@ -59,15 +59,16 @@ describe('ShapeElement Enhancements', () => {
       const circleShape = new ShapeElement('circle-1', 'ellipse');
       const json = circleShape.toJSON();
       
-      expect(json.path).toBe('M 100 0 A 50 50 0 1 1 100 200 A 50 50 0 1 1 100 0 Z');
+      // With default size 200x200, rx=100, ry=100
+      expect(json.path).toBe('M 100 0 A 100 100 0 1 1 100 200 A 100 100 0 1 1 100 0 Z');
     });
 
     it('should generate circular path that matches PPTist format exactly', () => {
       const shape = new ShapeElement('pptist-circle', 'ellipse');
       const json = shape.toJSON();
       
-      // Verify exact match with expected PPTist circle path
-      const expectedCirclePath = 'M 100 0 A 50 50 0 1 1 100 200 A 50 50 0 1 1 100 0 Z';
+      // Verify exact match with expected PPTist circle path (with default 200x200 size)
+      const expectedCirclePath = 'M 100 0 A 100 100 0 1 1 100 200 A 100 100 0 1 1 100 0 Z';
       expect(json.path).toBe(expectedCirclePath);
       
       // Verify it's not the old rectangle path
@@ -81,7 +82,7 @@ describe('ShapeElement Enhancements', () => {
       const triangle = new ShapeElement('triangle', 'triangle');
       const diamond = new ShapeElement('diamond', 'diamond');
 
-      expect(ellipse.toJSON().path).toBe('M 100 0 A 50 50 0 1 1 100 200 A 50 50 0 1 1 100 0 Z');
+      expect(ellipse.toJSON().path).toBe('M 100 0 A 100 100 0 1 1 100 200 A 100 100 0 1 1 100 0 Z');
       expect(rect.toJSON().path).toBe('M 0 0 L 200 0 L 200 200 L 0 200 Z');
       expect(triangle.toJSON().path).toBe('M 100 0 L 200 200 L 0 200 Z');
       expect(diamond.toJSON().path).toBe('M 100 0 L 200 100 L 100 200 L 0 100 Z');
@@ -165,8 +166,8 @@ describe('ShapeElement Enhancements', () => {
       expect(json).toHaveProperty('rotate');
       expect(json).toHaveProperty('enableShrink');
 
-      // Verify viewBox is always [200, 200]
-      expect(json.viewBox).toEqual([200, 200]);
+      // Verify viewBox matches width and height
+      expect(json.viewBox).toEqual([json.width, json.height]);
       
       // Verify fixedRatio is always false
       expect(json.fixedRatio).toBe(false);
