@@ -16,3 +16,20 @@ export function getFillType(node: any) {
 
   return fillType;
 }
+
+export function getTextByPathList(node: any, pathList: string[]): any {
+  if (!node || !pathList || pathList.length === 0) {
+    return undefined;
+  }
+
+  let current = node;
+  for (const path of pathList) {
+    if (current && typeof current === 'object') {
+      current = current[path];
+    } else {
+      return undefined;
+    }
+  }
+
+  return current;
+}

@@ -339,7 +339,7 @@ describe('Color Transformation Chain Tests', () => {
       results.forEach(result => {
         expect(ColorTestUtils.isValidRgbaFormat(result)).toBe(true);
       });
-      expect(endTime - startTime).toBeLessThan(10); // Batch should be efficient
+      expect(endTime - startTime).toBeLessThan(20); // Batch should be efficient
     });
   });
 

@@ -2,9 +2,9 @@ import { ColorUtils } from "./ColorUtils";
 
 export class FillExtractor {
   /**
-   * Helper function to get text by path list
+   * Helper function to get text by path list - enhanced version
    */
-  private static getTextByPathList(obj: any, pathList: string[]): string | undefined {
+  private static getTextByPathList(obj: any, pathList: string[]): any {
     let current = obj;
     for (const path of pathList) {
       if (current && typeof current === 'object' && path in current) {
@@ -13,7 +13,7 @@ export class FillExtractor {
         return undefined;
       }
     }
-    return typeof current === 'string' ? current : undefined;
+    return current;
   }
   /**
    * Extracts solid fill color from PowerPoint XML node
@@ -94,17 +94,24 @@ export class FillExtractor {
       color = "#" + color;
     }
 
-    // Convert to rgba for transformations
+    // Check if we need to apply color transformations
+    const hasTransformations = clrNode && this.hasColorTransformations(clrNode);
+    
+    // Always convert to rgba for consistency
     let rgbaColor = ColorUtils.toRgba(color);
 
-    // Apply color transformations
+    // Apply color transformations in correct order (matching sample-code)
     if (clrNode) {
-      // Alpha
+      // Check if we need to return alpha format
+      let isAlpha = false;
+      
+      // Alpha (check first to determine output format)
       const alphaVal = this.getTextByPathList(clrNode, ["a:alpha", "attrs", "val"]);
       if (alphaVal) {
         const alpha = parseInt(alphaVal) / 100000;
         if (!isNaN(alpha)) {
           rgbaColor = ColorUtils.applyAlpha(rgbaColor, alpha);
+          isAlpha = true;
         }
       }
 
@@ -131,7 +138,7 @@ export class FillExtractor {
       if (lumOffVal) {
         const lumOff = parseInt(lumOffVal) / 100000;
         if (!isNaN(lumOff)) {
-          rgbaColor = ColorUtils.applyLuminanceOff(rgbaColor, lumOff * 255);
+          rgbaColor = ColorUtils.applyLuminanceOff(rgbaColor, lumOff);
         }
       }
 
@@ -161,13 +168,16 @@ export class FillExtractor {
           rgbaColor = ColorUtils.applyTint(rgbaColor, tint);
         }
       }
+      
+      // Always return rgba format for consistency
+      // (Removing hex conversion to ensure consistent rgba output)
     }
 
     return rgbaColor;
   }
 
   /**
-   * Gets scheme color from theme
+   * Gets scheme color from theme - enhanced version matching sample-code
    */
   private static getSchemeColorFromTheme(
     schemeClr: string,
@@ -175,33 +185,90 @@ export class FillExtractor {
     clrMap?: any,
     phClr?: string
   ): string | null {
+    let color: string | null = null;
+    let slideLayoutClrOverride: any;
+    
+    // Determine color mapping override
+    if (clrMap) {
+      slideLayoutClrOverride = clrMap;
+    } else {
+      // Check slide color map override
+      let sldClrMapOvr = this.getTextByPathList(warpObj?.slideContent, ['p:sld', 'p:clrMapOvr', 'a:overrideClrMapping', 'attrs']);
+      if (sldClrMapOvr) {
+        slideLayoutClrOverride = sldClrMapOvr;
+      } else {
+        // Check slide layout color map override
+        sldClrMapOvr = this.getTextByPathList(warpObj?.slideLayoutContent, ['p:sldLayout', 'p:clrMapOvr', 'a:overrideClrMapping', 'attrs']);
+        if (sldClrMapOvr) {
+          slideLayoutClrOverride = sldClrMapOvr;
+        } else {
+          // Use slide master color map
+          slideLayoutClrOverride = this.getTextByPathList(warpObj?.slideMasterContent, ['p:sldMaster', 'p:clrMap', 'attrs']);
+        }
+      }
+    }
+    
+    // Extract scheme color name (remove 'a:' prefix)
+    const schmClrName = schemeClr.startsWith('a:') ? schemeClr.substring(2) : schemeClr;
+    
     // Handle placeholder color
-    if (schemeClr === "a:phClr" && phClr) {
+    if (schmClrName === 'phClr' && phClr) {
       return phClr;
     }
-
+    
+    let resolvedSchemeClr = schemeClr;
+    
+    // Apply color mapping overrides
+    if (slideLayoutClrOverride) {
+      switch (schmClrName) {
+        case 'tx1':
+        case 'tx2':
+        case 'bg1':
+        case 'bg2':
+          const mappedColor = slideLayoutClrOverride[schmClrName];
+          if (mappedColor) {
+            resolvedSchemeClr = 'a:' + mappedColor;
+          }
+          break;
+        default:
+          break;
+      }
+    } else {
+      // Apply default color mappings
+      switch (schmClrName) {
+        case 'tx1':
+          resolvedSchemeClr = 'a:dk1';
+          break;
+        case 'tx2':
+          resolvedSchemeClr = 'a:dk2';
+          break;
+        case 'bg1':
+          resolvedSchemeClr = 'a:lt1';
+          break;
+        case 'bg2':
+          resolvedSchemeClr = 'a:lt2';
+          break;
+        default:
+          break;
+      }
+    }
+    
     // Get theme colors
     const themeColors = warpObj?.themeContent?.["a:theme"]?.["a:themeElements"]?.["a:clrScheme"];
     if (!themeColors) return null;
 
-    // Map scheme color name if clrMap is provided
-    let colorName = schemeClr;
-    if (clrMap && clrMap[schemeClr]) {
-      colorName = clrMap[schemeClr];
-    }
-
-    // Get color from theme
-    const colorNode = themeColors[colorName];
+    // Get color node from theme
+    const colorNode = themeColors[resolvedSchemeClr];
     if (!colorNode) return null;
 
     // Extract color value
     if (colorNode["a:srgbClr"]) {
-      return this.getTextByPathList(colorNode["a:srgbClr"], ["attrs", "val"]) || null;
+      color = this.getTextByPathList(colorNode["a:srgbClr"], ["attrs", "val"]) || null;
     } else if (colorNode["a:sysClr"]) {
-      return this.getTextByPathList(colorNode["a:sysClr"], ["attrs", "lastClr"]) || null;
+      color = this.getTextByPathList(colorNode["a:sysClr"], ["attrs", "lastClr"]) || null;
     }
 
-    return null;
+    return color;
   }
 
   /**
@@ -222,6 +289,41 @@ export class FillExtractor {
 
     // Default to transparent if no fill is specified
     return "";
+  }
+
+  /**
+   * Checks if a color node has any transformations that need to be applied
+   */
+  private static hasColorTransformations(clrNode: any): boolean {
+    if (!clrNode) return false;
+    
+    // Check for various color transformation attributes
+    const transformations = [
+      "a:alpha", "a:hueMod", "a:lumMod", "a:lumOff", 
+      "a:satMod", "a:shade", "a:tint"
+    ];
+    
+    return transformations.some(transform => {
+      const val = this.getTextByPathList(clrNode, [transform, "attrs", "val"]);
+      return val !== undefined && val !== null;
+    });
+  }
+
+  /**
+   * Adds missing parseRgba method for ColorUtils compatibility
+   */
+  private static parseRgba(color: string): { r: number; g: number; b: number; a: number } | null {
+    const match = color.match(/rgba\((\d+),(\d+),(\d+),([\d.]+)\)/);
+    if (match) {
+      const [, r, g, b, a] = match;
+      return {
+        r: parseInt(r),
+        g: parseInt(g),
+        b: parseInt(b),
+        a: parseFloat(a),
+      };
+    }
+    return null;
   }
 
   /**

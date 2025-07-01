@@ -13,28 +13,131 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - `npm run type-check` - Run TypeScript type checking without emitting files
 
 ### Testing
-- `npm test` - Run all Jest tests
+- `npm test` - Run all Jest tests (450+ comprehensive test cases)
 - `npm run test:watch` - Run tests in watch mode for development
 - `npm run test:coverage` - Run tests with coverage reporting
-- Test files: Located in `tests/` directory and `tests/__tests__/` subdirectory
 - Run single test: `npx jest <test-file-name>` or `npx jest --testNamePattern="<test name>"`
+- Run test category: `npx jest background-image`, `npx jest color-processing`, `npx jest shape-processor`
 
-### Package Management
-This project uses npm as the package manager. Run `npm install` to install dependencies.
-
-### Project Identity (v2.0.0)
-- **Package Name**: `pptx2pptistjson` (changed from `pptxtojson`)
-- **Primary Focus**: PPTist-compatible JSON output format
+### Project Identity (v2.1.0)
+- **Package Name**: `pptx2pptistjson` (specialized for PPTist integration)
+- **Primary Focus**: PPTist-compatible JSON output format with pixel-perfect conversion
 - **Target Integration**: [PPTist](https://github.com/pipipi-pikachu/PPTist) presentation editor
+- **Architecture**: Full-stack Next.js application with modular service-oriented conversion engine
 
-## Development Best Practices
+## Core Architecture
 
-### Post-Modification Verification
-- **Comprehensive Checks**: After each modification, verify multiple command executions:
-  - `npm run build` - Ensures production build integrity
-  - `npm run type-check` - Validates TypeScript type consistency
-  - `npm run lint` - Checks code quality and style guidelines
-  - `npm run test` - Confirms all test cases pass successfully
-  - Each command must complete without errors to confirm code quality and readiness
+### Service-Oriented Design
+The codebase uses **dependency injection** through `ServiceContainer` for modular, testable architecture:
 
-[... rest of the existing content remains unchanged ...]
+```typescript
+ServiceContainer
+├── FileService           # ZIP/file operations using JSZip
+├── XmlParseService      # XML parsing with PPTX namespace handling  
+├── ImageDataService     # Image extraction, Base64 encoding, format detection
+├── PresentationParser   # Main orchestration: relationship parsing, theme resolution
+├── SlideParser         # Individual slide processing with background support
+├── ThemeParser         # PowerPoint theme → PPTist color scheme conversion
+└── Element Processors   # Specialized element converters
+    ├── TextProcessor    # Rich text → PPTist HTML with color/font mapping
+    ├── ShapeProcessor   # Geometric shapes → PPTist SVG paths with fill extraction
+    └── ImageProcessor   # Images → PPTist format with Base64/URL modes
+```
+
+### Color Processing Pipeline
+Advanced color transformation system matching PowerPoint behavior:
+
+```typescript
+FillExtractor.getSolidFill()
+├── ColorUtils.toRgba()           # Normalize all color formats to rgba()
+├── getSchemeColorFromTheme()     # Resolve theme color references
+├── Color Transformations (applied in PowerPoint order):
+│   ├── Alpha (transparency)
+│   ├── HueMod (hue rotation)
+│   ├── LumMod/LumOff (luminance)
+│   ├── SatMod (saturation)
+│   ├── Shade (darker)
+│   └── Tint (lighter)
+└── Always returns consistent rgba() format for PPTist
+```
+
+### Shape Processing Architecture
+Comprehensive shape conversion supporting 100+ PowerPoint shape types:
+
+```typescript
+ShapeProcessor.process()
+├── Geometry Detection:
+│   ├── prstGeom → preset shapes (rect, ellipse, triangle, flowChart*, actionButton*)
+│   └── custGeom → custom path analysis
+├── Fill Extraction:
+│   ├── solidFill → FillExtractor.getSolidFill()
+│   ├── noFill → transparent
+│   └── Theme color resolution with inheritance
+├── Path Generation:
+│   ├── getCustomShapePath() → SVG path with EMU→points conversion
+│   ├── Enhanced support for arcTo, cubicBezTo commands
+│   └── Coordinate scaling for different viewBox sizes
+└── PPTist Format Output:
+    ├── pathFormula (PowerPoint geometry identifier)
+    ├── themeFill (resolved colors with debug info)
+    └── enableShrink: true (PPTist compatibility)
+```
+
+### Unit Conversion System
+Precise coordinate mapping for PPTist layout accuracy:
+- **EMU to Points**: `value * 0.0007874015748031496` (UnitConverter.emuToPointsPrecise)
+- **Precision**: 2 decimal places, configurable
+- **Consistency**: All dimensions (position, size, paths) use points for PPTist
+
+### Image Processing Pipeline
+Multi-format image handling with PPTist optimization:
+
+```typescript
+ImageDataService.extractImageData()
+├── Format Detection: JPEG, PNG, GIF, BMP, WebP, TIFF
+├── Processing Modes:
+│   ├── base64: Full Data URL embedding for offline PPTist usage
+│   └── url: External URL references for cloud storage
+├── Metadata Extraction: dimensions, transparency, file size
+├── Error Isolation: Individual image failures don't break conversion
+└── Concurrent Processing: Semaphore-controlled batch processing (default: 3)
+```
+
+## Post-Modification Verification
+After each modification, verify multiple command executions:
+- `npm run build` - Ensures production build integrity  
+- `npm run type-check` - Validates TypeScript type consistency
+- `npm run lint` - Checks code quality and style guidelines
+- `npm run test` - Confirms all test cases pass successfully (all 450+ tests must pass)
+
+## Critical Implementation Details
+
+### Color Format Consistency
+- **All color functions MUST return rgba() format** for PPTist compatibility
+- **Never return hex colors** in final output - always convert via `ColorUtils.toRgba()`
+- **Color transformation order matters** - follow PowerPoint's official sequence
+
+### Shape Processing Rules
+- **pathFormula field** contains original PowerPoint geometry identifier for debugging
+- **themeFill includes debug info** to trace color resolution path
+- **Custom geometry analysis** detects circular patterns for proper PPTist shape type assignment
+- **Enhanced preset shapes**: 15+ flowChart series, 7+ actionButton series support added
+
+### Testing Strategy
+- **450+ test cases** cover color processing, shape conversion, image handling
+- **Integration tests** verify end-to-end PPTist compatibility
+- **Performance tests** ensure memory management and concurrent processing
+- **Edge case handling** for malformed PPTX files and missing resources
+
+### Sample Files Usage
+- `sample/basic/input.pptx` and `output.json` - reference conversion format
+- `sample/sample-1/` - detailed test case with expected outputs
+- **Never delete sample files** - they serve as conversion format reference
+
+### Service Container Pattern
+Register services with dependency injection for testability:
+```typescript
+container.register('fileService', new FileService());
+container.registerFactory('xmlParser', () => new XmlParseService(), true);
+const service = container.resolve<IFileService>('fileService');
+```

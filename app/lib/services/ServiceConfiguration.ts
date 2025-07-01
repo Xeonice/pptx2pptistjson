@@ -7,6 +7,8 @@ import { PresentationParser } from './parsing/PresentationParser';
 import { TextProcessor } from './element/processors/TextProcessor';
 import { ShapeProcessor } from './element/processors/ShapeProcessor';
 import { ImageProcessor } from './element/processors/ImageProcessor';
+import { LineProcessor } from './element/processors/LineProcessor';
+import { ConnectionShapeProcessor } from './element/processors/ConnectionShapeProcessor';
 import { ImageDataService } from './images/ImageDataService';
 import { IFileService } from './interfaces/IFileService';
 import { IXmlParseService } from './interfaces/IXmlParseService';
@@ -39,14 +41,23 @@ export function configureServices(container: ServiceContainer): void {
     const imageDataService = container.resolve<ImageDataService>('ImageDataService');
     const slideParser = new SlideParser(fileService, xmlParser, imageDataService);
     
-    // Register element processors
+    // Register element processors - order matters for priority
     const textProcessor = new TextProcessor(xmlParser);
     const shapeProcessor = new ShapeProcessor(xmlParser);
     const imageProcessor = new ImageProcessor(xmlParser, imageDataService);
+    const lineProcessor = new LineProcessor(xmlParser);
+    const connectionShapeProcessor = new ConnectionShapeProcessor(xmlParser);
     
-    slideParser.registerElementProcessor(textProcessor);
-    slideParser.registerElementProcessor(shapeProcessor);
+    // Image processor has highest priority
     slideParser.registerElementProcessor(imageProcessor);
+    // Connection shape processor handles p:cxnSp nodes
+    slideParser.registerElementProcessor(connectionShapeProcessor);
+    // Line processor handles connection lines
+    slideParser.registerElementProcessor(lineProcessor);
+    // Text processor processes text elements and generates background shapes when needed
+    slideParser.registerElementProcessor(textProcessor);
+    // Shape processor handles pure shapes without text
+    slideParser.registerElementProcessor(shapeProcessor);
     
     return slideParser;
   });

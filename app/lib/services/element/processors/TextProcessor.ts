@@ -15,8 +15,8 @@ export class TextProcessor implements IElementProcessor<TextElement> {
   constructor(private xmlParser: IXmlParseService) {}
 
   canProcess(xmlNode: XmlNode): boolean {
-    // Process shape nodes that contain text but don't have image fill
-    // Image fill takes priority over text content
+    // Process text nodes that don't have image fill
+    // Pure text or text without significant shape background
     return xmlNode.name.endsWith("sp") && 
            this.hasTextContent(xmlNode) && 
            !this.hasImageFill(xmlNode);
@@ -79,21 +79,55 @@ export class TextProcessor implements IElementProcessor<TextElement> {
       }
     }
 
-    // Extract text content
-    const txBodyNode = this.xmlParser.findNode(xmlNode, "txBody");
-    if (txBodyNode) {
-      const paragraphs = this.xmlParser.findNodes(txBodyNode, "p");
-      for (const pNode of paragraphs) {
-        const contentItems = this.extractParagraphContent(pNode, context);
-        contentItems.forEach(content => {
-          if (content) {
-            textElement.addContent(content);
-          }
-        });
+    // Check if this element has a visible shape background  
+    const hasShapeBackground = this.hasShapeBackground(xmlNode);
+    
+    // If it has both text and shape background, append "_text" to the ID
+    if (hasShapeBackground) {
+      const textId = id + "_text";
+      const finalTextElement = new TextElement(textId);
+      
+      // Copy position and size to text element
+      const position = textElement.getPosition();
+      const size = textElement.getSize();
+      const rotation = textElement.getRotation();
+      if (position) finalTextElement.setPosition(position);
+      if (size) finalTextElement.setSize(size);
+      if (rotation) finalTextElement.setRotation(rotation);
+      
+      // Extract text content for text element
+      const txBodyNode = this.xmlParser.findNode(xmlNode, "txBody");
+      if (txBodyNode) {
+        const paragraphs = this.xmlParser.findNodes(txBodyNode, "p");
+        for (const pNode of paragraphs) {
+          const contentItems = this.extractParagraphContent(pNode, context);
+          contentItems.forEach(content => {
+            if (content) {
+              finalTextElement.addContent(content);
+            }
+          });
+        }
       }
+      
+      return finalTextElement;
+    } else {
+      // Pure text element without shape background
+      // Extract text content
+      const txBodyNode = this.xmlParser.findNode(xmlNode, "txBody");
+      if (txBodyNode) {
+        const paragraphs = this.xmlParser.findNodes(txBodyNode, "p");
+        for (const pNode of paragraphs) {
+          const contentItems = this.extractParagraphContent(pNode, context);
+          contentItems.forEach(content => {
+            if (content) {
+              textElement.addContent(content);
+            }
+          });
+        }
+      }
+      
+      return textElement;
     }
-
-    return textElement;
   }
 
   getElementType(): string {
@@ -125,6 +159,19 @@ export class TextProcessor implements IElementProcessor<TextElement> {
     
     const blipFillNode = this.xmlParser.findNode(spPrNode, "blipFill");
     return !!blipFillNode;
+  }
+
+  private hasShapeBackground(xmlNode: XmlNode): boolean {
+    // Check if shape has fill background (solid fill, gradient, etc.)
+    const spPrNode = this.xmlParser.findNode(xmlNode, "spPr");
+    if (!spPrNode) return false;
+    
+    // Check for any fill type
+    const solidFillNode = this.xmlParser.findNode(spPrNode, "solidFill");
+    const gradFillNode = this.xmlParser.findNode(spPrNode, "gradFill");
+    const pattFillNode = this.xmlParser.findNode(spPrNode, "pattFill");
+    
+    return !!(solidFillNode || gradFillNode || pattFillNode);
   }
 
   private extractParagraphContent(
@@ -258,6 +305,7 @@ export class TextProcessor implements IElementProcessor<TextElement> {
 
     return obj;
   }
+
 
   private createThemeContent(theme: Theme): any {
     const colorScheme = theme.getColorScheme();

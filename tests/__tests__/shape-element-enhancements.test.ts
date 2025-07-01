@@ -40,7 +40,13 @@ describe('ShapeElement Enhancements', () => {
         height: 20.09,
         viewBox: [200, 200],
         path: 'M 100 0 A 50 50 0 1 1 100 200 A 50 50 0 1 1 100 0 Z',
-        themeFill: { color: 'rgba(255,137,137,1)' },
+        pathFormula: undefined,
+        shape: 'ellipse',
+        fill: 'rgba(255,137,137,1)',
+        themeFill: { 
+          color: 'rgba(255,137,137,1)',
+          debug: 'Extracted from fill: rgba(255,137,137,1)'
+        },
         fixedRatio: false,
         rotate: 0,
         enableShrink: true
@@ -88,7 +94,10 @@ describe('ShapeElement Enhancements', () => {
       shape.setFill({ color: 'rgba(255,137,137,1)' });
       
       const json = shape.toJSON();
-      expect(json.themeFill).toEqual({ color: 'rgba(255,137,137,1)' });
+      expect(json.themeFill).toEqual({ 
+        color: 'rgba(255,137,137,1)',
+        debug: 'Extracted from fill: rgba(255,137,137,1)'
+      });
     });
 
     it('should generate fallback colors when no fill is provided', () => {
