@@ -15,11 +15,12 @@ export class TextProcessor implements IElementProcessor<TextElement> {
   constructor(private xmlParser: IXmlParseService) {}
 
   canProcess(xmlNode: XmlNode): boolean {
-    // Process text nodes that don't have image fill
-    // Pure text or text without significant shape background
+    // Only process pure text elements without shape backgrounds
+    // Shape elements with text are handled by ShapeProcessor
     return xmlNode.name.endsWith("sp") && 
            this.hasTextContent(xmlNode) && 
-           !this.hasImageFill(xmlNode);
+           !this.hasImageFill(xmlNode) &&
+           !this.hasShapeBackground(xmlNode);
   }
 
   async process(

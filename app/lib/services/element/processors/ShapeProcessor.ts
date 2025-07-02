@@ -9,6 +9,7 @@ import { IXmlParseService } from "../../interfaces/IXmlParseService";
 import { UnitConverter } from "../../utils/UnitConverter";
 import { FillExtractor } from "../../utils/FillExtractor";
 import { getTextByPathList } from "../../../utils";
+import { TextContent } from "../../../models/domain/elements/TextElement";
 
 export class ShapeProcessor implements IElementProcessor<ShapeElement> {
   constructor(private xmlParser: IXmlParseService) {}
@@ -160,6 +161,17 @@ export class ShapeProcessor implements IElementProcessor<ShapeElement> {
       }
     }
 
+    // Extract text content if present
+    const txBodyNode = this.xmlParser.findNode(xmlNode, "txBody");
+    if (txBodyNode) {
+      const textContent = this.extractTextContent(txBodyNode, context);
+      if (textContent && textContent.length > 0) {
+        // Create shape text content in PPTist format
+        const shapeTextContent = this.createShapeTextContent(textContent, txBodyNode);
+        shapeElement.setShapeTextContent(shapeTextContent);
+      }
+    }
+
     return shapeElement;
   }
 
@@ -167,23 +179,6 @@ export class ShapeProcessor implements IElementProcessor<ShapeElement> {
     return "shape";
   }
 
-  private hasTextContent(xmlNode: XmlNode): boolean {
-    const txBodyNode = this.xmlParser.findNode(xmlNode, "txBody");
-    if (!txBodyNode) return false;
-
-    const paragraphs = this.xmlParser.findNodes(txBodyNode, "p");
-    for (const pNode of paragraphs) {
-      const runs = this.xmlParser.findNodes(pNode, "r");
-      for (const rNode of runs) {
-        const tNode = this.xmlParser.findNode(rNode, "t");
-        if (tNode && this.xmlParser.getTextContent(tNode).trim()) {
-          return true;
-        }
-      }
-    }
-
-    return false;
-  }
 
   private hasImageFill(xmlNode: XmlNode): boolean {
     // Check if shape has blipFill (image fill)
@@ -1181,5 +1176,183 @@ export class ShapeProcessor implements IElementProcessor<ShapeElement> {
     }
 
     return adjustmentValues;
+  }
+
+  private extractTextContent(
+    txBodyNode: XmlNode,
+    context: ProcessingContext
+  ): TextContent[] {
+    const contentItems: TextContent[] = [];
+    const paragraphs = this.xmlParser.findNodes(txBodyNode, "p");
+
+    for (const pNode of paragraphs) {
+      // Extract paragraph alignment
+      const pPrNode = this.xmlParser.findNode(pNode, "pPr");
+      let paragraphAlign = undefined;
+      if (pPrNode) {
+        const algn = this.xmlParser.getAttribute(pPrNode, "algn");
+        if (algn) {
+          paragraphAlign = this.mapAlignmentToCSS(algn);
+        }
+      }
+
+      const runs = this.xmlParser.findNodes(pNode, "r");
+      
+      for (const rNode of runs) {
+        const tNode = this.xmlParser.findNode(rNode, "t");
+        if (tNode) {
+          const text = this.xmlParser.getTextContent(tNode);
+          if (text.trim()) {
+            // Extract run properties
+            const rPrNode = this.xmlParser.findNode(rNode, "rPr");
+            const style = rPrNode ? this.extractRunStyle(rPrNode, context) : {};
+            
+            // Apply paragraph alignment to style if present
+            if (paragraphAlign) {
+              style.textAlign = paragraphAlign;
+            }
+
+            contentItems.push({
+              text: text,
+              style: style,
+            });
+          }
+        }
+      }
+    }
+
+    return contentItems;
+  }
+
+  private extractRunStyle(
+    rPrNode: XmlNode,
+    context: ProcessingContext
+  ): any {
+    const style: any = {};
+
+    // Font size
+    const sz = this.xmlParser.getAttribute(rPrNode, "sz");
+    if (sz) {
+      style.fontSize = Math.round((parseInt(sz) / 100) * 1.39);
+    }
+
+    // Bold
+    const b = this.xmlParser.getAttribute(rPrNode, "b");
+    if (b === "1" || b === "true") {
+      style.bold = true;
+    }
+
+    // Italic
+    const i = this.xmlParser.getAttribute(rPrNode, "i");
+    if (i === "1" || i === "true") {
+      style.italic = true;
+    }
+
+    // Color
+    const solidFillNode = this.xmlParser.findNode(rPrNode, "solidFill");
+    if (solidFillNode) {
+      const solidFillObj = this.xmlNodeToObject(solidFillNode);
+      const warpObj = {
+        themeContent: context.theme
+          ? this.createThemeContent(context.theme)
+          : undefined,
+      };
+      const color = FillExtractor.getSolidFill(
+        solidFillObj,
+        undefined,
+        undefined,
+        warpObj
+      );
+      if (color) {
+        style.color = color;
+      }
+    }
+
+    return style;
+  }
+
+  private createShapeTextContent(contentItems: TextContent[], txBodyNode: XmlNode): any {
+    // Format text content in PPTist shape text format
+    const html = this.formatTextContent(contentItems);
+    
+    // Extract vertical alignment from body properties
+    let align = "middle"; // default
+    const bodyPrNode = this.xmlParser.findNode(txBodyNode, "bodyPr");
+    if (bodyPrNode) {
+      const anchor = this.xmlParser.getAttribute(bodyPrNode, "anchor");
+      if (anchor === "t") align = "top";
+      else if (anchor === "b") align = "bottom";
+      else align = "middle";
+    }
+    
+    // Check for text alignment from paragraph properties
+    const hasTextAlign = contentItems.some(item => item.style?.textAlign);
+    let paragraphStyle = "";
+    
+    if (hasTextAlign) {
+      const textAlign = contentItems.find(item => item.style?.textAlign)?.style?.textAlign;
+      if (textAlign) {
+        paragraphStyle = ` style="text-align: ${textAlign}"`;
+      }
+    }
+    
+    // Get default font and color
+    const defaultFontName = contentItems[0]?.style?.fontFamily || "Corbel";
+    const defaultColor = contentItems[0]?.style?.color || "#333";
+    
+    return {
+      content: `<p${paragraphStyle}>${html}</p>`,
+      align: align,
+      defaultFontName: defaultFontName,
+      defaultColor: defaultColor
+    };
+  }
+
+  private formatTextContent(contentItems: TextContent[]): string {
+    // Convert text content to HTML format for PPTist
+    let html = '';
+    
+    for (const item of contentItems) {
+      let span = '<span';
+      const styles: string[] = [];
+      
+      if (item.style) {
+        if (item.style.fontSize) {
+          styles.push(`font-size: ${item.style.fontSize}px`);
+        }
+        if (item.style.color) {
+          styles.push(`color: ${item.style.color}`);
+        }
+        if (item.style.fontFamily) {
+          styles.push(`font-family: '${item.style.fontFamily}'`);
+        }
+        if (item.style.bold) {
+          styles.push('font-weight: bold');
+        }
+        if (item.style.italic) {
+          styles.push('font-style: italic');
+        }
+        // Don't include textAlign in span styles as it's applied at paragraph level
+      }
+      
+      if (styles.length > 0) {
+        span += ` style="${styles.join('; ')}"`;
+      }
+      span += `>${item.text}</span>`;
+      
+      html += span;
+    }
+    
+    return html || '';
+  }
+
+  private mapAlignmentToCSS(algn: string): string {
+    switch (algn) {
+      case 'l': return 'left';
+      case 'ctr': return 'center';
+      case 'r': return 'right';
+      case 'just': return 'justify';
+      default: return 'left';
+    }
   }
 }

@@ -54,10 +54,10 @@ export function configureServices(container: ServiceContainer): void {
     slideParser.registerElementProcessor(connectionShapeProcessor);
     // Line processor handles connection lines
     slideParser.registerElementProcessor(lineProcessor);
-    // Text processor processes text elements and generates background shapes when needed
-    slideParser.registerElementProcessor(textProcessor);
-    // Shape processor handles pure shapes without text
+    // Shape processor now handles shapes with or without text (complete shape elements)
     slideParser.registerElementProcessor(shapeProcessor);
+    // Text processor only handles pure text elements without shape backgrounds
+    slideParser.registerElementProcessor(textProcessor);
     
     return slideParser;
   });

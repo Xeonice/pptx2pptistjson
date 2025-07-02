@@ -231,6 +231,7 @@ export interface TextRunStyle {
   superscript?: boolean;
   link?: string;
   themeColorType?: string; // Store the original theme color type (e.g., 'accent1', 'dk1')
+  textAlign?: string; // For paragraph-level alignment
 }
 
 export interface BulletStyle {
