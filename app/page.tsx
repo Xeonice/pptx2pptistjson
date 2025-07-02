@@ -37,6 +37,15 @@ export default function Home() {
   const [outputFormat, setOutputFormat] = useState("pptist"); // 默认使用 PPTist 格式
   const [uploadResult, setUploadResult] = useState<UploadResult | null>(null);
   const [viewMode, setViewMode] = useState<'monaco' | 'legacy'>('monaco');
+  const [debugMode, setDebugMode] = useState(false);
+  const [debugOptions, setDebugOptions] = useState({
+    saveDebugImages: true,
+    logProcessingDetails: true,
+    preserveIntermediateSteps: false,
+    includeColorResolutionTrace: false,
+    includeTimingInfo: false,
+    saveXmlFiles: false,
+  });
 
   // 页面加载时的调试信息
   React.useEffect(() => {
@@ -63,6 +72,12 @@ export default function Home() {
       formData.append("useCdn", options.useCdn.toString());
       if (options.cdnFilename) {
         formData.append("cdnFilename", options.cdnFilename);
+      }
+      
+      // 添加调试参数
+      if (debugMode) {
+        formData.append("enableDebugMode", "true");
+        formData.append("debugOptions", JSON.stringify(debugOptions));
       }
 
       console.log("🌐 发送 API 请求到 /api/parse-pptx...");
@@ -234,6 +249,110 @@ export default function Home() {
             <br />
             传统格式: 原始解析格式，包含基础的元素和主题信息
           </div>
+        </div>
+
+        {/* 调试模式配置器 */}
+        <div
+          style={{
+            marginTop: "15px",
+            padding: "16px",
+            backgroundColor: "#fff3cd",
+            borderRadius: "8px",
+            border: "1px solid #ffc107",
+          }}
+        >
+          <div style={{ display: "flex", alignItems: "center", marginBottom: "12px" }}>
+            <label
+              style={{
+                display: "flex",
+                alignItems: "center",
+                cursor: "pointer",
+                fontWeight: "600",
+              }}
+            >
+              <input
+                type="checkbox"
+                checked={debugMode}
+                onChange={(e) => setDebugMode(e.target.checked)}
+                style={{ marginRight: "8px" }}
+              />
+              <span style={{ fontSize: "14px", color: "#333" }}>🐛 调试模式</span>
+            </label>
+          </div>
+          
+          {debugMode && (
+            <div style={{ marginLeft: "20px", marginTop: "12px" }}>
+              <div style={{ fontSize: "12px", color: "#666", marginBottom: "10px" }}>
+                选择调试功能（启用后会在服务端生成调试文件和详细日志）：
+              </div>
+              
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px" }}>
+                <label style={{ display: "flex", alignItems: "center", cursor: "pointer" }}>
+                  <input
+                    type="checkbox"
+                    checked={debugOptions.saveDebugImages}
+                    onChange={(e) => setDebugOptions(prev => ({ ...prev, saveDebugImages: e.target.checked }))}
+                    style={{ marginRight: "6px" }}
+                  />
+                  <span style={{ fontSize: "12px" }}>保存调试图片</span>
+                </label>
+                
+                <label style={{ display: "flex", alignItems: "center", cursor: "pointer" }}>
+                  <input
+                    type="checkbox"
+                    checked={debugOptions.logProcessingDetails}
+                    onChange={(e) => setDebugOptions(prev => ({ ...prev, logProcessingDetails: e.target.checked }))}
+                    style={{ marginRight: "6px" }}
+                  />
+                  <span style={{ fontSize: "12px" }}>详细处理日志</span>
+                </label>
+                
+                <label style={{ display: "flex", alignItems: "center", cursor: "pointer" }}>
+                  <input
+                    type="checkbox"
+                    checked={debugOptions.preserveIntermediateSteps}
+                    onChange={(e) => setDebugOptions(prev => ({ ...prev, preserveIntermediateSteps: e.target.checked }))}
+                    style={{ marginRight: "6px" }}
+                  />
+                  <span style={{ fontSize: "12px" }}>保留中间步骤</span>
+                </label>
+                
+                <label style={{ display: "flex", alignItems: "center", cursor: "pointer" }}>
+                  <input
+                    type="checkbox"
+                    checked={debugOptions.includeColorResolutionTrace}
+                    onChange={(e) => setDebugOptions(prev => ({ ...prev, includeColorResolutionTrace: e.target.checked }))}
+                    style={{ marginRight: "6px" }}
+                  />
+                  <span style={{ fontSize: "12px" }}>颜色解析追踪</span>
+                </label>
+                
+                <label style={{ display: "flex", alignItems: "center", cursor: "pointer" }}>
+                  <input
+                    type="checkbox"
+                    checked={debugOptions.includeTimingInfo}
+                    onChange={(e) => setDebugOptions(prev => ({ ...prev, includeTimingInfo: e.target.checked }))}
+                    style={{ marginRight: "6px" }}
+                  />
+                  <span style={{ fontSize: "12px" }}>性能计时信息</span>
+                </label>
+                
+                <label style={{ display: "flex", alignItems: "center", cursor: "pointer" }}>
+                  <input
+                    type="checkbox"
+                    checked={debugOptions.saveXmlFiles}
+                    onChange={(e) => setDebugOptions(prev => ({ ...prev, saveXmlFiles: e.target.checked }))}
+                    style={{ marginRight: "6px" }}
+                  />
+                  <span style={{ fontSize: "12px" }}>保存XML文件</span>
+                </label>
+              </div>
+              
+              <div style={{ fontSize: "11px", color: "#856404", marginTop: "8px", fontStyle: "italic" }}>
+                ⚠️ 调试模式会增加处理时间和服务器存储占用
+              </div>
+            </div>
+          )}
         </div>
 
         {/* 查看模式选择器 */}

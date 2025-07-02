@@ -10,6 +10,7 @@ import { UnitConverter } from "../../utils/UnitConverter";
 import { FillExtractor } from "../../utils/FillExtractor";
 import { getTextByPathList } from "../../../utils";
 import { TextContent } from "../../../models/domain/elements/TextElement";
+import { DebugHelper } from "../../utils/DebugHelper";
 
 export class ShapeProcessor implements IElementProcessor<ShapeElement> {
   constructor(private xmlParser: IXmlParseService) {}
@@ -28,6 +29,8 @@ export class ShapeProcessor implements IElementProcessor<ShapeElement> {
     xmlNode: XmlNode,
     context: ProcessingContext
   ): Promise<ShapeElement> {
+    DebugHelper.log(context, "=== Starting Shape Processing ===", "info");
+    
     // Extract shape ID
     const nvSpPrNode = this.xmlParser.findNode(xmlNode, "nvSpPr");
     const cNvPrNode = nvSpPrNode
@@ -53,10 +56,12 @@ export class ShapeProcessor implements IElementProcessor<ShapeElement> {
         if (prst) {
           shapeType = this.mapGeometryToShapeType(prst);
           pathFormula = prst; // Set the pathFormula from prst attribute
+          DebugHelper.log(context, `Shape geometry: ${prst} -> ${shapeType}`, "info");
 
           // Extract adjustment values for roundRect shapes
           if (prst === "roundRect") {
             adjustmentValues = this.extractAdjustmentValues(prstGeomNode);
+            DebugHelper.log(context, `RoundRect adjustments:`, "info", adjustmentValues);
           }
         }
       } else {
@@ -94,10 +99,10 @@ export class ShapeProcessor implements IElementProcessor<ShapeElement> {
           const x = this.xmlParser.getAttribute(offNode, "x");
           const y = this.xmlParser.getAttribute(offNode, "y");
           if (x && y) {
-            shapeElement.setPosition({
-              x: UnitConverter.emuToPointsPrecise(parseInt(x)),
-              y: UnitConverter.emuToPointsPrecise(parseInt(y)),
-            });
+            const posX = UnitConverter.emuToPointsPrecise(parseInt(x));
+            const posY = UnitConverter.emuToPointsPrecise(parseInt(y));
+            shapeElement.setPosition({ x: posX, y: posY });
+            DebugHelper.log(context, `Shape position: (${posX}, ${posY})`, "info");
           }
         }
 
@@ -113,6 +118,7 @@ export class ShapeProcessor implements IElementProcessor<ShapeElement> {
               width,
               height,
             });
+            DebugHelper.log(context, `Shape size: ${width} x ${height}`, "info");
           }
         }
 
@@ -153,11 +159,16 @@ export class ShapeProcessor implements IElementProcessor<ShapeElement> {
         }
       }
 
-      // Extract fill color - improved extraction
-      const fillColor = this.extractFillColor(spPrNode, context);
+      // Extract style node for style references (fillRef, lnRef, etc.)
+      const styleNode = this.xmlParser.findNode(xmlNode, "style");
+      
+      // Extract fill color - improved extraction with style references
+      const fillColor = this.extractFillColor(spPrNode, context, styleNode);
       if (fillColor) {
         shapeElement.setFill({ color: fillColor });
+        DebugHelper.log(context, `Shape fill color set to: ${fillColor}`, "success");
       } else {
+        DebugHelper.log(context, "No fill color resolved, using default handling", "warn");
       }
     }
 
@@ -247,12 +258,26 @@ export class ShapeProcessor implements IElementProcessor<ShapeElement> {
 
   private extractFillColor(
     spPrNode: XmlNode,
-    context: ProcessingContext
+    context: ProcessingContext,
+    shapeStyleNode?: XmlNode
   ): string | undefined {
+    DebugHelper.log(context, "Starting fill color extraction", "info");
+    
     // Check for explicit noFill first (but only direct children of spPr, not in a:ln)
     const noFillNode = this.findDirectChildNode(spPrNode, "noFill");
     if (noFillNode) {
+      DebugHelper.log(context, "Found explicit noFill, returning transparent", "info");
       return "rgba(0,0,0,0)"; // Transparent
+    }
+
+    // NEW: Check for style references first (fillRef from p:style)
+    if (shapeStyleNode) {
+      DebugHelper.log(context, "Processing shape style references", "info");
+      const styleColor = this.extractColorFromStyleRef(shapeStyleNode, context);
+      if (styleColor) {
+        DebugHelper.log(context, `Style reference resolved to: ${styleColor}`, "success");
+        return styleColor;
+      }
     }
 
     // Check for direct solidFill in spPr (but only direct children of spPr, not in a:ln)
@@ -316,6 +341,69 @@ export class ShapeProcessor implements IElementProcessor<ShapeElement> {
 
     // Return the color if found, otherwise undefined
     return color && color !== "" ? color : undefined;
+  }
+
+  /**
+   * Extract color from style references (fillRef, lnRef)
+   */
+  private extractColorFromStyleRef(
+    styleNode: XmlNode,
+    context: ProcessingContext
+  ): string | undefined {
+    // Look for fillRef in the style node
+    const fillRefNode = this.xmlParser.findNode(styleNode, "fillRef");
+    if (!fillRefNode) {
+      DebugHelper.log(context, "No fillRef found in style", "info");
+      return undefined;
+    }
+
+    DebugHelper.log(context, "Found fillRef in style", "info");
+
+    // Check for scheme color reference within fillRef
+    const schemeClrNode = this.xmlParser.findNode(fillRefNode, "schemeClr");
+    if (!schemeClrNode) {
+      DebugHelper.log(context, "No schemeClr found in fillRef", "warn");
+      return undefined;
+    }
+
+    const schemeColorValue = this.xmlParser.getAttribute(schemeClrNode, "val");
+    if (!schemeColorValue) {
+      DebugHelper.log(context, "No val attribute found in schemeClr", "warn");
+      return undefined;
+    }
+
+    DebugHelper.log(context, `Processing scheme color: ${schemeColorValue}`, "info");
+
+    if (!context.theme) {
+      DebugHelper.log(context, "No theme available for scheme color resolution", "error");
+      return undefined;
+    }
+
+    // Create scheme color object for FillExtractor
+    const schemeClrObj = this.xmlNodeToObject(schemeClrNode);
+    const solidFillObj = {
+      "a:schemeClr": schemeClrObj
+    };
+
+    const warpObj = {
+      themeContent: this.createThemeContent(context.theme)
+    };
+
+    const resolvedColor = FillExtractor.getSolidFill(
+      solidFillObj,
+      undefined,
+      undefined,
+      warpObj
+    );
+
+    if (DebugHelper.shouldIncludeColorTrace(context)) {
+      DebugHelper.log(context, `Color resolution trace:`, "info");
+      DebugHelper.log(context, `  Scheme color: ${schemeColorValue}`, "info");
+      DebugHelper.log(context, `  Resolved to: ${resolvedColor}`, "info");
+      DebugHelper.log(context, `  Theme available: ${!!context.theme}`, "info");
+    }
+
+    return resolvedColor && resolvedColor !== "" ? resolvedColor : undefined;
   }
 
   private xmlNodeToObject(node: XmlNode): any {

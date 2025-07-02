@@ -5,7 +5,8 @@ import { XmlNode } from '../../../models/xml/XmlNode';
 import { IXmlParseService } from '../../interfaces/IXmlParseService';
 import { UnitConverter } from '../../utils/UnitConverter';
 import { ImageDataService } from '../../images/ImageDataService';
-import { ImageOffsetAdjuster, OffsetStrategy } from './ImageOffsetAdjuster';
+import { ImageOffsetAdjuster } from './ImageOffsetAdjuster';
+import { DebugHelper } from '../../utils/DebugHelper';
 
 export class ImageProcessor implements IElementProcessor<ImageElement> {
   constructor(
@@ -74,12 +75,24 @@ export class ImageProcessor implements IElementProcessor<ImageElement> {
     // 尝试提取并处理实际的图片数据
     if (embedId && this.imageDataService) {
       try {
+        DebugHelper.log(context, `Processing image with embedId: ${embedId}`, "info");
+        
         const imageData = await this.imageDataService.extractImageData(embedId, context);
         if (imageData) {
           const dataUrl = this.imageDataService.encodeToBase64(imageData);
           imageElement.setImageData(imageData, dataUrl);
+          
+          const dimensions = imageData.dimensions ? `${imageData.dimensions.width}x${imageData.dimensions.height}` : 'unknown dimensions';
+          DebugHelper.log(context, `Image data processed successfully: ${imageData.format}, ${dimensions}`, "success");
+          
+          // TODO: Add stretch offset processing with debug if needed
+          // This is where ImageProcessingService integration would go
+          if (DebugHelper.shouldSaveDebugImages(context)) {
+            DebugHelper.log(context, `Debug image saving is enabled but not yet integrated with stretch processing`, "warn");
+          }
         }
       } catch (error) {
+        DebugHelper.log(context, `Failed to process image data for ${embedId}: ${error}`, "error");
         console.warn(`Failed to process image data for ${embedId}:`, error);
         // 继续使用占位符URL，不影响其他处理
       }

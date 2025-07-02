@@ -51,4 +51,44 @@ export interface ParseOptions {
     colors?: Record<string, string>;
     fonts?: Record<string, string>;
   };
+
+  /**
+   * Master debug mode switch
+   */
+  enableDebugMode?: boolean;
+
+  /**
+   * Detailed debug configuration options
+   */
+  debugOptions?: {
+    /**
+     * Save debug images during image processing
+     */
+    saveDebugImages?: boolean;
+    
+    /**
+     * Enable detailed console logging
+     */
+    logProcessingDetails?: boolean;
+    
+    /**
+     * Preserve intermediate processing steps
+     */
+    preserveIntermediateSteps?: boolean;
+    
+    /**
+     * Include color resolution trace in shape processing
+     */
+    includeColorResolutionTrace?: boolean;
+    
+    /**
+     * Include processing timing information
+     */
+    includeTimingInfo?: boolean;
+    
+    /**
+     * Save XML intermediate files for inspection
+     */
+    saveXmlFiles?: boolean;
+  };
 }

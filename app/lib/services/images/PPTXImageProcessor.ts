@@ -68,7 +68,9 @@ export class PPTXImageProcessor {
    */
   private async initializeSharp(): Promise<void> {
     try {
-      this.sharp = (await import('sharp')).default as SharpStatic;
+      // Use dynamic import with type assertion to avoid TypeScript errors when sharp is not installed
+      const sharpModule = await import('sharp' as any);
+      this.sharp = sharpModule.default as SharpStatic;
       this.isSharpAvailable = true;
       console.log('✅ Sharp initialized successfully for image processing');
     } catch (error) {

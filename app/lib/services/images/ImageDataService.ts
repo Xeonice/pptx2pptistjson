@@ -1,5 +1,6 @@
 import { ProcessingContext } from '../interfaces/ProcessingContext';
 import { FileService } from '../core/FileService';
+import { DebugHelper } from '../utils/DebugHelper';
 
 export interface ImageData {
   buffer: Buffer;
@@ -30,10 +31,13 @@ export class ImageDataService {
    * 从PPTX中提取图片二进制数据
    */
   async extractImageData(embedId: string, context: ProcessingContext): Promise<ImageData | null> {
+    DebugHelper.log(context, `=== Starting Image Data Extraction for ${embedId} ===`, "info");
+    
     try {
       // 从关系映射中获取图片路径
       const relationship = context.relationships.get(embedId);
       if (!relationship) {
+        DebugHelper.log(context, `No relationship found for embedId: ${embedId}`, "warn");
         console.warn(`No relationship found for embedId: ${embedId}`);
         return null;
       }
@@ -51,10 +55,12 @@ export class ImageDataService {
 
       // 构建完整的图片路径
       const fullPath = this.resolveImagePath(imagePath);
+      DebugHelper.log(context, `Resolved image path: ${fullPath}`, "info");
       
       // 从ZIP中提取图片数据
       const buffer = await this.fileService.extractBinaryFileAsBuffer(context.zip, fullPath);
       if (!buffer) {
+        DebugHelper.log(context, `Failed to extract image data from path: ${fullPath}`, "error");
         console.warn(`Failed to extract image data from path: ${fullPath}`);
         return null;
       }
@@ -70,7 +76,7 @@ export class ImageDataService {
       // 获取图片尺寸（可选）
       const dimensions = await this.getImageDimensions(buffer, format);
 
-      return {
+      const imageData = {
         buffer,
         filename,
         mimeType,
@@ -80,9 +86,69 @@ export class ImageDataService {
         dimensions
       };
 
+      DebugHelper.log(context, `Image extracted successfully: ${filename} (${format}, ${buffer.length} bytes)`, "success");
+      
+      // 如果启用了调试图片保存，保存原始图片用于调试
+      if (DebugHelper.shouldSaveDebugImages(context)) {
+        await this.saveDebugImage(imageData, embedId, context);
+      }
+
+      return imageData;
+
     } catch (error) {
+      DebugHelper.log(context, `Error extracting image data for ${embedId}: ${error}`, "error");
       console.error(`Error extracting image data for ${embedId}:`, error);
       return null;
+    }
+  }
+
+  /**
+   * 保存调试图片到debug-images目录
+   */
+  private async saveDebugImage(imageData: ImageData, embedId: string, context: ProcessingContext): Promise<void> {
+    try {
+      const fs = require('fs');
+      const path = require('path');
+      
+      // 创建debug-images目录
+      const debugDir = path.join(process.cwd(), 'debug-images');
+      if (!fs.existsSync(debugDir)) {
+        fs.mkdirSync(debugDir, { recursive: true });
+        DebugHelper.log(context, `Created debug directory: ${debugDir}`, "info");
+      }
+      
+      // 生成调试文件名
+      const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+      const slideId = context.slideId || 'unknown';
+      const debugFileName = `slide-${slideId}_image-${embedId}_${timestamp}.${imageData.format}`;
+      const debugFilePath = path.join(debugDir, debugFileName);
+      
+      // 保存图片文件
+      fs.writeFileSync(debugFilePath, imageData.buffer);
+      
+      // 保存元数据JSON
+      const metadataFileName = `slide-${slideId}_image-${embedId}_${timestamp}.json`;
+      const metadataFilePath = path.join(debugDir, metadataFileName);
+      const metadata = {
+        embedId,
+        slideId,
+        filename: imageData.filename,
+        format: imageData.format,
+        mimeType: imageData.mimeType,
+        size: imageData.size,
+        hash: imageData.hash,
+        dimensions: imageData.dimensions,
+        extractedAt: new Date().toISOString(),
+        debugFilePath
+      };
+      fs.writeFileSync(metadataFilePath, JSON.stringify(metadata, null, 2));
+      
+      DebugHelper.log(context, `Debug image saved: ${debugFileName}`, "success");
+      DebugHelper.log(context, `Debug metadata saved: ${metadataFileName}`, "info");
+      
+    } catch (error) {
+      DebugHelper.log(context, `Failed to save debug image: ${error}`, "error");
+      console.warn(`Failed to save debug image for ${embedId}:`, error);
     }
   }
 
@@ -230,7 +296,12 @@ export class ImageDataService {
   /**
    * 获取图片尺寸（简单实现）
    */
-  private async getImageDimensions(buffer: Buffer, format: ImageFormat): Promise<{ width: number; height: number } | undefined> {
+  private async getImageDimensions(
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    _buffer: Buffer, 
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    _format: ImageFormat
+  ): Promise<{ width: number; height: number } | undefined> {
     try {
       // 这里可以集成 image-size 库或自己实现
       // 为了简化，暂时返回 undefined

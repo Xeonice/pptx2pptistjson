@@ -17,21 +17,25 @@ export async function POST(request: NextRequest) {
     // 检查是否提供了 CDN URL
     if (cdnUrl) {
       console.log("☁️ 从 CDN 下载文件:", cdnUrl);
-      
+
       try {
         // 从 CDN 下载文件
         const response = await fetch(cdnUrl);
-        
+
         if (!response.ok) {
-          throw new Error(`Failed to download from CDN: ${response.status} ${response.statusText}`);
+          throw new Error(
+            `Failed to download from CDN: ${response.status} ${response.statusText}`
+          );
         }
 
         fileBuffer = await response.arrayBuffer();
-        
+
         // 从 Content-Disposition 或 URL 中获取文件名
         const contentDisposition = response.headers.get("content-disposition");
         if (contentDisposition) {
-          const filenameMatch = contentDisposition.match(/filename="?(.+?)"?(?:;|$)/);
+          const filenameMatch = contentDisposition.match(
+            /filename="?(.+?)"?(?:;|$)/
+          );
           fileName = filenameMatch ? filenameMatch[1] : "downloaded.pptx";
         } else {
           // 从 URL 中提取文件名
@@ -39,22 +43,26 @@ export async function POST(request: NextRequest) {
             const url = new URL(cdnUrl);
             // 从路径中提取文件名，移除路径分隔符
             let pathName = url.pathname;
-            const pathParts = pathName.split('/');
+            const pathParts = pathName.split("/");
             fileName = pathParts[pathParts.length - 1] || "downloaded.pptx";
-            
+
             // 如果从路径无法得到有效文件名，尝试从 URL 片段中提取
-            if (!fileName || fileName === "download" || !fileName.includes('.')) {
+            if (
+              !fileName ||
+              fileName === "download" ||
+              !fileName.includes(".")
+            ) {
               // 对于 Vercel Blob URL，文件名可能在路径的其他位置
               for (let i = pathParts.length - 1; i >= 0; i--) {
-                if (pathParts[i] && pathParts[i].includes('.pptx')) {
+                if (pathParts[i] && pathParts[i].includes(".pptx")) {
                   fileName = pathParts[i];
                   break;
                 }
               }
             }
-            
+
             // 确保有默认文件名
-            if (!fileName || !fileName.includes('.')) {
+            if (!fileName || !fileName.includes(".")) {
               fileName = "downloaded.pptx";
             }
           } catch (urlError) {
@@ -66,7 +74,9 @@ export async function POST(request: NextRequest) {
         // 验证文件扩展名
         if (!fileName.toLowerCase().endsWith(".pptx")) {
           console.log("❌ CDN 文件类型错误:", fileName);
-          throw new Error("Invalid file type. Only .pptx files are supported from CDN.");
+          throw new Error(
+            "Invalid file type. Only .pptx files are supported from CDN."
+          );
         }
 
         console.log("✅ CDN 文件下载成功:", {
@@ -76,9 +86,10 @@ export async function POST(request: NextRequest) {
       } catch (cdnError) {
         console.error("❌ CDN 下载失败:", cdnError);
         return NextResponse.json(
-          { 
+          {
             error: "Failed to download file from CDN",
-            details: cdnError instanceof Error ? cdnError.message : String(cdnError)
+            details:
+              cdnError instanceof Error ? cdnError.message : String(cdnError),
           },
           { status: 400 }
         );
@@ -111,15 +122,30 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    debugger;
-
     // 获取输出格式参数
     const format = (formData.get("format") as string) || "legacy";
     // 获取 CDN 存储选项
     const useCdn = formData.get("useCdn") === "true";
     const cdnFilename = formData.get("cdnFilename") as string;
+    // 获取调试参数
+    const enableDebugMode = formData.get("enableDebugMode") === "true";
+    const debugOptionsString = formData.get("debugOptions") as string;
+    let debugOptions = null;
+    
+    if (enableDebugMode && debugOptionsString) {
+      try {
+        debugOptions = JSON.parse(debugOptionsString);
+      } catch (parseError) {
+        console.warn("⚠️ 调试选项解析失败:", parseError);
+      }
+    }
+    
     console.log("🎯 输出格式:", format);
     console.log("☁️ 使用 CDN 存储:", useCdn);
+    console.log("🐛 调试模式:", enableDebugMode);
+    if (enableDebugMode) {
+      console.log("🐛 调试选项:", debugOptions);
+    }
 
     console.log("🔄 开始解析 PPTX 文件...");
     console.log("文件大小:", fileBuffer.byteLength);
@@ -128,7 +154,11 @@ export async function POST(request: NextRequest) {
 
     // Parse the PPTX file using our internal parser
     console.log("📊 使用内部解析器解析...");
-    const jsonResult = await pptxParser.parseToJSON(fileBuffer);
+    const parseOptions = {
+      enableDebugMode,
+      debugOptions,
+    };
+    const jsonResult = await pptxParser.parseToJSON(fileBuffer, parseOptions);
 
     console.log("✅ 解析完成");
     console.log("解析结果类型:", typeof jsonResult);
@@ -161,6 +191,8 @@ export async function POST(request: NextRequest) {
         resultType: typeof jsonResult,
         resultKeys: Object.keys(jsonResult || {}),
         hasData: !!jsonResult,
+        debugMode: enableDebugMode,
+        debugOptions: enableDebugMode ? debugOptions : undefined,
       },
     };
 
@@ -169,24 +201,27 @@ export async function POST(request: NextRequest) {
       try {
         console.log("☁️ 开始上传 JSON 到 CDN...");
         const cdnService = createCdnStorageService();
-        
+
         if (cdnService.isAvailable()) {
           const uploadOptions = {
             filename: cdnFilename || `pptx-result-${Date.now()}.json`,
-            contentType: 'application/json',
-            access: 'public' as const,
+            contentType: "application/json",
+            access: "public" as const,
             ttl: 3600 * 24, // 24 hours
             metadata: {
               originalFilename: fileName,
               uploadedAt: new Date().toISOString(),
               format,
-            }
+            },
           };
 
-          const uploadResult = await cdnService.uploadJSON(jsonResult, uploadOptions);
-          
+          const uploadResult = await cdnService.uploadJSON(
+            jsonResult,
+            uploadOptions
+          );
+
           console.log("✅ JSON 上传到 CDN 成功:", uploadResult.url);
-          
+
           // 替换响应数据为 CDN URL 引用
           response = {
             success: true,
@@ -210,7 +245,8 @@ export async function POST(request: NextRequest) {
         // 添加 CDN 错误信息但继续返回原始数据
         response.cdnError = {
           message: "CDN upload failed, returning JSON directly",
-          details: cdnError instanceof Error ? cdnError.message : String(cdnError),
+          details:
+            cdnError instanceof Error ? cdnError.message : String(cdnError),
         };
       }
     }

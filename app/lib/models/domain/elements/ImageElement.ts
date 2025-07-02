@@ -81,6 +81,12 @@ export class ImageElement extends Element {
     return this.offsetInfo;
   }
 
+  getStretchInfo(): ImageStretchInfo | undefined {
+    // For now, return undefined as stretch info is not fully implemented
+    // This method exists to satisfy the TypeScript interface requirements
+    return undefined;
+  }
+
   toJSON(): any {
     const baseOutput = {
       type: this.type,
@@ -197,4 +203,19 @@ export interface ImageData {
   size: number;
   hash: string;
   dimensions?: { width: number; height: number };
+}
+
+export interface ImageStretchInfo {
+  fillRect: {
+    left: number;
+    top: number;
+    right: number;
+    bottom: number;
+  };
+  srcRect?: {
+    left: number;
+    top: number;
+    right: number;
+    bottom: number;
+  };
 }
