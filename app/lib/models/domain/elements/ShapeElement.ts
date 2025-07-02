@@ -5,6 +5,7 @@ export class ShapeElement extends Element {
   private path?: string;
   private pathFormula?: string;
   private text?: TextContent;
+  private shapeText?: ShapeTextContent;
   private fill?: { color: string };
   private stroke?: StrokeProperties;
   private flip?: { horizontal: boolean; vertical: boolean };
@@ -69,13 +70,22 @@ export class ShapeElement extends Element {
       }
       case "roundRect": {
         const adjustValues = this.getAdjustmentValues();
-        const adjValue = adjustValues.adj !== undefined ? adjustValues.adj : 0.1;
+        const adjValue =
+          adjustValues.adj !== undefined ? adjustValues.adj : 0.1;
         const w = this.size?.width || 200;
         const h = this.size?.height || 200;
         const roundRectRx = Math.min(w, h) * adjValue;
-        
+
         // Always generate rounded rectangle path (no circle conversion)
-        return `M ${roundRectRx} 0 L ${w - roundRectRx} 0 Q ${w} 0 ${w} ${roundRectRx} L ${w} ${h - roundRectRx} Q ${w} ${h} ${w - roundRectRx} ${h} L ${roundRectRx} ${h} Q 0 ${h} 0 ${h - roundRectRx} L 0 ${roundRectRx} Q 0 0 ${roundRectRx} 0 Z`;
+        return `M ${roundRectRx} 0 L ${
+          w - roundRectRx
+        } 0 Q ${w} 0 ${w} ${roundRectRx} L ${w} ${
+          h - roundRectRx
+        } Q ${w} ${h} ${
+          w - roundRectRx
+        } ${h} L ${roundRectRx} ${h} Q 0 ${h} 0 ${
+          h - roundRectRx
+        } L 0 ${roundRectRx} Q 0 0 ${roundRectRx} 0 Z`;
       }
       case "triangle":
         return "M 100 0 L 200 200 L 0 200 Z";
@@ -130,6 +140,10 @@ export class ShapeElement extends Element {
     this.text = { content };
   }
 
+  setShapeTextContent(textContent: ShapeTextContent): void {
+    this.shapeText = textContent;
+  }
+
   toJSON(): any {
     const themeFill = this.getThemeFill();
     const result: any = {
@@ -144,7 +158,7 @@ export class ShapeElement extends Element {
       pathFormula: this.pathFormula,
       shape: this.shapeType,
       fill: themeFill.color, // String format for frontend rendering
-      themeFill: themeFill,  // Object format for theme management
+      themeFill: themeFill, // Object format for theme management
       fixedRatio: false,
       rotate: this.rotation || 0,
       enableShrink: true,
@@ -158,28 +172,32 @@ export class ShapeElement extends Element {
       result.keypoints = [adjValue];
     }
 
+    // Add text content if present
+    if (this.shapeText) {
+      result.text = this.shapeText;
+    }
+
     return result;
   }
 
-
   private getThemeFill(): { color: string; debug?: any } {
     // Return actual fill color if available, prioritizing extracted colors
-    if (this.fill && this.fill.color && this.fill.color !== 'rgba(0,0,0,0)') {
-      return { 
+    if (this.fill && this.fill.color) {
+      return {
         color: this.fill.color,
-        debug: `Extracted from fill: ${this.fill.color}`
+        debug: `Extracted from fill: ${this.fill.color}`,
       };
     }
-    
+
     // Generate fallback colors for better visual compatibility (RGBA format)
     const colors = [
-      "rgba(255,137,137,1)",   // Red
-      "rgba(216,241,255,1)",   // Light Blue  
-      "rgba(255,219,65,1)",    // Yellow
-      "rgba(144,238,144,1)",   // Light Green
-      "rgba(255,182,193,1)",   // Light Pink
+      "rgba(255,137,137,1)", // Red
+      "rgba(216,241,255,1)", // Light Blue
+      "rgba(255,219,65,1)", // Yellow
+      "rgba(144,238,144,1)", // Light Green
+      "rgba(255,182,193,1)", // Light Pink
     ];
-    
+
     // Create a simple hash from the ID to get consistent color selection
     let hash = 0;
     for (let i = 0; i < this.id.length; i++) {
@@ -187,9 +205,11 @@ export class ShapeElement extends Element {
     }
     const index = Math.abs(hash) % colors.length;
     const fallbackColor = colors[index];
-    return { 
+    return {
       color: fallbackColor,
-      debug: `Fallback color - no extracted fill. Original fill was: ${JSON.stringify(this.fill)}. ID: ${this.id}`
+      debug: `Fallback color - no extracted fill. Original fill was: ${JSON.stringify(
+        this.fill
+      )}. ID: ${this.id}`,
     };
   }
 }
@@ -224,7 +244,15 @@ export interface TextContent {
     color?: string;
     align?: "left" | "center" | "right";
     valign?: "top" | "middle" | "bottom";
+    textAlign?: string;
   };
+}
+
+export interface ShapeTextContent {
+  content: string;
+  align?: string;
+  defaultFontName?: string;
+  defaultColor?: string;
 }
 
 export interface StrokeProperties {
