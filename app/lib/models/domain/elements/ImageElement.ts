@@ -11,10 +11,13 @@ export class ImageElement extends Element {
   private originalSize?: number;
   private aspectRatio?: number;
   private offsetInfo?: ImageOffsetInfo;
+  private stretchInfo?: ImageStretchInfo;
+  private embedId?: string;
 
-  constructor(id: string, src: string) {
+  constructor(id: string, src: string, embedId?: string) {
     super(id, "image");
     this.src = src;
+    this.embedId = embedId;
   }
 
   getSrc(): string {
@@ -81,10 +84,72 @@ export class ImageElement extends Element {
     return this.offsetInfo;
   }
 
+  setStretchInfo(stretchInfo: ImageStretchInfo): void {
+    this.stretchInfo = stretchInfo;
+  }
+
   getStretchInfo(): ImageStretchInfo | undefined {
-    // For now, return undefined as stretch info is not fully implemented
-    // This method exists to satisfy the TypeScript interface requirements
+    // 优先使用从XML解析的拉伸信息
+    if (this.stretchInfo) {
+      return this.stretchInfo;
+    }
+    
+    // 如果有偏移信息，转换为拉伸信息
+    if (this.offsetInfo) {
+      // 验证偏移百分比值
+      const leftPercent = this.offsetInfo.leftOffsetPercent;
+      const topPercent = this.offsetInfo.topOffsetPercent;
+      const rightPercent = this.offsetInfo.rightOffsetPercent;
+      const bottomPercent = this.offsetInfo.bottomOffsetPercent;
+      
+      // 检查是否有无效值（NaN或Infinity）
+      if (!isFinite(leftPercent) || !isFinite(topPercent) || 
+          !isFinite(rightPercent) || !isFinite(bottomPercent)) {
+        console.warn(`Invalid offset percentages in ImageElement ${this.id}:`, {
+          left: leftPercent, top: topPercent, right: rightPercent, bottom: bottomPercent
+        });
+        return undefined;
+      }
+      
+      // PowerPoint fillRect 的工作原理：
+      // - 负值表示图片超出容器边界（向外扩展）
+      // - 正值表示图片在容器内部（向内收缩）
+      // 直接转换百分比为小数，保持负值
+      const left = leftPercent / 100;
+      const top = topPercent / 100;
+      const right = rightPercent / 100;
+      const bottom = bottomPercent / 100;
+      
+      // 检查分母是否会导致除零
+      const widthDenominator = 1 - left - right;
+      const heightDenominator = 1 - top - bottom;
+      
+      if (widthDenominator <= 0.001 || heightDenominator <= 0.001) {
+        console.warn(`FillRect would cause division by zero in ImageElement ${this.id}:`, {
+          left, top, right, bottom,
+          widthDenominator, heightDenominator
+        });
+        return undefined;
+      }
+      
+      return {
+        fillRect: {
+          left,
+          top,
+          right,
+          bottom,
+        },
+      };
+    }
     return undefined;
+  }
+
+  setEmbedId(embedId: string): void {
+    this.embedId = embedId;
+  }
+
+  getEmbedId(): string | undefined {
+    return this.embedId;
   }
 
   toJSON(): any {
@@ -99,31 +164,46 @@ export class ImageElement extends Element {
       rotate: this.rotation || 0,
       clip: {
         shape: "rect",
-        range: this.crop ? this.convertCropToRange() : [[0, 0], [100, 100]],
+        range: this.crop
+          ? this.convertCropToRange()
+          : [
+              [0, 0],
+              [100, 100],
+            ],
       },
       loading: false,
       // 偏移信息 - 供编辑器使用
-      offsetInfo: this.offsetInfo ? {
-        // 绝对偏移量(points)
-        leftOffset: this.offsetInfo.leftOffset,
-        topOffset: this.offsetInfo.topOffset,
-        rightOffset: this.offsetInfo.rightOffset,
-        bottomOffset: this.offsetInfo.bottomOffset,
-        // 百分比偏移量(类似PowerPoint Stretch Offset)
-        leftOffsetPercent: this.offsetInfo.leftOffsetPercent,
-        topOffsetPercent: this.offsetInfo.topOffsetPercent,
-        rightOffsetPercent: this.offsetInfo.rightOffsetPercent,
-        bottomOffsetPercent: this.offsetInfo.bottomOffsetPercent,
-        // 原始和转换后位置
-        originalPosition: {
-          x: this.offsetInfo.originalX,
-          y: this.offsetInfo.originalY
-        },
-        convertedPosition: {
-          x: this.offsetInfo.convertedX,
-          y: this.offsetInfo.convertedY
-        }
-      } : undefined,
+      offsetInfo: this.offsetInfo
+        ? {
+            // 绝对偏移量(points)
+            leftOffset: this.offsetInfo.leftOffset,
+            topOffset: this.offsetInfo.topOffset,
+            rightOffset: this.offsetInfo.rightOffset,
+            bottomOffset: this.offsetInfo.bottomOffset,
+            // 百分比偏移量(类似PowerPoint Stretch Offset)
+            leftOffsetPercent: this.offsetInfo.leftOffsetPercent,
+            topOffsetPercent: this.offsetInfo.topOffsetPercent,
+            rightOffsetPercent: this.offsetInfo.rightOffsetPercent,
+            bottomOffsetPercent: this.offsetInfo.bottomOffsetPercent,
+            // 原始和转换后位置
+            originalPosition: {
+              x: this.offsetInfo.originalX,
+              y: this.offsetInfo.originalY,
+            },
+            convertedPosition: {
+              x: this.offsetInfo.convertedX,
+              y: this.offsetInfo.convertedY,
+            },
+          }
+        : undefined,
+      // 拉伸信息 - PowerPoint原生fillRect
+      stretchInfo: this.stretchInfo
+        ? {
+            fillRect: this.stretchInfo.fillRect,
+            srcRect: this.stretchInfo.srcRect,
+            fromXml: this.stretchInfo.fromXml,
+          }
+        : undefined,
     };
 
     // 根据是否有图片数据决定输出格式
@@ -134,7 +214,7 @@ export class ImageElement extends Element {
         format: this.format,
         mimeType: this.mimeType,
         originalSize: this.originalSize,
-        mode: 'base64',
+        mode: "base64",
         // 保留原始路径作为备用信息
         originalSrc: this.src,
         alt: this.alt,
@@ -144,7 +224,7 @@ export class ImageElement extends Element {
       return {
         ...baseOutput,
         src: this.convertSrcToUrl(),
-        mode: 'url',
+        mode: "url",
         alt: this.alt,
       };
     }
@@ -161,31 +241,35 @@ export class ImageElement extends Element {
   }
 
   private convertCropToRange(): number[][] {
-    if (!this.crop) return [[0, 0], [100, 100]];
-    
+    if (!this.crop)
+      return [
+        [0, 0],
+        [100, 100],
+      ];
+
     // 将裁剪信息转换为百分比范围
     return [
       [this.crop.left, this.crop.top],
-      [100 - this.crop.right, 100 - this.crop.bottom]
+      [100 - this.crop.right, 100 - this.crop.bottom],
     ];
   }
 }
 
 export interface ImageOffsetInfo {
-  originalX: number;        // 原始EMU单位的X坐标
-  originalY: number;        // 原始EMU单位的Y坐标
-  convertedX: number;       // 转换后的X坐标(points)
-  convertedY: number;       // 转换后的Y坐标(points)
-  adjustedX?: number;       // 调整后的X坐标(points)
-  adjustedY?: number;       // 调整后的Y坐标(points)
-  leftOffset: number;       // 向左偏移量(points)
-  topOffset: number;        // 向上偏移量(points)
-  rightOffset: number;      // 向右偏移量(points)
-  bottomOffset: number;     // 向下偏移量(points)
-  leftOffsetPercent: number;    // 向左偏移百分比
-  topOffsetPercent: number;     // 向上偏移百分比
-  rightOffsetPercent: number;   // 向右偏移百分比
-  bottomOffsetPercent: number;  // 向下偏移百分比
+  originalX: number; // 原始EMU单位的X坐标
+  originalY: number; // 原始EMU单位的Y坐标
+  convertedX: number; // 转换后的X坐标(points)
+  convertedY: number; // 转换后的Y坐标(points)
+  adjustedX?: number; // 调整后的X坐标(points)
+  adjustedY?: number; // 调整后的Y坐标(points)
+  leftOffset: number; // 向左偏移量(points)
+  topOffset: number; // 向上偏移量(points)
+  rightOffset: number; // 向右偏移量(points)
+  bottomOffset: number; // 向下偏移量(points)
+  leftOffsetPercent: number; // 向左偏移百分比
+  topOffsetPercent: number; // 向上偏移百分比
+  rightOffsetPercent: number; // 向右偏移百分比
+  bottomOffsetPercent: number; // 向下偏移百分比
 }
 
 export interface ImageCrop {
@@ -218,4 +302,5 @@ export interface ImageStretchInfo {
     right: number;
     bottom: number;
   };
+  fromXml?: boolean; // 标记是否来自XML解析
 }

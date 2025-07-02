@@ -848,6 +848,7 @@ export class ShapeProcessor implements IElementProcessor<ShapeElement> {
             parseInt(this.xmlParser.getAttribute(child, "wR") || "0") * scaleX;
           const hR =
             parseInt(this.xmlParser.getAttribute(child, "hR") || "0") * scaleY;
+          // eslint-disable-next-line @typescript-eslint/no-unused-vars
           const stAng =
             parseInt(this.xmlParser.getAttribute(child, "stAng") || "0") /
             60000;

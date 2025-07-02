@@ -45,6 +45,7 @@ export class LineElement extends Element {
 
   toJSON(): any {
     const position = this.getPosition();
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const size = this.getSize();
     
     // Calculate relative start and end points from absolute position
