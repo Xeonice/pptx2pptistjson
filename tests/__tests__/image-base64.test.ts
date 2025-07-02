@@ -10,14 +10,20 @@ describe('Image Base64 Processing', () => {
     let mockContext: ProcessingContext;
 
     beforeEach(() => {
-      imageDataService = new ImageDataService({} as any);
+      const mockFileService = {
+        loadZip: jest.fn(),
+        extractFile: jest.fn(),
+        extractBinaryFile: jest.fn(),
+        extractBinaryFileAsBuffer: jest.fn().mockResolvedValue(Buffer.from([0xFF, 0xD8, 0xFF, 0xE0])),
+        listFiles: jest.fn(),
+        getFileInfo: jest.fn()
+      };
+      
+      imageDataService = new ImageDataService(mockFileService as any);
       mockContext = {
         relationships: new Map([['rId1', '../media/image1.jpeg']]), // 直接存储字符串，不是对象
         zip: {} as any,
-        fileService: {
-          extractBinaryFile: jest.fn(),
-          extractBinaryFileAsBuffer: jest.fn()
-        }
+        fileService: mockFileService
       } as any;
     });
 
@@ -69,16 +75,21 @@ describe('Image Base64 Processing', () => {
 
     test('should handle extraction errors gracefully', async () => {
       const mockFileService = {
+        loadZip: jest.fn(),
+        extractFile: jest.fn(),
         extractBinaryFile: jest.fn(),
-        extractBinaryFileAsBuffer: jest.fn().mockRejectedValue(new Error('File not found'))
+        extractBinaryFileAsBuffer: jest.fn().mockRejectedValue(new Error('File not found')),
+        listFiles: jest.fn(),
+        getFileInfo: jest.fn()
       };
       
+      const errorImageDataService = new ImageDataService(mockFileService as any);
       const context = {
         ...mockContext,
         fileService: mockFileService
       };
 
-      const result = await imageDataService.extractImageData('rId1', context);
+      const result = await errorImageDataService.extractImageData('rId1', context);
       expect(result).toBeNull();
     });
   });
@@ -195,8 +206,12 @@ describe('Image Base64 Processing', () => {
       const mockBuffer = Buffer.from([0xFF, 0xD8, 0xFF, 0xE0, 0x00, 0x10, 0x4A, 0x46]); // 完整JPEG header
       
       const mockFileService = {
+        loadZip: jest.fn(),
+        extractFile: jest.fn(),
         extractBinaryFile: jest.fn(),
-        extractBinaryFileAsBuffer: jest.fn().mockResolvedValue(mockBuffer)
+        extractBinaryFileAsBuffer: jest.fn().mockResolvedValue(mockBuffer),
+        listFiles: jest.fn(),
+        getFileInfo: jest.fn()
       };
 
       const mockContext: ProcessingContext = {
@@ -231,8 +246,12 @@ describe('Image Base64 Processing', () => {
 
     test('should handle memory management with multiple images', async () => {
       const mockFileService = {
+        loadZip: jest.fn(),
+        extractFile: jest.fn(),
         extractBinaryFile: jest.fn(),
-        extractBinaryFileAsBuffer: jest.fn().mockResolvedValue(Buffer.from([0xFF, 0xD8, 0xFF, 0xE0, 0x00, 0x10, 0x4A, 0x46]))
+        extractBinaryFileAsBuffer: jest.fn().mockResolvedValue(Buffer.from([0xFF, 0xD8, 0xFF, 0xE0, 0x00, 0x10, 0x4A, 0x46])),
+        listFiles: jest.fn(),
+        getFileInfo: jest.fn()
       };
       const imageDataService = new ImageDataService(mockFileService as any);
       const mockContext: ProcessingContext = {
@@ -242,10 +261,7 @@ describe('Image Base64 Processing', () => {
           ['rId3', '../media/image3.gif']
         ]),
         zip: {} as any,
-        fileService: {
-          extractBinaryFile: jest.fn(),
-          extractBinaryFileAsBuffer: jest.fn().mockResolvedValue(Buffer.from([0xFF, 0xD8, 0xFF, 0xE0, 0x00, 0x10, 0x4A, 0x46]))
-        }
+        fileService: mockFileService
       } as any;
 
       const embedIds = ['rId1', 'rId2', 'rId3'];
