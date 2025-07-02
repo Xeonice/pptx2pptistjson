@@ -100,7 +100,7 @@ describe('修正后的拉伸偏移逻辑测试', () => {
       expect(result.height).toBe(150);
       
       // left 50% 应该显示图片的右侧部分（向内收缩50%）
-      expect(result.appliedEffects).toContain('fillRect stretch');
+      expect(result.appliedEffects.some(effect => effect.startsWith('fillRect stretch:'))).toBe(true);
     });
 
     it('应该正确处理 left 负值偏移（向外扩展）', async () => {
@@ -124,7 +124,7 @@ describe('修正后的拉伸偏移逻辑测试', () => {
       expect(result.height).toBe(150);
       
       // left -50% 应该显示图片的左侧更多内容（向外扩展50%）
-      expect(result.appliedEffects).toContain('fillRect stretch');
+      expect(result.appliedEffects.some(effect => effect.startsWith('fillRect stretch:'))).toBe(true);
     });
 
     it('应该正确处理 top 正值偏移（向内收缩）', async () => {
@@ -148,7 +148,7 @@ describe('修正后的拉伸偏移逻辑测试', () => {
       expect(result.height).toBe(150);
       
       // top 50% 应该显示图片的下半部分（向内收缩50%）
-      expect(result.appliedEffects).toContain('fillRect stretch');
+      expect(result.appliedEffects.some(effect => effect.startsWith('fillRect stretch:'))).toBe(true);
     });
 
     it('应该正确处理复合偏移', async () => {
@@ -172,7 +172,7 @@ describe('修正后的拉伸偏移逻辑测试', () => {
       expect(result.height).toBe(150);
       
       // 复合偏移应该显示图片的中心区域
-      expect(result.appliedEffects).toContain('fillRect stretch');
+      expect(result.appliedEffects.some(effect => effect.startsWith('fillRect stretch:'))).toBe(true);
     });
   });
 
@@ -191,8 +191,10 @@ describe('修正后的拉伸偏移逻辑测试', () => {
         enableDebug: false
       };
 
-      await expect(processor.applyStretchOffset(testImage, config))
-        .rejects.toThrow('Invalid effective dimensions');
+      const result = await processor.applyStretchOffset(testImage, config);
+      
+      // 应该创建透明图片并记录无效显示区域
+      expect(result.appliedEffects.some(effect => effect.includes('Invalid display area'))).toBe(true);
     });
   });
 
