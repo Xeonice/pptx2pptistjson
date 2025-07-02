@@ -167,7 +167,10 @@ export class ShapeProcessor implements IElementProcessor<ShapeElement> {
       const textContent = this.extractTextContent(txBodyNode, context);
       if (textContent && textContent.length > 0) {
         // Create shape text content in PPTist format
-        const shapeTextContent = this.createShapeTextContent(textContent, txBodyNode);
+        const shapeTextContent = this.createShapeTextContent(
+          textContent,
+          txBodyNode
+        );
         shapeElement.setShapeTextContent(shapeTextContent);
       }
     }
@@ -178,7 +181,6 @@ export class ShapeProcessor implements IElementProcessor<ShapeElement> {
   getElementType(): string {
     return "shape";
   }
-
 
   private hasImageFill(xmlNode: XmlNode): boolean {
     // Check if shape has blipFill (image fill)
@@ -247,7 +249,6 @@ export class ShapeProcessor implements IElementProcessor<ShapeElement> {
     spPrNode: XmlNode,
     context: ProcessingContext
   ): string | undefined {
-
     // Check for explicit noFill first (but only direct children of spPr, not in a:ln)
     const noFillNode = this.findDirectChildNode(spPrNode, "noFill");
     if (noFillNode) {
@@ -283,7 +284,6 @@ export class ShapeProcessor implements IElementProcessor<ShapeElement> {
 
       // If we got a transparent color, it means something went wrong
       if (color === "rgba(0,0,0,0)" || color === "" || !color) {
-
       }
 
       return color && color !== "" ? color : undefined;
@@ -360,15 +360,17 @@ export class ShapeProcessor implements IElementProcessor<ShapeElement> {
 
   /**
    * Find direct child node by name (not nested descendants)
-   * This ensures we only look for immediate children of spPr, 
+   * This ensures we only look for immediate children of spPr,
    * not elements nested within a:ln (line properties)
    */
-  private findDirectChildNode(parent: XmlNode, childName: string): XmlNode | undefined {
+  private findDirectChildNode(
+    parent: XmlNode,
+    childName: string
+  ): XmlNode | undefined {
     if (!parent.children) return undefined;
-    
-    return parent.children.find(child => 
-      child.name === childName || 
-      child.name === `a:${childName}`
+
+    return parent.children.find(
+      (child) => child.name === childName || child.name === `a:${childName}`
     );
   }
 
@@ -1194,30 +1196,40 @@ export class ShapeProcessor implements IElementProcessor<ShapeElement> {
       const pPrNode = this.xmlParser.findNode(pNode, "pPr");
       let paragraphAlign = undefined;
       let paragraphLevel = 0; // Default to level 0
-      
-      console.log(`[TextExtract Debug] Processing paragraph, pPr node found: ${!!pPrNode}`);
-      
+
+      console.log(
+        `[TextExtract Debug] Processing paragraph, pPr node found: ${!!pPrNode}`
+      );
+
       if (pPrNode) {
         const algn = this.xmlParser.getAttribute(pPrNode, "algn");
         if (algn) {
           paragraphAlign = this.mapAlignmentToCSS(algn);
-          console.log(`[TextExtract Debug] Paragraph alignment: ${algn} → ${paragraphAlign}`);
+          console.log(
+            `[TextExtract Debug] Paragraph alignment: ${algn} → ${paragraphAlign}`
+          );
         }
-        
+
         // Extract paragraph level (lvl attribute)
         const lvl = this.xmlParser.getAttribute(pPrNode, "lvl");
         if (lvl) {
           paragraphLevel = parseInt(lvl);
-          console.log(`[TextExtract Debug] Paragraph level found: lvl="${lvl}" → ${paragraphLevel}`);
+          console.log(
+            `[TextExtract Debug] Paragraph level found: lvl="${lvl}" → ${paragraphLevel}`
+          );
         } else {
-          console.log(`[TextExtract Debug] No 'lvl' attribute found, using default level 0`);
+          console.log(
+            `[TextExtract Debug] No 'lvl' attribute found, using default level 0`
+          );
         }
       } else {
-        console.log(`[TextExtract Debug] No paragraph properties, using defaults`);
+        console.log(
+          `[TextExtract Debug] No paragraph properties, using defaults`
+        );
       }
 
       const runs = this.xmlParser.findNodes(pNode, "r");
-      
+
       for (const rNode of runs) {
         const tNode = this.xmlParser.findNode(rNode, "t");
         if (tNode) {
@@ -1225,8 +1237,13 @@ export class ShapeProcessor implements IElementProcessor<ShapeElement> {
           if (text.trim()) {
             // Extract run properties with font size priority logic
             const rPrNode = this.xmlParser.findNode(rNode, "rPr");
-            const style = this.extractRunStyleWithFontSize(rPrNode, lstStyleNode, paragraphLevel, context);
-            
+            const style = this.extractRunStyleWithFontSize(
+              rPrNode,
+              lstStyleNode,
+              paragraphLevel,
+              context
+            );
+
             // Apply paragraph alignment to style if present
             if (paragraphAlign) {
               style.textAlign = paragraphAlign;
@@ -1253,7 +1270,11 @@ export class ShapeProcessor implements IElementProcessor<ShapeElement> {
     const style: any = {};
 
     // Apply font size with priority logic
-    const fontSize = this.getFontSizeWithPriority(rPrNode, lstStyleNode, paragraphLevel);
+    const fontSize = this.getFontSizeWithPriority(
+      rPrNode,
+      lstStyleNode,
+      paragraphLevel
+    );
     if (fontSize) {
       style.fontSize = fontSize;
     }
@@ -1296,10 +1317,7 @@ export class ShapeProcessor implements IElementProcessor<ShapeElement> {
     return style;
   }
 
-  private extractRunStyle(
-    rPrNode: XmlNode,
-    context: ProcessingContext
-  ): any {
+  private extractRunStyle(rPrNode: XmlNode, context: ProcessingContext): any {
     const style: any = {};
 
     // Font size
@@ -1343,10 +1361,13 @@ export class ShapeProcessor implements IElementProcessor<ShapeElement> {
     return style;
   }
 
-  private createShapeTextContent(contentItems: TextContent[], txBodyNode: XmlNode): any {
+  private createShapeTextContent(
+    contentItems: TextContent[],
+    txBodyNode: XmlNode
+  ): any {
     // Format text content in PPTist shape text format
     const html = this.formatTextContent(contentItems);
-    
+
     // Extract vertical alignment from body properties
     let align = "middle"; // default
     const bodyPrNode = this.xmlParser.findNode(txBodyNode, "bodyPr");
@@ -1356,38 +1377,39 @@ export class ShapeProcessor implements IElementProcessor<ShapeElement> {
       else if (anchor === "b") align = "bottom";
       else align = "middle";
     }
-    
+
     // Check for text alignment from paragraph properties
-    const hasTextAlign = contentItems.some(item => item.style?.textAlign);
+    const hasTextAlign = contentItems.some((item) => item.style?.textAlign);
     let paragraphStyle = "";
-    
+
     if (hasTextAlign) {
-      const textAlign = contentItems.find(item => item.style?.textAlign)?.style?.textAlign;
+      const textAlign = contentItems.find((item) => item.style?.textAlign)
+        ?.style?.textAlign;
       if (textAlign) {
         paragraphStyle = ` style="text-align: ${textAlign}"`;
       }
     }
-    
+
     // Get default font and color
     const defaultFontName = contentItems[0]?.style?.fontFamily || "Corbel";
     const defaultColor = contentItems[0]?.style?.color || "#333";
-    
+
     return {
       content: `<p${paragraphStyle}>${html}</p>`,
       align: align,
       defaultFontName: defaultFontName,
-      defaultColor: defaultColor
+      defaultColor: defaultColor,
     };
   }
 
   private formatTextContent(contentItems: TextContent[]): string {
     // Convert text content to HTML format for PPTist
-    let html = '';
-    
+    let html = "";
+
     for (const item of contentItems) {
-      let span = '<span';
+      let span = "<span";
       const styles: string[] = [];
-      
+
       if (item.style) {
         if (item.style.fontSize) {
           styles.push(`font-size: ${item.style.fontSize}px`);
@@ -1399,32 +1421,37 @@ export class ShapeProcessor implements IElementProcessor<ShapeElement> {
           styles.push(`font-family: '${item.style.fontFamily}'`);
         }
         if (item.style.bold) {
-          styles.push('font-weight: bold');
+          styles.push("font-weight: bold");
         }
         if (item.style.italic) {
-          styles.push('font-style: italic');
+          styles.push("font-style: italic");
         }
         // Don't include textAlign in span styles as it's applied at paragraph level
       }
-      
+
       if (styles.length > 0) {
-        span += ` style="${styles.join('; ')}"`;
+        span += ` style="${styles.join("; ")}"`;
       }
       span += `>${item.text}</span>`;
-      
+
       html += span;
     }
-    
-    return html || '';
+
+    return html || "";
   }
 
   private mapAlignmentToCSS(algn: string): string {
     switch (algn) {
-      case 'l': return 'left';
-      case 'ctr': return 'center';
-      case 'r': return 'right';
-      case 'just': return 'justify';
-      default: return 'left';
+      case "l":
+        return "left";
+      case "ctr":
+        return "center";
+      case "r":
+        return "right";
+      case "just":
+        return "justify";
+      default:
+        return "left";
     }
   }
 
@@ -1442,18 +1469,27 @@ export class ShapeProcessor implements IElementProcessor<ShapeElement> {
     lstStyleNode: XmlNode | undefined,
     paragraphLevel: number
   ): number | undefined {
-    
-    console.log(`[FontSize Debug] Starting font size detection for paragraph level ${paragraphLevel}`);
-    
+    console.log(
+      `[FontSize Debug] Starting font size detection for paragraph level ${paragraphLevel}`
+    );
+
+    console.log("lstStyleNode", lstStyleNode);
+
     // Priority 1: Text run properties (highest priority)
     if (rPrNode) {
       const sz = this.xmlParser.getAttribute(rPrNode, "sz");
       if (sz) {
         const fontSize = Math.round((parseInt(sz) / 100) * 1.43);
-        console.log(`[FontSize Debug] ✅ Found in text run properties: sz="${sz}" → ${parseInt(sz)/100}pt → ${fontSize}px (Priority 1)`);
+        console.log(
+          `[FontSize Debug] ✅ Found in text run properties: sz="${sz}" → ${
+            parseInt(sz) / 100
+          }pt → ${fontSize}px (Priority 1)`
+        );
         return fontSize;
       } else {
-        console.log(`[FontSize Debug] ❌ Text run properties exist but no 'sz' attribute found`);
+        console.log(
+          `[FontSize Debug] ❌ Text run properties exist but no 'sz' attribute found`
+        );
       }
     } else {
       console.log(`[FontSize Debug] ❌ No text run properties (rPrNode) found`);
@@ -1461,24 +1497,34 @@ export class ShapeProcessor implements IElementProcessor<ShapeElement> {
 
     // Priority 2: List style level properties
     if (lstStyleNode) {
-      console.log(`[FontSize Debug] 🔍 Checking list style for level ${paragraphLevel}`);
+      console.log(
+        `[FontSize Debug] 🔍 Checking list style for level ${paragraphLevel}`
+      );
       const fontSize = this.getListStyleFontSize(lstStyleNode, paragraphLevel);
       if (fontSize) {
-        console.log(`[FontSize Debug] ✅ Found in list style: ${fontSize}px (Priority 2)`);
+        console.log(
+          `[FontSize Debug] ✅ Found in list style: ${fontSize}px (Priority 2)`
+        );
         return fontSize;
       } else {
-        console.log(`[FontSize Debug] ❌ No font size found in list style for level ${paragraphLevel}`);
+        console.log(
+          `[FontSize Debug] ❌ No font size found in list style for level ${paragraphLevel}`
+        );
       }
     } else {
       console.log(`[FontSize Debug] ❌ No list style (lstStyleNode) found`);
     }
 
     // Priority 3-4: Placeholder and default styles would go here
-    console.log(`[FontSize Debug] ⏭️ Skipping placeholder and default styles (not implemented)`);
-    
+    console.log(
+      `[FontSize Debug] ⏭️ Skipping placeholder and default styles (not implemented)`
+    );
+
     // Priority 5: Theme default (18pt converted with scaling factor)
     const defaultSize = Math.round(18 * 1.43);
-    console.log(`[FontSize Debug] 🎯 Using theme default: 18pt → ${defaultSize}px (Priority 5)`);
+    console.log(
+      `[FontSize Debug] 🎯 Using theme default: 18pt → ${defaultSize}px (Priority 5)`
+    );
     return defaultSize;
   }
 
@@ -1486,29 +1532,42 @@ export class ShapeProcessor implements IElementProcessor<ShapeElement> {
    * Extract font size from list style based on paragraph level
    * Supports lvl0pPr through lvl8pPr (levels 0-8)
    */
-  private getListStyleFontSize(lstStyleNode: XmlNode, paragraphLevel: number): number | undefined {
+  private getListStyleFontSize(
+    lstStyleNode: XmlNode,
+    paragraphLevel: number
+  ): number | undefined {
     // Clamp level to valid range (0-8)
-    const level = Math.max(0, Math.min(8, paragraphLevel));
-    
-    console.log(`[ListStyle Debug] Searching font size for level ${paragraphLevel} (clamped to ${level})`);
-    
+    const level = Math.max(1, Math.min(8, paragraphLevel));
+
+    console.log(
+      `[ListStyle Debug] Searching font size for level ${paragraphLevel} (clamped to ${level})`
+    );
+
     // Build level property name (lvl0pPr, lvl1pPr, etc.)
     const levelPropName = `lvl${level}pPr`;
     console.log(`[ListStyle Debug] Looking for node: ${levelPropName}`);
-    
+
     const levelPrNode = this.xmlParser.findNode(lstStyleNode, levelPropName);
     if (levelPrNode) {
       console.log(`[ListStyle Debug] ✅ Found ${levelPropName} node`);
       const defRPrNode = this.xmlParser.findNode(levelPrNode, "defRPr");
       if (defRPrNode) {
-        console.log(`[ListStyle Debug] ✅ Found defRPr node in ${levelPropName}`);
+        console.log(
+          `[ListStyle Debug] ✅ Found defRPr node in ${levelPropName}`
+        );
         const sz = this.xmlParser.getAttribute(defRPrNode, "sz");
         if (sz) {
           const fontSize = Math.round((parseInt(sz) / 100) * 1.43);
-          console.log(`[ListStyle Debug] ✅ Found sz="${sz}" in ${levelPropName} → ${parseInt(sz)/100}pt → ${fontSize}px`);
+          console.log(
+            `[ListStyle Debug] ✅ Found sz="${sz}" in ${levelPropName} → ${
+              parseInt(sz) / 100
+            }pt → ${fontSize}px`
+          );
           return fontSize;
         } else {
-          console.log(`[ListStyle Debug] ❌ No 'sz' attribute in ${levelPropName}/defRPr`);
+          console.log(
+            `[ListStyle Debug] ❌ No 'sz' attribute in ${levelPropName}/defRPr`
+          );
         }
       } else {
         console.log(`[ListStyle Debug] ❌ No defRPr node in ${levelPropName}`);
@@ -1518,35 +1577,60 @@ export class ShapeProcessor implements IElementProcessor<ShapeElement> {
     }
 
     // If current level doesn't have font size, try to inherit from parent levels
-    console.log(`[ListStyle Debug] 🔄 Trying to inherit from parent levels (${level-1} down to 0)`);
+    console.log(
+      `[ListStyle Debug] 🔄 Trying to inherit from parent levels (${
+        level - 1
+      } down to 0)`
+    );
     for (let parentLevel = level - 1; parentLevel >= 0; parentLevel--) {
       const parentLevelPropName = `lvl${parentLevel}pPr`;
-      console.log(`[ListStyle Debug] 🔍 Checking inheritance from ${parentLevelPropName}`);
-      
-      const parentLevelPrNode = this.xmlParser.findNode(lstStyleNode, parentLevelPropName);
-      
+      console.log(
+        `[ListStyle Debug] 🔍 Checking inheritance from ${parentLevelPropName}`
+      );
+
+      const parentLevelPrNode = this.xmlParser.findNode(
+        lstStyleNode,
+        parentLevelPropName
+      );
+
       if (parentLevelPrNode) {
-        console.log(`[ListStyle Debug] ✅ Found parent ${parentLevelPropName} node`);
+        console.log(
+          `[ListStyle Debug] ✅ Found parent ${parentLevelPropName} node`
+        );
         const defRPrNode = this.xmlParser.findNode(parentLevelPrNode, "defRPr");
         if (defRPrNode) {
-          console.log(`[ListStyle Debug] ✅ Found defRPr in parent ${parentLevelPropName}`);
+          console.log(
+            `[ListStyle Debug] ✅ Found defRPr in parent ${parentLevelPropName}`
+          );
           const sz = this.xmlParser.getAttribute(defRPrNode, "sz");
           if (sz) {
             const fontSize = Math.round((parseInt(sz) / 100) * 1.43);
-            console.log(`[ListStyle Debug] ✅ Inherited sz="${sz}" from ${parentLevelPropName} → ${parseInt(sz)/100}pt → ${fontSize}px`);
+            console.log(
+              `[ListStyle Debug] ✅ Inherited sz="${sz}" from ${parentLevelPropName} → ${
+                parseInt(sz) / 100
+              }pt → ${fontSize}px`
+            );
             return fontSize;
           } else {
-            console.log(`[ListStyle Debug] ❌ No 'sz' attribute in parent ${parentLevelPropName}/defRPr`);
+            console.log(
+              `[ListStyle Debug] ❌ No 'sz' attribute in parent ${parentLevelPropName}/defRPr`
+            );
           }
         } else {
-          console.log(`[ListStyle Debug] ❌ No defRPr in parent ${parentLevelPropName}`);
+          console.log(
+            `[ListStyle Debug] ❌ No defRPr in parent ${parentLevelPropName}`
+          );
         }
       } else {
-        console.log(`[ListStyle Debug] ❌ No parent ${parentLevelPropName} node found`);
+        console.log(
+          `[ListStyle Debug] ❌ No parent ${parentLevelPropName} node found`
+        );
       }
     }
 
-    console.log(`[ListStyle Debug] ❌ No font size found in any level (current or inherited)`);
+    console.log(
+      `[ListStyle Debug] ❌ No font size found in any level (current or inherited)`
+    );
     return undefined;
   }
 }
