@@ -1438,7 +1438,9 @@ export class ShapeProcessor implements IElementProcessor<ShapeElement> {
     if (rPrNode) {
       const sz = this.xmlParser.getAttribute(rPrNode, "sz");
       if (sz) {
-        return Math.round((parseInt(sz) / 100) * 1.39);
+        // 正确的转换：sz="2800" → 28pt → 40px
+        // 转换因子应该是 40/28 ≈ 1.43
+        return Math.round((parseInt(sz) / 100) * 1.43);
       }
     }
 
@@ -1454,7 +1456,7 @@ export class ShapeProcessor implements IElementProcessor<ShapeElement> {
     // For now, we skip these as they require access to slideLayout/slideMaster/presentation
     
     // Priority 5: Theme default (18pt converted with scaling factor)
-    return Math.round(18 * 1.39); // 25pt after scaling
+    return Math.round(18 * 1.43); // 26px after scaling
   }
 
   /**
@@ -1474,7 +1476,8 @@ export class ShapeProcessor implements IElementProcessor<ShapeElement> {
       if (defRPrNode) {
         const sz = this.xmlParser.getAttribute(defRPrNode, "sz");
         if (sz) {
-          return Math.round((parseInt(sz) / 100) * 1.39);
+          // 正确的转换：sz="2800" → 28pt → 40px
+          return Math.round((parseInt(sz) / 100) * 1.43);
         }
       }
     }
@@ -1490,7 +1493,8 @@ export class ShapeProcessor implements IElementProcessor<ShapeElement> {
         if (defRPrNode) {
           const sz = this.xmlParser.getAttribute(defRPrNode, "sz");
           if (sz) {
-            return Math.round((parseInt(sz) / 100) * 1.39);
+            // 正确的转换：sz="2800" → 28pt → 40px
+            return Math.round((parseInt(sz) / 100) * 1.43);
           }
         }
       }
