@@ -170,6 +170,8 @@ export interface ImageOffsetInfo {
   originalY: number;        // 原始EMU单位的Y坐标
   convertedX: number;       // 转换后的X坐标(points)
   convertedY: number;       // 转换后的Y坐标(points)
+  adjustedX?: number;       // 调整后的X坐标(points)
+  adjustedY?: number;       // 调整后的Y坐标(points)
   leftOffset: number;       // 向左偏移量(points)
   topOffset: number;        // 向上偏移量(points)
   rightOffset: number;      // 向右偏移量(points)

@@ -5,6 +5,7 @@ import { XmlNode } from '../../../models/xml/XmlNode';
 import { IXmlParseService } from '../../interfaces/IXmlParseService';
 import { UnitConverter } from '../../utils/UnitConverter';
 import { ImageDataService } from '../../images/ImageDataService';
+import { ImageOffsetAdjuster, OffsetStrategy } from './ImageOffsetAdjuster';
 
 export class ImageProcessor implements IElementProcessor<ImageElement> {
   constructor(
@@ -99,20 +100,48 @@ export class ImageProcessor implements IElementProcessor<ImageElement> {
             const convertedX = UnitConverter.emuToPoints(originalX);
             const convertedY = UnitConverter.emuToPoints(originalY);
             
-            imageElement.setPosition({
-              x: convertedX,
-              y: convertedY
-            });
-            
-            // Store detailed offset information for debugging/adjustment
+            // 获取幻灯片尺寸用于偏移调整
             const slideWidth = context.slideSize?.width || 1350; // 默认幻灯片宽度
             const slideHeight = context.slideSize?.height || 759.375; // 默认幻灯片高度
             
+            // 应用偏移调整
+            let adjustedX = convertedX;
+            let adjustedY = convertedY;
+            
+            // 获取图片尺寸信息用于偏移调整
+            const extNode = this.xmlParser.findNode(xfrmNode, 'ext');
+            if (extNode) {
+              const cx = this.xmlParser.getAttribute(extNode, 'cx');
+              const cy = this.xmlParser.getAttribute(extNode, 'cy');
+              if (cx && cy) {
+                const imgWidth = UnitConverter.emuToPointsPrecise(parseInt(cx));
+                const imgHeight = UnitConverter.emuToPointsPrecise(parseInt(cy));
+                
+                // 自动调整图片位置，避免超出边界
+                const adjusted = ImageOffsetAdjuster.autoAdjust(
+                  convertedX,
+                  convertedY,
+                  imgWidth,
+                  imgHeight,
+                  slideWidth,
+                  slideHeight
+                );
+                
+                adjustedX = adjusted.x;
+                adjustedY = adjusted.y;
+              }
+            }
+            
+            imageElement.setPosition({
+              x: adjustedX,
+              y: adjustedY
+            });
+            
             // 计算偏移量
-            const leftOffset = convertedX; // 向左偏移量 (距离左边界)
-            const topOffset = convertedY;  // 向上偏移量 (距离上边界)
-            const rightOffset = slideWidth - convertedX;  // 向右偏移量 (距离右边界)
-            const bottomOffset = slideHeight - convertedY; // 向下偏移量 (距离下边界)
+            const leftOffset = adjustedX; // 向左偏移量 (距离左边界)
+            const topOffset = adjustedY;  // 向上偏移量 (距离上边界)
+            const rightOffset = slideWidth - adjustedX;  // 向右偏移量 (距离右边界)
+            const bottomOffset = slideHeight - adjustedY; // 向下偏移量 (距离下边界)
             
             // 计算百分比偏移量 (类似PowerPoint Stretch Offset)
             const leftOffsetPercent = (leftOffset / slideWidth) * 100;
@@ -125,6 +154,8 @@ export class ImageProcessor implements IElementProcessor<ImageElement> {
               originalY: originalY,
               convertedX: convertedX,
               convertedY: convertedY,
+              adjustedX: adjustedX,
+              adjustedY: adjustedY,
               leftOffset: leftOffset,
               topOffset: topOffset,
               rightOffset: rightOffset,
