@@ -1185,14 +1185,25 @@ export class ShapeProcessor implements IElementProcessor<ShapeElement> {
     const contentItems: TextContent[] = [];
     const paragraphs = this.xmlParser.findNodes(txBodyNode, "p");
 
+    // Extract list style from txBody
+    const lstStyleNode = this.xmlParser.findNode(txBodyNode, "lstStyle");
+
     for (const pNode of paragraphs) {
-      // Extract paragraph alignment
+      // Extract paragraph properties
       const pPrNode = this.xmlParser.findNode(pNode, "pPr");
       let paragraphAlign = undefined;
+      let paragraphLevel = 0; // Default to level 0
+      
       if (pPrNode) {
         const algn = this.xmlParser.getAttribute(pPrNode, "algn");
         if (algn) {
           paragraphAlign = this.mapAlignmentToCSS(algn);
+        }
+        
+        // Extract paragraph level (lvl attribute)
+        const lvl = this.xmlParser.getAttribute(pPrNode, "lvl");
+        if (lvl) {
+          paragraphLevel = parseInt(lvl);
         }
       }
 
@@ -1203,9 +1214,9 @@ export class ShapeProcessor implements IElementProcessor<ShapeElement> {
         if (tNode) {
           const text = this.xmlParser.getTextContent(tNode);
           if (text.trim()) {
-            // Extract run properties
+            // Extract run properties with font size priority logic
             const rPrNode = this.xmlParser.findNode(rNode, "rPr");
-            const style = rPrNode ? this.extractRunStyle(rPrNode, context) : {};
+            const style = this.extractRunStyleWithFontSize(rPrNode, lstStyleNode, paragraphLevel, context);
             
             // Apply paragraph alignment to style if present
             if (paragraphAlign) {
@@ -1222,6 +1233,58 @@ export class ShapeProcessor implements IElementProcessor<ShapeElement> {
     }
 
     return contentItems;
+  }
+
+  private extractRunStyleWithFontSize(
+    rPrNode: XmlNode | undefined,
+    lstStyleNode: XmlNode | undefined,
+    paragraphLevel: number,
+    context: ProcessingContext
+  ): any {
+    const style: any = {};
+
+    // Apply font size with priority logic
+    const fontSize = this.getFontSizeWithPriority(rPrNode, lstStyleNode, paragraphLevel);
+    if (fontSize) {
+      style.fontSize = fontSize;
+    }
+
+    // Extract other run properties if rPrNode exists
+    if (rPrNode) {
+      // Bold
+      const b = this.xmlParser.getAttribute(rPrNode, "b");
+      if (b === "1" || b === "true") {
+        style.bold = true;
+      }
+
+      // Italic
+      const i = this.xmlParser.getAttribute(rPrNode, "i");
+      if (i === "1" || i === "true") {
+        style.italic = true;
+      }
+
+      // Color
+      const solidFillNode = this.xmlParser.findNode(rPrNode, "solidFill");
+      if (solidFillNode) {
+        const solidFillObj = this.xmlNodeToObject(solidFillNode);
+        const warpObj = {
+          themeContent: context.theme
+            ? this.createThemeContent(context.theme)
+            : undefined,
+        };
+        const color = FillExtractor.getSolidFill(
+          solidFillObj,
+          undefined,
+          undefined,
+          warpObj
+        );
+        if (color) {
+          style.color = color;
+        }
+      }
+    }
+
+    return style;
   }
 
   private extractRunStyle(
@@ -1354,5 +1417,85 @@ export class ShapeProcessor implements IElementProcessor<ShapeElement> {
       case 'just': return 'justify';
       default: return 'left';
     }
+  }
+
+  /**
+   * Get font size with PPTX priority logic
+   * Priority (highest to lowest):
+   * 1. Text run properties (<a:rPr sz="...">)
+   * 2. List style level properties (<a:lvlXpPr><a:defRPr sz="...">)
+   * 3. Placeholder style (from slideLayout/slideMaster) - Not implemented here
+   * 4. Default text style (<p:defaultTextStyle>) - Not implemented here
+   * 5. Theme default (18pt) - fallback
+   */
+  private getFontSizeWithPriority(
+    rPrNode: XmlNode | undefined,
+    lstStyleNode: XmlNode | undefined,
+    paragraphLevel: number
+  ): number | undefined {
+    
+    // Priority 1: Text run properties (highest priority)
+    if (rPrNode) {
+      const sz = this.xmlParser.getAttribute(rPrNode, "sz");
+      if (sz) {
+        return Math.round((parseInt(sz) / 100) * 1.39);
+      }
+    }
+
+    // Priority 2: List style level properties
+    if (lstStyleNode) {
+      const fontSize = this.getListStyleFontSize(lstStyleNode, paragraphLevel);
+      if (fontSize) {
+        return fontSize;
+      }
+    }
+
+    // Priority 3-4: Placeholder and default styles would go here
+    // For now, we skip these as they require access to slideLayout/slideMaster/presentation
+    
+    // Priority 5: Theme default (18pt converted with scaling factor)
+    return Math.round(18 * 1.39); // 25pt after scaling
+  }
+
+  /**
+   * Extract font size from list style based on paragraph level
+   * Supports lvl0pPr through lvl8pPr (levels 0-8)
+   */
+  private getListStyleFontSize(lstStyleNode: XmlNode, paragraphLevel: number): number | undefined {
+    // Clamp level to valid range (0-8)
+    const level = Math.max(0, Math.min(8, paragraphLevel));
+    
+    // Build level property name (lvl0pPr, lvl1pPr, etc.)
+    const levelPropName = `lvl${level}pPr`;
+    
+    const levelPrNode = this.xmlParser.findNode(lstStyleNode, levelPropName);
+    if (levelPrNode) {
+      const defRPrNode = this.xmlParser.findNode(levelPrNode, "defRPr");
+      if (defRPrNode) {
+        const sz = this.xmlParser.getAttribute(defRPrNode, "sz");
+        if (sz) {
+          return Math.round((parseInt(sz) / 100) * 1.39);
+        }
+      }
+    }
+
+    // If current level doesn't have font size, try to inherit from parent levels
+    // This is common in PPTX - if lvl2pPr doesn't specify size, use lvl1pPr, then lvl0pPr
+    for (let parentLevel = level - 1; parentLevel >= 0; parentLevel--) {
+      const parentLevelPropName = `lvl${parentLevel}pPr`;
+      const parentLevelPrNode = this.xmlParser.findNode(lstStyleNode, parentLevelPropName);
+      
+      if (parentLevelPrNode) {
+        const defRPrNode = this.xmlParser.findNode(parentLevelPrNode, "defRPr");
+        if (defRPrNode) {
+          const sz = this.xmlParser.getAttribute(defRPrNode, "sz");
+          if (sz) {
+            return Math.round((parseInt(sz) / 100) * 1.39);
+          }
+        }
+      }
+    }
+
+    return undefined;
   }
 }
