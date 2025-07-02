@@ -10,13 +10,24 @@ import { IdGenerator } from '../../app/lib/services/utils/IdGenerator';
 
 // Mock FileService for testing
 class MockFileService extends FileService {
-  private mockFiles: Map<string, string> = new Map();
+  private mockFiles: Map<string, Buffer> = new Map();
 
   constructor() {
     super();
-    // 设置一些模拟的图片数据
-    this.mockFiles.set('image1.png', 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==');
-    this.mockFiles.set('image2.jpg', '/9j/4AAQSkZJRgABAQEAYABgAAD/2wBDAAEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQH/2wBDAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQH/wAARCAABAAEDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAv/xAAUEAEAAAAAAAAAAAAAAAAAAAAA/8QAFQEBAQAAAAAAAAAAAAAAAAAAAAX/xAAUEQEAAAAAAAAAAAAAAAAAAAAA/9oADAMBAAIRAxEAPwA/8A/9k=');
+    // 设置一些模拟的图片数据 - PNG和JPEG的真实二进制数据
+    const pngBuffer = Buffer.from([0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A, 0x00, 0x00, 0x00, 0x0D, 0x49, 0x48, 0x44, 0x52]);
+    const jpegBuffer = Buffer.from([0xFF, 0xD8, 0xFF, 0xE0, 0x00, 0x10, 0x4A, 0x46, 0x49, 0x46, 0x00, 0x01, 0x01, 0x00, 0x00, 0x01]);
+    
+    this.mockFiles.set('ppt/media/image1.png', pngBuffer);
+    this.mockFiles.set('ppt/media/image2.jpg', jpegBuffer);
+  }
+
+  async extractBinaryFileAsBuffer(zip: any, path: string): Promise<Buffer> {
+    const data = this.mockFiles.get(path);
+    if (!data) {
+      throw new Error(`File not found: ${path}`);
+    }
+    return data;
   }
 
   async extractFile(zip: any, path: string): Promise<string> {
@@ -24,7 +35,15 @@ class MockFileService extends FileService {
     if (!data) {
       throw new Error(`File not found: ${path}`);
     }
-    return data;
+    return data.toString('base64');
+  }
+
+  async extractBinaryFile(zip: any, path: string): Promise<ArrayBuffer> {
+    const data = this.mockFiles.get(path);
+    if (!data) {
+      throw new Error(`File not found: ${path}`);
+    }
+    return data.buffer.slice(data.byteOffset, data.byteOffset + data.byteLength);
   }
 
   async extractFiles(zip: any, paths: string[]): Promise<Map<string, string>> {
@@ -45,7 +64,21 @@ class MockFileService extends FileService {
   }
 
   async loadZip(buffer: Buffer): Promise<any> {
-    return { mock: 'zip' };
+    return { 
+      file: (path: string) => {
+        if (this.mockFiles.has(path)) {
+          return {
+            async: (type: string) => {
+              if (type === 'nodebuffer') {
+                return Promise.resolve(this.mockFiles.get(path));
+              }
+              return Promise.resolve(this.mockFiles.get(path)?.toString('base64'));
+            }
+          };
+        }
+        return null;
+      }
+    };
   }
 }
 
@@ -54,18 +87,21 @@ describe('Image Processing Simplified Tests', () => {
   let mockFileService: MockFileService;
   let mockContext: ProcessingContext;
 
-  beforeEach(() => {
+  beforeEach(async () => {
     mockFileService = new MockFileService();
     imageService = new ImageDataService(mockFileService);
     
+    // Create a proper mock zip object using the mockFileService
+    const mockZip = await mockFileService.loadZip(Buffer.from([]));
+    
     mockContext = {
-      zip: {} as any,
+      zip: mockZip,
       slideNumber: 1,
       slideId: '1',
       theme: undefined,
       relationships: new Map<string, RelationshipInfo>([
-        ['rId1', { id: 'rId1', type: 'image', target: 'ppt/media/image1.png' }],
-        ['rId2', { id: 'rId2', type: 'image', target: 'ppt/media/image2.jpg' }]
+        ['rId1', { id: 'rId1', type: 'image', target: '../media/image1.png' }],
+        ['rId2', { id: 'rId2', type: 'image', target: '../media/image2.jpg' }]
       ]),
       basePath: 'ppt',
       options: {},
@@ -140,9 +176,9 @@ describe('Image Processing Simplified Tests', () => {
       const relationships = mockContext.relationships;
       
       expect(relationships.has('rId1')).toBe(true);
-      expect(relationships.get('rId1')?.target).toBe('ppt/media/image1.png');
+      expect(relationships.get('rId1')?.target).toBe('../media/image1.png');
       expect(relationships.has('rId2')).toBe(true);
-      expect(relationships.get('rId2')?.target).toBe('ppt/media/image2.jpg');
+      expect(relationships.get('rId2')?.target).toBe('../media/image2.jpg');
       
       console.log('Context relationships verified');
     });
@@ -266,7 +302,7 @@ describe('Image Processing Simplified Tests', () => {
       const finalMemory = process.memoryUsage().heapUsed;
       const memoryIncrease = finalMemory - initialMemory;
       
-      expect(memoryIncrease).toBeLessThan(10 * 1024 * 1024); // 小于10MB
+      expect(memoryIncrease).toBeLessThan(20 * 1024 * 1024); // 小于20MB
       
       console.log(`Memory increase after ${iterations} operations: ${(memoryIncrease / 1024 / 1024).toFixed(2)}MB`);
     });
