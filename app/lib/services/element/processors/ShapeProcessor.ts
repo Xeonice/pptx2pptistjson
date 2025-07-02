@@ -8,7 +8,12 @@ import { XmlNode } from "../../../models/xml/XmlNode";
 import { IXmlParseService } from "../../interfaces/IXmlParseService";
 import { UnitConverter } from "../../utils/UnitConverter";
 import { FillExtractor } from "../../utils/FillExtractor";
-import { getTextByPathList } from "../../../utils";
+import {
+  getTextByPathList,
+  SHAPE_LIST,
+  SHAPE_PATH_FORMULAS,
+  ShapePoolItem,
+} from "../../../utils";
 import { TextContent } from "../../../models/domain/elements/TextElement";
 import { DebugHelper } from "../../utils/DebugHelper";
 
@@ -16,6 +21,20 @@ export class ShapeProcessor implements IElementProcessor<ShapeElement> {
   constructor(private xmlParser: IXmlParseService) {}
 
   canProcess(xmlNode: XmlNode): boolean {
+    // Skip if it's explicitly a text box
+    const nvSpPrNode = this.xmlParser.findNode(xmlNode, "nvSpPr");
+    const cNvSpPrNode = nvSpPrNode
+      ? this.xmlParser.findNode(nvSpPrNode, "cNvSpPr")
+      : undefined;
+    const txBox = cNvSpPrNode
+      ? this.xmlParser.getAttribute(cNvSpPrNode, "txBox")
+      : undefined;
+
+    if (txBox === "1") {
+      // This is a text box, should be handled by TextProcessor
+      return false;
+    }
+
     // Process shape nodes that have visible shape backgrounds and don't have image fill
     // This includes pure shapes and shapes with text (for the background shape)
     return (
@@ -30,7 +49,11 @@ export class ShapeProcessor implements IElementProcessor<ShapeElement> {
     context: ProcessingContext
   ): Promise<ShapeElement> {
     DebugHelper.log(context, "=== Starting Shape Processing ===", "info");
-    
+
+    const shapeList: ShapePoolItem[] = [];
+    for (const item of SHAPE_LIST) {
+      shapeList.push(...item.children);
+    }
     // Extract shape ID
     const nvSpPrNode = this.xmlParser.findNode(xmlNode, "nvSpPr");
     const cNvPrNode = nvSpPrNode
@@ -46,7 +69,6 @@ export class ShapeProcessor implements IElementProcessor<ShapeElement> {
     // Extract geometry first to determine shape type
     const spPrNode = this.xmlParser.findNode(xmlNode, "spPr");
     let shapeType: ShapeType = "rect"; // default
-    let pathFormula: string | undefined;
     let adjustmentValues: Record<string, number> = {};
 
     if (spPrNode) {
@@ -55,13 +77,21 @@ export class ShapeProcessor implements IElementProcessor<ShapeElement> {
         const prst = this.xmlParser.getAttribute(prstGeomNode, "prst");
         if (prst) {
           shapeType = this.mapGeometryToShapeType(prst);
-          pathFormula = prst; // Set the pathFormula from prst attribute
-          DebugHelper.log(context, `Shape geometry: ${prst} -> ${shapeType}`, "info");
+          DebugHelper.log(
+            context,
+            `Shape geometry: ${prst} -> ${shapeType}`,
+            "info"
+          );
 
           // Extract adjustment values for roundRect shapes
           if (prst === "roundRect") {
             adjustmentValues = this.extractAdjustmentValues(prstGeomNode);
-            DebugHelper.log(context, `RoundRect adjustments:`, "info", adjustmentValues);
+            DebugHelper.log(
+              context,
+              `RoundRect adjustments:`,
+              "info",
+              adjustmentValues
+            );
           }
         }
       } else {
@@ -70,17 +100,12 @@ export class ShapeProcessor implements IElementProcessor<ShapeElement> {
         if (custGeomNode) {
           // For custom geometry, try to detect if it's circular
           shapeType = this.analyzeCustomGeometry(custGeomNode);
-          pathFormula = "custom"; // For custom geometry, set as "custom"
+          // Don't set pathFormula for custom geometry
         }
       }
     }
 
     const shapeElement = new ShapeElement(id, shapeType);
-
-    // Set pathFormula if available
-    if (pathFormula) {
-      shapeElement.setPathFormula(pathFormula);
-    }
 
     // Set adjustment values if available
     if (Object.keys(adjustmentValues).length > 0) {
@@ -102,7 +127,11 @@ export class ShapeProcessor implements IElementProcessor<ShapeElement> {
             const posX = UnitConverter.emuToPointsPrecise(parseInt(x));
             const posY = UnitConverter.emuToPointsPrecise(parseInt(y));
             shapeElement.setPosition({ x: posX, y: posY });
-            DebugHelper.log(context, `Shape position: (${posX}, ${posY})`, "info");
+            DebugHelper.log(
+              context,
+              `Shape position: (${posX}, ${posY})`,
+              "info"
+            );
           }
         }
 
@@ -118,7 +147,11 @@ export class ShapeProcessor implements IElementProcessor<ShapeElement> {
               width,
               height,
             });
-            DebugHelper.log(context, `Shape size: ${width} x ${height}`, "info");
+            DebugHelper.log(
+              context,
+              `Shape size: ${width} x ${height}`,
+              "info"
+            );
           }
         }
 
@@ -137,23 +170,75 @@ export class ShapeProcessor implements IElementProcessor<ShapeElement> {
         if (svgPath) {
           shapeElement.setPath(svgPath);
         }
+        // For custom geometry, calculate viewBox from path range
+        if (svgPath && svgPath.indexOf("NaN") === -1) {
+          const { maxX, maxY } = this.getSvgPathRange(svgPath);
+          shapeElement.setViewBox([maxX || width, maxY || height]);
+        }
       } else {
         // Handle preset geometry
         const prstGeomNode = this.xmlParser.findNode(spPrNode, "prstGeom");
         if (prstGeomNode) {
           const prst = this.xmlParser.getAttribute(prstGeomNode, "prst");
           if (prst) {
-            // Use actual shape dimensions for accurate path generation
-            const pathWidth = width || 200;
-            const pathHeight = height || 200;
-            const svgPath = this.getShapePath(
-              prst,
-              pathWidth,
-              pathHeight,
-              adjustmentValues
-            );
-            if (svgPath) {
-              shapeElement.setPath(svgPath);
+            // Find matching shape in SHAPE_LIST
+            const shape = shapeList.find((item) => item.pptxShapeType === prst);
+
+            if (shape) {
+              // Use shape's predefined path and viewBox
+              shapeElement.setPath(shape.path);
+              shapeElement.setViewBox(shape.viewBox);
+
+              // If shape has pathFormula in SHAPE_PATH_FORMULAS
+              if (shape.pathFormula && SHAPE_PATH_FORMULAS[shape.pathFormula]) {
+                const pathFormulaConfig =
+                  SHAPE_PATH_FORMULAS[shape.pathFormula];
+                shapeElement.setPathFormula(shape.pathFormula);
+                shapeElement.setViewBox([width, height]); // Use actual dimensions
+
+                // Generate path using formula
+                if (
+                  "editable" in pathFormulaConfig &&
+                  pathFormulaConfig.editable
+                ) {
+                  const defaultValues = pathFormulaConfig.defaultValue || [0.5];
+                  // Use adjustment values if available, otherwise use defaults
+                  const useValues =
+                    Object.keys(adjustmentValues).length > 0
+                      ? [adjustmentValues.adj || defaultValues[0]]
+                      : defaultValues;
+                  shapeElement.setPath(
+                    pathFormulaConfig.formula(width, height, useValues)
+                  );
+                  if (Object.keys(adjustmentValues).length === 0) {
+                    shapeElement.setAdjustmentValues({ adj: defaultValues[0] });
+                  }
+                } else {
+                  shapeElement.setPath(
+                    pathFormulaConfig.formula(width, height)
+                  );
+                }
+              }
+
+              // Mark as special if shape has special flag
+              if (shape.special) {
+                shapeElement.setSpecial(true);
+              }
+            } else {
+              // Fallback: generate path using dimensions
+              const pathWidth = width || 200;
+              const pathHeight = height || 200;
+              const svgPath = this.getShapePath(
+                prst,
+                pathWidth,
+                pathHeight,
+                adjustmentValues
+              );
+              if (svgPath) {
+                shapeElement.setPath(svgPath);
+              }
+              // Set viewBox to actual dimensions for preset shapes
+              shapeElement.setViewBox([pathWidth, pathHeight]);
             }
           }
         }
@@ -161,14 +246,22 @@ export class ShapeProcessor implements IElementProcessor<ShapeElement> {
 
       // Extract style node for style references (fillRef, lnRef, etc.)
       const styleNode = this.xmlParser.findNode(xmlNode, "style");
-      
+
       // Extract fill color - improved extraction with style references
       const fillColor = this.extractFillColor(spPrNode, context, styleNode);
       if (fillColor) {
         shapeElement.setFill({ color: fillColor });
-        DebugHelper.log(context, `Shape fill color set to: ${fillColor}`, "success");
+        DebugHelper.log(
+          context,
+          `Shape fill color set to: ${fillColor}`,
+          "success"
+        );
       } else {
-        DebugHelper.log(context, "No fill color resolved, using default handling", "warn");
+        DebugHelper.log(
+          context,
+          "No fill color resolved, using default handling",
+          "warn"
+        );
       }
     }
 
@@ -200,6 +293,16 @@ export class ShapeProcessor implements IElementProcessor<ShapeElement> {
 
     const blipFillNode = this.xmlParser.findNode(spPrNode, "blipFill");
     return !!blipFillNode;
+  }
+
+  private hasGeom(xmlNode: XmlNode): boolean {
+    // Check if shape has visible background fill
+    const spPrNode = this.xmlParser.findNode(xmlNode, "spPr");
+    if (!spPrNode) return false;
+
+    const customGeomNode = this.xmlParser.findNode(spPrNode, "a:custGeom");
+
+    return !!customGeomNode;
   }
 
   private hasVisibleShapeBackground(xmlNode: XmlNode): boolean {
@@ -262,11 +365,15 @@ export class ShapeProcessor implements IElementProcessor<ShapeElement> {
     shapeStyleNode?: XmlNode
   ): string | undefined {
     DebugHelper.log(context, "Starting fill color extraction", "info");
-    
+
     // Check for explicit noFill first (but only direct children of spPr, not in a:ln)
     const noFillNode = this.findDirectChildNode(spPrNode, "noFill");
     if (noFillNode) {
-      DebugHelper.log(context, "Found explicit noFill, returning transparent", "info");
+      DebugHelper.log(
+        context,
+        "Found explicit noFill, returning transparent",
+        "info"
+      );
       return "rgba(0,0,0,0)"; // Transparent
     }
 
@@ -275,7 +382,11 @@ export class ShapeProcessor implements IElementProcessor<ShapeElement> {
       DebugHelper.log(context, "Processing shape style references", "info");
       const styleColor = this.extractColorFromStyleRef(shapeStyleNode, context);
       if (styleColor) {
-        DebugHelper.log(context, `Style reference resolved to: ${styleColor}`, "success");
+        DebugHelper.log(
+          context,
+          `Style reference resolved to: ${styleColor}`,
+          "success"
+        );
         return styleColor;
       }
     }
@@ -372,21 +483,29 @@ export class ShapeProcessor implements IElementProcessor<ShapeElement> {
       return undefined;
     }
 
-    DebugHelper.log(context, `Processing scheme color: ${schemeColorValue}`, "info");
+    DebugHelper.log(
+      context,
+      `Processing scheme color: ${schemeColorValue}`,
+      "info"
+    );
 
     if (!context.theme) {
-      DebugHelper.log(context, "No theme available for scheme color resolution", "error");
+      DebugHelper.log(
+        context,
+        "No theme available for scheme color resolution",
+        "error"
+      );
       return undefined;
     }
 
     // Create scheme color object for FillExtractor
     const schemeClrObj = this.xmlNodeToObject(schemeClrNode);
     const solidFillObj = {
-      "a:schemeClr": schemeClrObj
+      "a:schemeClr": schemeClrObj,
     };
 
     const warpObj = {
-      themeContent: this.createThemeContent(context.theme)
+      themeContent: this.createThemeContent(context.theme),
     };
 
     const resolvedColor = FillExtractor.getSolidFill(
@@ -1010,6 +1129,7 @@ export class ShapeProcessor implements IElementProcessor<ShapeElement> {
   ): string {
     switch (presetType) {
       case "rect":
+      case "actionButtonBlank":
         return `M 0 0 L ${w} 0 L ${w} ${h} L 0 ${h} Z`;
       case "ellipse":
       case "circle": {
@@ -1720,5 +1840,30 @@ export class ShapeProcessor implements IElementProcessor<ShapeElement> {
       `[ListStyle Debug] ❌ No font size found in any level (current or inherited)`
     );
     return undefined;
+  }
+
+  /**
+   * Get the range of an SVG path to determine viewBox
+   */
+  private getSvgPathRange(path: string): { maxX: number; maxY: number } {
+    let maxX = 0;
+    let maxY = 0;
+
+    // Simple regex to extract numeric values from path
+    const numRegex = /-?\d+(\.\d+)?/g;
+    const matches = path.match(numRegex);
+
+    if (matches) {
+      const numbers = matches.map((n) => parseFloat(n));
+      // Process numbers in pairs (x, y)
+      for (let i = 0; i < numbers.length - 1; i += 2) {
+        const x = Math.abs(numbers[i]);
+        const y = Math.abs(numbers[i + 1]);
+        maxX = Math.max(maxX, x);
+        maxY = Math.max(maxY, y);
+      }
+    }
+
+    return { maxX, maxY };
   }
 }
