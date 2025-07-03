@@ -17,7 +17,7 @@
   "author": "ad546971975@gmail.com",
   "repository": {
     "type": "git",
-    "url": "https://github.com/Xeonice/pptx2pptistjson"
+    "url": "git+https://github.com/Xeonice/pptx2pptistjson.git"
   },
   "keywords": [
     "ppt",
@@ -95,5 +95,14 @@
     "rollup-plugin-node-globals": "^1.4.0",
     "ts-jest": "^29.4.0",
     "typescript": "^5.0.0"
+  },
+  "main": ".eslintrc.js",
+  "directories": {
+    "doc": "docs",
+    "lib": "lib",
+    "test": "tests"
+  },
+  "bugs": {
+    "url": "https://github.com/Xeonice/pptx2pptistjson/issues"
   }
 }
