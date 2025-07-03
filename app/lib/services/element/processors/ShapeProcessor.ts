@@ -10,7 +10,6 @@ import { IXmlParseService } from "../../interfaces/IXmlParseService";
 import { UnitConverter } from "../../utils/UnitConverter";
 import { FillExtractor } from "../../utils/FillExtractor";
 import {
-  getTextByPathList,
   SHAPE_LIST,
   SHAPE_PATH_FORMULAS,
   ShapePoolItem,
@@ -228,13 +227,26 @@ export class ShapeProcessor implements IElementProcessor<ShapeElement> {
       if (custGeomNode) {
         // Handle custom geometry
         const svgPath = this.extractSvgPath(custGeomNode, width, height);
-        if (svgPath) {
+        if (svgPath && svgPath.trim().length > 10) { // Check for meaningful path content
           shapeElement.setPath(svgPath);
-        }
-        // For custom geometry, calculate viewBox from path range
-        if (svgPath && svgPath.indexOf("NaN") === -1) {
-          const { maxX, maxY } = this.getSvgPathRange(svgPath);
-          shapeElement.setViewBox([maxX || width, maxY || height]);
+          // For custom geometry, calculate viewBox from path range
+          if (svgPath.indexOf("NaN") === -1) {
+            const { maxX, maxY } = this.getSvgPathRange(svgPath);
+            shapeElement.setViewBox([maxX || width, maxY || height]);
+          }
+        } else {
+          // Custom geometry failed, fall back to detected shape type or rect
+          const fallbackShapeType = shapeType !== "custom" ? shapeType.toString() : "rect";
+          DebugHelper.log(
+            context,
+            `Custom geometry extraction failed, falling back to detected shape type: ${fallbackShapeType}`,
+            "warn"
+          );
+          const fallbackPath = this.getShapePath(fallbackShapeType, width, height);
+          if (fallbackPath) {
+            shapeElement.setPath(fallbackPath);
+            shapeElement.setViewBox([width, height]);
+          }
         }
       } else {
         // Handle preset geometry
@@ -390,15 +402,6 @@ export class ShapeProcessor implements IElementProcessor<ShapeElement> {
     return !!blipFillNode;
   }
 
-  private hasGeom(xmlNode: XmlNode): boolean {
-    // Check if shape has visible background fill
-    const spPrNode = this.xmlParser.findNode(xmlNode, "spPr");
-    if (!spPrNode) return false;
-
-    const customGeomNode = this.xmlParser.findNode(spPrNode, "a:custGeom");
-
-    return !!customGeomNode;
-  }
 
   private hasVisibleShapeBackground(xmlNode: XmlNode): boolean {
     // Check if shape has visible background fill
@@ -978,9 +981,6 @@ export class ShapeProcessor implements IElementProcessor<ShapeElement> {
             const hR =
               parseInt(this.xmlParser.getAttribute(child, "hR") || "0") *
               scaleY;
-            const stAng =
-              parseInt(this.xmlParser.getAttribute(child, "stAng") || "0") /
-              60000;
             const swAng =
               parseInt(this.xmlParser.getAttribute(child, "swAng") || "0") /
               60000;
@@ -1028,327 +1028,8 @@ export class ShapeProcessor implements IElementProcessor<ShapeElement> {
     return optimized.replace(/\s+/g, " ").trim();
   }
 
-  /**
-   * Fallback SVG path extraction (original implementation)
-   */
-  private extractSvgPathFallback(custGeomNode: XmlNode): string | undefined {
-    const pathLstNode = this.xmlParser.findNode(custGeomNode, "pathLst");
-    if (!pathLstNode) return undefined;
 
-    const pathNode = this.xmlParser.findNode(pathLstNode, "path");
-    if (!pathNode) return undefined;
 
-    // Get path dimensions for scaling
-    const w = parseInt(this.xmlParser.getAttribute(pathNode, "w") || "0");
-    const h = parseInt(this.xmlParser.getAttribute(pathNode, "h") || "0");
-
-    let svgPath = "";
-    const scaleX = w > 0 ? 200 / w : 1;
-    const scaleY = h > 0 ? 200 / h : 1;
-
-    // Process path commands
-    pathNode.children?.forEach((child) => {
-      switch (child.name) {
-        case "moveTo":
-          const movePt = this.xmlParser.findNode(child, "pt");
-          if (movePt) {
-            const x =
-              parseInt(this.xmlParser.getAttribute(movePt, "x") || "0") *
-              scaleX;
-            const y =
-              parseInt(this.xmlParser.getAttribute(movePt, "y") || "0") *
-              scaleY;
-            svgPath += `M ${x} ${y} `;
-          }
-          break;
-
-        case "lnTo":
-          const linePt = this.xmlParser.findNode(child, "pt");
-          if (linePt) {
-            const x =
-              parseInt(this.xmlParser.getAttribute(linePt, "x") || "0") *
-              scaleX;
-            const y =
-              parseInt(this.xmlParser.getAttribute(linePt, "y") || "0") *
-              scaleY;
-            svgPath += `L ${x} ${y} `;
-          }
-          break;
-
-        case "arcTo":
-          const wR =
-            parseInt(this.xmlParser.getAttribute(child, "wR") || "0") * scaleX;
-          const hR =
-            parseInt(this.xmlParser.getAttribute(child, "hR") || "0") * scaleY;
-          // eslint-disable-next-line @typescript-eslint/no-unused-vars
-          const stAng =
-            parseInt(this.xmlParser.getAttribute(child, "stAng") || "0") /
-            60000;
-          const swAng =
-            parseInt(this.xmlParser.getAttribute(child, "swAng") || "0") /
-            60000;
-
-          // Convert arc to SVG arc command
-          // This is a simplified conversion - full implementation would calculate end point
-          svgPath += `A ${wR} ${hR} 0 ${Math.abs(swAng) > 180 ? 1 : 0} ${
-            swAng > 0 ? 1 : 0
-          } `;
-          break;
-
-        case "cubicBezTo":
-          const pts = this.xmlParser.findNodes(child, "pt");
-          if (pts.length >= 3) {
-            const coords = pts.map((pt) => ({
-              x: parseInt(this.xmlParser.getAttribute(pt, "x") || "0") * scaleX,
-              y: parseInt(this.xmlParser.getAttribute(pt, "y") || "0") * scaleY,
-            }));
-            svgPath += `C ${coords[0].x} ${coords[0].y}, ${coords[1].x} ${coords[1].y}, ${coords[2].x} ${coords[2].y} `;
-          }
-          break;
-
-        case "close":
-          svgPath += "Z ";
-          break;
-      }
-    });
-
-    return svgPath.trim();
-  }
-
-  private shapeArc(
-    cX: number,
-    cY: number,
-    rX: number,
-    rY: number,
-    stAng: number,
-    endAng: number,
-    isClose: boolean
-  ): string {
-    let dData = "";
-    let angle = stAng;
-
-    if (endAng >= stAng) {
-      while (angle <= endAng) {
-        const radians = angle * (Math.PI / 180);
-        const x = cX + Math.cos(radians) * rX;
-        const y = cY + Math.sin(radians) * rY;
-        if (angle === stAng) {
-          dData = " M" + x + " " + y;
-        }
-        dData += " L" + x + " " + y;
-        angle++;
-      }
-    } else {
-      while (angle > endAng) {
-        const radians = angle * (Math.PI / 180);
-        const x = cX + Math.cos(radians) * rX;
-        const y = cY + Math.sin(radians) * rY;
-        if (angle === stAng) {
-          dData = " M " + x + " " + y;
-        }
-        dData += " L " + x + " " + y;
-        angle--;
-      }
-    }
-    dData += isClose ? " z" : "";
-    return dData;
-  }
-
-  private getCustomShapePath(custShapType: any, w: number, h: number): string {
-    const pathLstNode = getTextByPathList(custShapType, ["a:pathLst"]);
-    if (!pathLstNode) return "";
-
-    let pathNodes = getTextByPathList(pathLstNode, ["a:path"]);
-    if (!pathNodes) return "";
-
-    if (Array.isArray(pathNodes)) pathNodes = pathNodes.shift();
-    if (!pathNodes || !pathNodes["attrs"]) return "";
-
-    const maxX = parseInt(pathNodes["attrs"]["w"] || "0");
-    const maxY = parseInt(pathNodes["attrs"]["h"] || "0");
-    const cX = maxX === 0 ? 0 : (1 / maxX) * w;
-    const cY = maxY === 0 ? 0 : (1 / maxY) * h;
-    let d = "";
-
-    let moveToNode = getTextByPathList(pathNodes, ["a:moveTo"]);
-
-    const lnToNodes = pathNodes["a:lnTo"];
-    let cubicBezToNodes = pathNodes["a:cubicBezTo"];
-    const arcToNodes = pathNodes["a:arcTo"];
-    let closeNode = getTextByPathList(pathNodes, ["a:close"]);
-
-    if (!Array.isArray(moveToNode)) moveToNode = [moveToNode];
-
-    const multiSapeAry: any[] = [];
-    if (moveToNode && moveToNode.length > 0) {
-      // Handle moveTo nodes
-      Object.keys(moveToNode).forEach((key) => {
-        const moveToPtNode = moveToNode[key]?.["a:pt"];
-        if (moveToPtNode) {
-          Object.keys(moveToPtNode).forEach((ptKey) => {
-            const moveToNoPt = moveToPtNode[ptKey];
-            if (moveToNoPt?.["attrs"]) {
-              const spX = moveToNoPt["attrs"]["x"];
-              const spY = moveToNoPt["attrs"]["y"];
-              const order = moveToNoPt["attrs"]["order"] || 0;
-              multiSapeAry.push({
-                type: "movto",
-                x: spX,
-                y: spY,
-                order,
-              });
-            }
-          });
-        }
-      });
-
-      // Handle lineTo nodes
-      if (lnToNodes) {
-        Object.keys(lnToNodes).forEach((key) => {
-          const lnToPtNode = lnToNodes[key]?.["a:pt"];
-          if (lnToPtNode) {
-            Object.keys(lnToPtNode).forEach((ptKey) => {
-              const lnToNoPt = lnToPtNode[ptKey];
-              if (lnToNoPt?.["attrs"]) {
-                const ptX = lnToNoPt["attrs"]["x"];
-                const ptY = lnToNoPt["attrs"]["y"];
-                const order = lnToNoPt["attrs"]["order"] || 0;
-                multiSapeAry.push({
-                  type: "lnto",
-                  x: ptX,
-                  y: ptY,
-                  order,
-                });
-              }
-            });
-          }
-        });
-      }
-
-      // Handle cubic Bézier nodes
-      if (cubicBezToNodes) {
-        const cubicBezToPtNodesAry: any[] = [];
-        if (!Array.isArray(cubicBezToNodes)) {
-          cubicBezToNodes = [cubicBezToNodes];
-        }
-        Object.keys(cubicBezToNodes).forEach((key) => {
-          const ptNode = cubicBezToNodes[key]?.["a:pt"];
-          if (ptNode) {
-            cubicBezToPtNodesAry.push(ptNode);
-          }
-        });
-
-        cubicBezToPtNodesAry.forEach((pts) => {
-          if (Array.isArray(pts)) {
-            const pts_ary: any[] = [];
-            pts.forEach((pt: any) => {
-              if (pt?.["attrs"]) {
-                const pt_obj = {
-                  x: pt["attrs"]["x"],
-                  y: pt["attrs"]["y"],
-                };
-                pts_ary.push(pt_obj);
-              }
-            });
-            if (pts_ary.length > 0 && pts[0]?.["attrs"]) {
-              const order = pts[0]["attrs"]["order"] || 0;
-              multiSapeAry.push({
-                type: "cubicBezTo",
-                cubBzPt: pts_ary,
-                order,
-              });
-            }
-          }
-        });
-      }
-
-      // Handle arc nodes
-      if (arcToNodes?.["attrs"]) {
-        const arcToNodesAttrs = arcToNodes["attrs"];
-        const order = arcToNodesAttrs["order"] || 0;
-        const hR = arcToNodesAttrs["hR"];
-        const wR = arcToNodesAttrs["wR"];
-        const stAng = arcToNodesAttrs["stAng"];
-        const swAng = arcToNodesAttrs["swAng"];
-        let shftX = 0;
-        let shftY = 0;
-        const arcToPtNode = getTextByPathList(arcToNodes, ["a:pt", "attrs"]);
-        if (arcToPtNode) {
-          shftX = arcToPtNode["x"] || 0;
-          shftY = arcToPtNode["y"] || 0;
-        }
-        multiSapeAry.push({
-          type: "arcTo",
-          hR: hR,
-          wR: wR,
-          stAng: stAng,
-          swAng: swAng,
-          shftX: shftX,
-          shftY: shftY,
-          order,
-        });
-      }
-
-      // Handle close nodes
-      if (closeNode) {
-        if (!Array.isArray(closeNode)) closeNode = [closeNode];
-        Object.keys(closeNode).forEach(() => {
-          multiSapeAry.push({
-            type: "close",
-            order: Infinity,
-          });
-        });
-      }
-
-      // Sort by order and generate path
-      multiSapeAry.sort((a, b) => a.order - b.order);
-
-      let k = 0;
-      while (k < multiSapeAry.length) {
-        if (multiSapeAry[k].type === "movto") {
-          const spX = parseInt(multiSapeAry[k].x) * cX;
-          const spY = parseInt(multiSapeAry[k].y) * cY;
-          d += " M" + spX + "," + spY;
-        } else if (multiSapeAry[k].type === "lnto") {
-          const Lx = parseInt(multiSapeAry[k].x) * cX;
-          const Ly = parseInt(multiSapeAry[k].y) * cY;
-          d += " L" + Lx + "," + Ly;
-        } else if (multiSapeAry[k].type === "cubicBezTo") {
-          if (multiSapeAry[k].cubBzPt && multiSapeAry[k].cubBzPt.length >= 3) {
-            const Cx1 = parseInt(multiSapeAry[k].cubBzPt[0].x) * cX;
-            const Cy1 = parseInt(multiSapeAry[k].cubBzPt[0].y) * cY;
-            const Cx2 = parseInt(multiSapeAry[k].cubBzPt[1].x) * cX;
-            const Cy2 = parseInt(multiSapeAry[k].cubBzPt[1].y) * cY;
-            const Cx3 = parseInt(multiSapeAry[k].cubBzPt[2].x) * cX;
-            const Cy3 = parseInt(multiSapeAry[k].cubBzPt[2].y) * cY;
-            d +=
-              " C" +
-              Cx1 +
-              "," +
-              Cy1 +
-              " " +
-              Cx2 +
-              "," +
-              Cy2 +
-              " " +
-              Cx3 +
-              "," +
-              Cy3;
-          }
-        } else if (multiSapeAry[k].type === "arcTo") {
-          const hR = parseInt(multiSapeAry[k].hR) * cX;
-          const wR = parseInt(multiSapeAry[k].wR) * cY;
-          const stAng = parseInt(multiSapeAry[k].stAng) / 60000;
-          const swAng = parseInt(multiSapeAry[k].swAng) / 60000;
-          const endAng = stAng + swAng;
-          d += this.shapeArc(wR, hR, wR, hR, stAng, endAng, false);
-        } else if (multiSapeAry[k].type === "close") d += "z";
-        k++;
-      }
-    }
-
-    return d;
-  }
 
   /**
    * Generate SVG path for preset geometric shapes
@@ -2007,7 +1688,7 @@ export class ShapeProcessor implements IElementProcessor<ShapeElement> {
   /**
    * 应用饱和度调制
    */
-  private applySaturationModulation(color: string, modValue: number): string {
+  private applySaturationModulation(color: string, _modValue: number): string {
     // 简化实现，实际应该转换到HSL空间
     return color;
   }
@@ -2015,7 +1696,7 @@ export class ShapeProcessor implements IElementProcessor<ShapeElement> {
   /**
    * 应用色相调制
    */
-  private applyHueModulation(color: string, modValue: number): string {
+  private applyHueModulation(color: string, _modValue: number): string {
     // 简化实现，实际应该转换到HSL空间
     return color;
   }

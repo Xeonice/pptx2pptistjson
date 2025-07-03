@@ -172,14 +172,18 @@ export class ShapeElement extends Element {
   }
 
   toJSON(): any {
+    const width = this.size?.width || 0;
+    const height = this.size?.height || 0;
+    
     const result: any = {
       type: this.type,
       id: this.id,
-      width: this.size?.width || 0,
-      height: this.size?.height || 0,
+      width: width,
+      height: height,
       left: this.position?.x || 0,
       top: this.position?.y || 0,
-      viewBox: this.viewBox || [200, 200], // Use preset viewBox or default 200x200
+      // Use actual dimensions for viewBox if available, otherwise use preset viewBox or default 200x200
+      viewBox: this.viewBox || (width > 0 && height > 0 ? [width, height] : [200, 200]),
       path: this.path || this.getShapePathInternal(),
       fixedRatio: false,
       rotate: this.rotation || 0,
@@ -196,37 +200,31 @@ export class ShapeElement extends Element {
     }
 
     // Add shape type and enableShrink for all shapes
-    if (this.shapeType !== "custom") {
-      result.shape = this.shapeType;
-    }
+    // Always include shape property, default to "rect" for custom shapes with no path
+    result.shape = this.shapeType !== "custom" ? this.shapeType : "rect";
     result.enableShrink = true;
 
-    // Add legacy outline properties
-    if (this.stroke) {
+    // Add pathFormula if present (but don't include if undefined)
+    if (this.pathFormula !== undefined) {
+      result.pathFormula = this.pathFormula;
+    }
+
+    // Only add legacy properties if they contain meaningful data
+    if (this.stroke && (this.stroke.width && this.stroke.width > 0 || this.stroke.color !== "#000000")) {
       result.outline = {
         color: this.stroke.color || "#000000",
         width: this.stroke.width || 0,
         style: this.stroke.dashType || "solid"
       };
-    } else {
-      result.outline = {
-        color: "#000000",
-        width: 0,
-        style: "solid"
-      };
     }
 
-    // Add legacy text properties
-    result.text = {
-      content: "",
-      defaultFontName: "Corbel",
-      defaultColor: "#333",
-      align: "middle"
-    };
-
-    // Add legacy flip properties
-    result.flipH = this.flip?.horizontal || false;
-    result.flipV = this.flip?.vertical || false;
+    // Only add flip properties if they are true
+    if (this.flip?.horizontal) {
+      result.flipH = true;
+    }
+    if (this.flip?.vertical) {
+      result.flipV = true;
+    }
 
     // Add keypoints property for roundRect shapes
     if (this.shapeType === "roundRect") {
