@@ -26,12 +26,25 @@ export class TextStyleExtractor {
   ): TextRunStyle {
     const style: TextRunStyle = {};
 
-    // Font size
+    // Get list style inheritance first if available
+    let listStyleDefRPr: XmlNode | undefined;
+    if (pNode && txBodyNode) {
+      listStyleDefRPr = this.getListStyleDefRPr(pNode, txBodyNode);
+    }
+
+    // Font size - check run properties first, then list style inheritance
     const sz = rPrNode ? this.xmlParser.getAttribute(rPrNode, "sz") : undefined;
     if (sz) {
       // PowerPoint font size is in hundreds of points, but needs scaling for web display
       // Based on comparison with expected output, applying 1.39 scaling factor
       style.fontSize = Math.round((parseInt(sz) / 100) * 1.39);
+    } else if (listStyleDefRPr) {
+      // Inherit font size from list style
+      const listSz = this.xmlParser.getAttribute(listStyleDefRPr, "sz");
+      if (listSz) {
+        style.fontSize = Math.round((parseInt(listSz) / 100) * 1.39);
+        DebugHelper.log(context, `TextStyleExtractor: Font size inherited from list style: ${style.fontSize}`, "info");
+      }
     }
 
     // Bold - check run properties first, then inherit from list style
@@ -40,8 +53,9 @@ export class TextStyleExtractor {
     let boldFromListStyle = false;
 
     // If no direct bold setting, check list style inheritance
-    if (!boldFromRun && pNode && txBodyNode) {
-      boldFromListStyle = this.getBoldFromListStyle(pNode, context, txBodyNode);
+    if (!boldFromRun && listStyleDefRPr) {
+      const listBold = this.xmlParser.getAttribute(listStyleDefRPr, "b");
+      boldFromListStyle = listBold === "1" || listBold === "true";
     }
 
     if (boldFromRun || boldFromListStyle) {
@@ -49,61 +63,81 @@ export class TextStyleExtractor {
       DebugHelper.log(context, `TextStyleExtractor: Bold applied - direct: ${boldFromRun}, inherited: ${boldFromListStyle}`, "info");
     }
 
-    // Italic
-    const i = rPrNode ? this.xmlParser.getAttribute(rPrNode, "i") : undefined;
-    if (i === "1" || i === "true") {
+    // Italic - check run properties first, then inherit from list style
+    const directItalic = rPrNode ? this.xmlParser.getAttribute(rPrNode, "i") : undefined;
+    let italicFromRun = directItalic === "1" || directItalic === "true";
+    let italicFromListStyle = false;
+
+    if (!italicFromRun && listStyleDefRPr) {
+      const listItalic = this.xmlParser.getAttribute(listStyleDefRPr, "i");
+      italicFromListStyle = listItalic === "1" || listItalic === "true";
+    }
+
+    if (italicFromRun || italicFromListStyle) {
       style.italic = true;
+      if (italicFromListStyle) {
+        DebugHelper.log(context, `TextStyleExtractor: Italic inherited from list style`, "info");
+      }
     }
 
-    // Underline
-    const u = rPrNode ? this.xmlParser.getAttribute(rPrNode, "u") : undefined;
-    if (u && u !== "none") {
+    // Underline - check run properties first, then inherit from list style
+    const directUnderline = rPrNode ? this.xmlParser.getAttribute(rPrNode, "u") : undefined;
+    let underlineFromRun = !!(directUnderline && directUnderline !== "none");
+    let underlineFromListStyle = false;
+
+    if (!underlineFromRun && listStyleDefRPr) {
+      const listUnderline = this.xmlParser.getAttribute(listStyleDefRPr, "u");
+      underlineFromListStyle = !!(listUnderline && listUnderline !== "none");
+    }
+
+    if (underlineFromRun || underlineFromListStyle) {
       style.underline = true;
+      if (underlineFromListStyle) {
+        DebugHelper.log(context, `TextStyleExtractor: Underline inherited from list style`, "info");
+      }
     }
 
-    // Color
+    // Color - check run properties first, then inherit from list style
     const solidFillNode = rPrNode ? this.xmlParser.findNode(rPrNode, "solidFill") : undefined;
     if (solidFillNode) {
-      // Convert solidFillNode to plain object for FillExtractor
-      const solidFillObj = this.xmlNodeToObject(solidFillNode);
-
-      // Create warpObj with theme content
-      const warpObj = {
-        themeContent: context.theme
-          ? this.createThemeContent(context.theme)
-          : undefined,
-      };
-
-      // Use FillExtractor to get color
-      const color = FillExtractor.getSolidFill(
-        solidFillObj,
-        undefined,
-        undefined,
-        warpObj
-      );
-      if (color) {
-        style.color = color;
-
-        // Extract theme color type if present
-        const schemeClrNode = this.xmlParser.findNode(
-          solidFillNode,
-          "schemeClr"
-        );
-        if (schemeClrNode) {
-          const val = this.xmlParser.getAttribute(schemeClrNode, "val");
-          if (val) {
-            style.themeColorType = val;
+      const colorResult = this.extractColorFromSolidFill(solidFillNode, context);
+      if (colorResult) {
+        style.color = colorResult.color;
+        if (colorResult.themeColorType) {
+          style.themeColorType = colorResult.themeColorType;
+        }
+      }
+    } else if (listStyleDefRPr) {
+      // Inherit color from list style
+      const listSolidFillNode = this.xmlParser.findNode(listStyleDefRPr, "solidFill");
+      if (listSolidFillNode) {
+        const colorResult = this.extractColorFromSolidFill(listSolidFillNode, context);
+        if (colorResult) {
+          style.color = colorResult.color;
+          if (colorResult.themeColorType) {
+            style.themeColorType = colorResult.themeColorType;
           }
+          DebugHelper.log(context, `TextStyleExtractor: Color inherited from list style: ${style.color}`, "info");
         }
       }
     }
 
-    // Font family
+    // Font family - check run properties first, then inherit from list style
     const latinNode = rPrNode ? this.xmlParser.findNode(rPrNode, "latin") : undefined;
     if (latinNode) {
       const typeface = this.xmlParser.getAttribute(latinNode, "typeface");
       if (typeface) {
         style.fontFamily = typeface;
+      }
+    } else if (listStyleDefRPr) {
+      // Inherit font family from list style
+      const listLatinNode = this.xmlParser.findNode(listStyleDefRPr, "latin");
+      if (listLatinNode) {
+        const listTypeface = this.xmlParser.getAttribute(listLatinNode, "typeface");
+        if (listTypeface) {
+          style.fontFamily = listTypeface;
+          DebugHelper.log(context, `TextStyleExtractor: Font family inherited from list style: ${style.fontFamily}`, "info");
+        }
       }
     }
 
@@ -157,13 +191,10 @@ export class TextStyleExtractor {
   }
 
   /**
-   * Extract bold setting from list style based on paragraph level
+   * Get defRPr node from list style for current paragraph level
+   * This is used for comprehensive style inheritance from list styles
    */
-  getBoldFromListStyle(
-    pNode: XmlNode,
-    _context: ProcessingContext,
-    txBodyNode: XmlNode
-  ): boolean {
+  getListStyleDefRPr(pNode: XmlNode, txBodyNode: XmlNode): XmlNode | undefined {
     // Extract paragraph level
     const pPrNode = this.xmlParser.findNode(pNode, "pPr");
     let paragraphLevel = 0;
@@ -178,19 +209,9 @@ export class TextStyleExtractor {
     // Extract list style from txBody
     const lstStyleNode = this.xmlParser.findNode(txBodyNode, "lstStyle");
     if (!lstStyleNode) {
-      return false;
+      return undefined;
     }
 
-    return this.getBoldFromListStyleByLevel(lstStyleNode, paragraphLevel);
-  }
-
-  /**
-   * Extract bold setting from list style by specific level
-   */
-  getBoldFromListStyleByLevel(
-    lstStyleNode: XmlNode,
-    paragraphLevel: number
-  ): boolean {
     // Clamp level to valid range (0-8)
     const level = Math.max(0, Math.min(8, paragraphLevel));
 
@@ -201,10 +222,7 @@ export class TextStyleExtractor {
     if (levelPrNode) {
       const defRPrNode = this.xmlParser.findNode(levelPrNode, "defRPr");
       if (defRPrNode) {
-        const b = this.xmlParser.getAttribute(defRPrNode, "b");
-        if (b === "1" || b === "true") {
-          return true;
-        }
+        return defRPrNode;
       }
     }
 
@@ -216,16 +234,71 @@ export class TextStyleExtractor {
       if (parentLevelPrNode) {
         const defRPrNode = this.xmlParser.findNode(parentLevelPrNode, "defRPr");
         if (defRPrNode) {
-          const b = this.xmlParser.getAttribute(defRPrNode, "b");
-          if (b === "1" || b === "true") {
-            return true;
-          }
+          return defRPrNode;
         }
       }
     }
 
+    return undefined;
+  }
+
+  /**
+   * Extract color information from solidFill node
+   */
+  extractColorFromSolidFill(solidFillNode: XmlNode, context: ProcessingContext): { color: string; themeColorType?: string } | undefined {
+    // Convert solidFillNode to plain object for FillExtractor
+    const solidFillObj = this.xmlNodeToObject(solidFillNode);
+
+    // Create warpObj with theme content
+    const warpObj = {
+      themeContent: context.theme
+        ? this.createThemeContent(context.theme)
+        : undefined,
+    };
+
+    // Use FillExtractor to get color
+    const color = FillExtractor.getSolidFill(
+      solidFillObj,
+      undefined,
+      undefined,
+      warpObj
+    );
+    
+    if (color) {
+      const result: { color: string; themeColorType?: string } = { color };
+
+      // Extract theme color type if present
+      const schemeClrNode = this.xmlParser.findNode(solidFillNode, "schemeClr");
+      if (schemeClrNode) {
+        const val = this.xmlParser.getAttribute(schemeClrNode, "val");
+        if (val) {
+          result.themeColorType = val;
+        }
+      }
+
+      return result;
+    }
+
+    return undefined;
+  }
+
+  /**
+   * Extract bold setting from list style based on paragraph level
+   * This method is kept for backward compatibility
+   */
+  getBoldFromListStyle(
+    pNode: XmlNode,
+    _context: ProcessingContext,
+    txBodyNode: XmlNode
+  ): boolean {
+    const defRPrNode = this.getListStyleDefRPr(pNode, txBodyNode);
+    if (defRPrNode) {
+      const b = this.xmlParser.getAttribute(defRPrNode, "b");
+      return b === "1" || b === "true";
+    }
     return false;
   }
+
 
   /**
    * Extract default text styles from shape style references
