@@ -66,7 +66,11 @@ export class ConnectionShapeProcessor
       ? this.xmlParser.getAttribute(cNvPrNode, "name")
       : "Connection";
 
-    DebugHelper.log(context, `ConnectionShapeProcessor: Processing connection shape "${name}" with ID ${originalId}`, "info");
+    DebugHelper.log(
+      context,
+      `ConnectionShapeProcessor: Processing connection shape "${name}" with ID ${originalId}`,
+      "info"
+    );
 
     // Generate unique ID
     const id = context.idGenerator.generateUniqueId(originalId, "cxn-shape");
@@ -83,7 +87,11 @@ export class ConnectionShapeProcessor
         if (prst) {
           shapeType = this.mapConnectionGeometryToShapeType(prst, context);
           pathFormula = prst;
-          DebugHelper.log(context, `ConnectionShapeProcessor ${id}: Geometry type: ${prst} -> ${shapeType}`, "info");
+          DebugHelper.log(
+            context,
+            `ConnectionShapeProcessor ${id}: Geometry type: ${prst} -> ${shapeType}`,
+            "info"
+          );
         }
       } else {
         // Check for custom geometry
@@ -91,7 +99,11 @@ export class ConnectionShapeProcessor
         if (custGeomNode) {
           shapeType = "custom";
           pathFormula = "custom";
-          DebugHelper.log(context, `ConnectionShapeProcessor ${id}: Custom geometry detected`, "info");
+          DebugHelper.log(
+            context,
+            `ConnectionShapeProcessor ${id}: Custom geometry detected`,
+            "info"
+          );
         }
       }
     }
@@ -156,7 +168,11 @@ export class ConnectionShapeProcessor
     // Extract fill color (connection shapes often have stroke properties)
     const fillColor = this.extractFillColor(spPrNode, context);
     if (fillColor) {
-      DebugHelper.log(context, `ConnectionShapeProcessor ${id}: extracted fill color: ${fillColor}`, "info");
+      DebugHelper.log(
+        context,
+        `ConnectionShapeProcessor ${id}: extracted fill color: ${fillColor}`,
+        "info"
+      );
       shapeElement.setFill({ color: fillColor });
     }
 
@@ -178,7 +194,10 @@ export class ConnectionShapeProcessor
     const styledTextContent = this.extractTextContent(xmlNode, context);
     if (styledTextContent && styledTextContent.length > 0) {
       // Set simple text content for backward compatibility
-      const simpleText = styledTextContent.map(item => item.text).join("").trim();
+      const simpleText = styledTextContent
+        .map((item) => item.text)
+        .join("")
+        .trim();
       shapeElement.setTextContent(simpleText);
 
       // Also set styled text content for rich formatting support
@@ -192,11 +211,18 @@ export class ConnectionShapeProcessor
       shapeElement.setConnectionInfo(connectionInfo);
     }
 
-    DebugHelper.log(context, `ConnectionShapeProcessor: Successfully processed connection shape ${id}`, "info");
+    DebugHelper.log(
+      context,
+      `ConnectionShapeProcessor: Successfully processed connection shape ${id}`,
+      "info"
+    );
     return shapeElement;
   }
 
-  private mapConnectionGeometryToShapeType(prst: string, context?: ProcessingContext): ShapeType {
+  private mapConnectionGeometryToShapeType(
+    prst: string,
+    context?: ProcessingContext
+  ): ShapeType {
     // Map PowerPoint connection preset geometries to shape types
     switch (prst) {
       case "bentConnector2":
@@ -219,7 +245,11 @@ export class ConnectionShapeProcessor
         return "doubleArrow";
       default:
         if (context) {
-          DebugHelper.log(context, `ConnectionShapeProcessor: Unknown connection geometry: ${prst}, using 'line'`, "warn");
+          DebugHelper.log(
+            context,
+            `ConnectionShapeProcessor: Unknown connection geometry: ${prst}, using 'line'`,
+            "warn"
+          );
         }
         return "line";
     }
@@ -411,13 +441,20 @@ export class ConnectionShapeProcessor
    * Extract text content with full style support (bold, italic, underline, etc.)
    * Uses the shared TextStyleExtractor for consistency across processors
    */
-  private extractTextContent(xmlNode: XmlNode, context: ProcessingContext): TextContent[] | undefined {
+  private extractTextContent(
+    xmlNode: XmlNode,
+    context: ProcessingContext
+  ): TextContent[] | undefined {
     const txBodyNode = this.xmlParser.findNode(xmlNode, "p:txBody");
     if (!txBodyNode) return undefined;
 
     // Use unified text extraction logic with paragraph structure
-    const paragraphs = this.textStyleExtractor.extractTextContentByParagraphs(txBodyNode, context);
-    
+    const result = this.textStyleExtractor.extractTextContentByParagraphs(
+      txBodyNode,
+      context
+    );
+    const paragraphs = result.paragraphs;
+
     // Store paragraphs for later use in createShapeTextContent
     this.lastProcessedParagraphs = paragraphs;
 
@@ -435,13 +472,16 @@ export class ConnectionShapeProcessor
     let html: string;
     if (this.lastProcessedParagraphs.length > 0) {
       // Generate HTML with proper paragraph structure
-      html = HtmlConverter.convertParagraphsToHtml(this.lastProcessedParagraphs, {
-        wrapInDiv: false // We'll add our own structure
-      });
+      html = HtmlConverter.convertParagraphsToHtml(
+        this.lastProcessedParagraphs,
+        {
+          wrapInDiv: false, // We'll add our own structure
+        }
+      );
     } else {
       // Fallback to single paragraph
       html = HtmlConverter.convertSingleParagraphToHtml(contentItems, {
-        wrapInDiv: false
+        wrapInDiv: false,
       });
     }
 
@@ -458,53 +498,6 @@ export class ConnectionShapeProcessor
       defaultFontName: defaultFontName,
       defaultColor: defaultColor,
     };
-  }
-
-  /**
-   * Format text content items into HTML string with styles
-   */
-  private formatTextContent(contentItems: TextContent[]): string {
-    let html = "";
-
-    for (const item of contentItems) {
-      let span = "<span";
-      const styles: string[] = [];
-
-      if (item.style) {
-        if (item.style.fontSize) {
-          styles.push(`font-size: ${item.style.fontSize}px`);
-        }
-        if (item.style.color) {
-          styles.push(`color: ${item.style.color}`);
-        }
-        if (item.style.fontFamily) {
-          styles.push(`font-family: '${item.style.fontFamily}'`);
-        }
-        if (item.style.bold) {
-          styles.push("font-weight: bold");
-        }
-        if (item.style.italic) {
-          styles.push("font-style: italic");
-        }
-        if (item.style.underline) {
-          styles.push("text-decoration: underline");
-        }
-      }
-
-      if (styles.length > 0) {
-        span += ` style="${styles.join("; ")}"`;
-      }
-
-      // Add theme color type as data attribute if present
-      if (item.style?.themeColorType) {
-        span += ` data-theme-color="${item.style.themeColorType}"`;
-      }
-
-      span += `>${item.text}</span>`;
-      html += span;
-    }
-
-    return html || "";
   }
 
   private extractConnectionInfo(xmlNode: XmlNode): any {

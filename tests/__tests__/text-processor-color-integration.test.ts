@@ -367,7 +367,7 @@ describe('TextProcessor Color Integration Tests', () => {
       expect(textContent).toHaveLength(1);
       const style = textContent[0].style;
       expect(style?.color).toBe('rgba(255,0,0,1)');
-      expect(style?.fontSize).toBe(Math.round((2000 / 100) * 1.39)); // Font size scaling
+      expect(style?.fontSize).toBe(26.66); // FontSizeCalculator precise calculation
       expect(style?.bold).toBe(true);
       expect(style?.italic).toBe(true);
       expect(style?.underline).toBe(true);

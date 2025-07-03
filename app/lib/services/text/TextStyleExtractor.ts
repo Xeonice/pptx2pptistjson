@@ -5,6 +5,7 @@ import { TextRunStyle } from "../../models/domain/elements/TextElement";
 import { Theme } from "../../models/domain/Theme";
 import { FillExtractor } from "../utils/FillExtractor";
 import { DebugHelper } from "../utils/DebugHelper";
+import { FontSizeCalculator } from "../utils/FontSizeCalculator";
 
 /**
  * Shared text style extraction utilities for both TextProcessor and ShapeProcessor
@@ -36,13 +37,13 @@ export class TextStyleExtractor {
     const sz = rPrNode ? this.xmlParser.getAttribute(rPrNode, "sz") : undefined;
     if (sz) {
       // PowerPoint font size is in hundreds of points, but needs scaling for web display
-      // Based on comparison with expected output, applying 1.39 scaling factor
-      style.fontSize = Math.round((parseInt(sz) / 100) * 1.39);
+      // Using FontSizeCalculator for precise decimal calculations
+      style.fontSize = FontSizeCalculator.convertPowerPointToWebSize(sz);
     } else if (listStyleDefRPr) {
       // Inherit font size from list style
       const listSz = this.xmlParser.getAttribute(listStyleDefRPr, "sz");
       if (listSz) {
-        style.fontSize = Math.round((parseInt(listSz) / 100) * 1.39);
+        style.fontSize = FontSizeCalculator.convertPowerPointToWebSize(listSz);
         DebugHelper.log(
           context,
           `TextStyleExtractor: Font size inherited from list style: ${style.fontSize}`,
@@ -202,18 +203,33 @@ export class TextStyleExtractor {
   /**
    * Extract text content from multiple paragraphs grouped by paragraph
    * Returns array of paragraph content arrays for proper HTML p tag generation
+   * Also extracts the line height from the first paragraph for the TextElement
    */
   extractTextContentByParagraphs(
     txBodyNode: XmlNode,
     context: ProcessingContext,
     shapeStyleNode?: XmlNode
-  ): Array<Array<{ text: string; style: TextRunStyle }>> {
+  ): {
+    paragraphs: Array<Array<{ text: string; style: TextRunStyle }>>;
+    lineHeight?: number;
+  } {
     const paragraphs = this.xmlParser.findNodes(txBodyNode, "p");
-    const allParagraphs: Array<Array<{ text: string; style: TextRunStyle }>> = [];
+    const allParagraphs: Array<Array<{ text: string; style: TextRunStyle }>> =
+      [];
+    let documentLineHeight: number | undefined;
 
     for (const pNode of paragraphs) {
-      // Extract content for each paragraph
-      const paragraphContent = this.extractParagraphContent(
+      // Extract line height from the first paragraph for the entire TextElement
+      if (!documentLineHeight) {
+        const extractedLineHeight = this.extractLineHeight(pNode);
+        // Only set if it's not the default value
+        if (Math.abs(extractedLineHeight - 1.15) > 0.01) {
+          documentLineHeight = extractedLineHeight;
+        }
+      }
+
+      // Extract content for each paragraph (without individual line heights)
+      const paragraphContent = this.extractParagraphContentWithoutLineHeight(
         pNode,
         context,
         txBodyNode,
@@ -226,7 +242,10 @@ export class TextStyleExtractor {
       }
     }
 
-    return allParagraphs;
+    return {
+      paragraphs: allParagraphs,
+      lineHeight: documentLineHeight,
+    };
   }
 
   /**
@@ -238,24 +257,25 @@ export class TextStyleExtractor {
     context: ProcessingContext,
     shapeStyleNode?: XmlNode
   ): Array<{ text: string; style: TextRunStyle }> {
-    const paragraphGroups = this.extractTextContentByParagraphs(
+    const result = this.extractTextContentByParagraphs(
       txBodyNode,
       context,
       shapeStyleNode
     );
+    const paragraphGroups = result.paragraphs;
 
     // Flatten paragraphs into a single array (legacy behavior)
     const allTextContent: Array<{ text: string; style: TextRunStyle }> = [];
-    
+
     for (let i = 0; i < paragraphGroups.length; i++) {
       const paragraphContent = paragraphGroups[i];
       allTextContent.push(...paragraphContent);
-      
+
       // Add line break between paragraphs (except for the last one)
       if (i < paragraphGroups.length - 1) {
         allTextContent.push({
           text: "\n",
-          style: {}
+          style: {},
         });
       }
     }
@@ -275,6 +295,9 @@ export class TextStyleExtractor {
     const runs = this.xmlParser.findNodes(pNode, "r");
     const contentItems: Array<{ text: string; style: TextRunStyle }> = [];
 
+    // Extract paragraph-level line spacing
+    const paragraphLineHeight = this.extractLineHeight(pNode);
+
     // Process all text runs
     for (const rNode of runs) {
       const tNode = this.xmlParser.findNode(rNode, "t");
@@ -293,6 +316,9 @@ export class TextStyleExtractor {
             shapeStyleNode
           );
 
+          // Add line height to the style (always available now with default 1.0)
+          style.lineHeight = paragraphLineHeight;
+
           contentItems.push({
             text: text,
             style: style,
@@ -301,8 +327,110 @@ export class TextStyleExtractor {
       }
     }
 
+    return contentItems;
+  }
+
+  /**
+   * Extract paragraph content without line height (for use with TextElement-level line height)
+   */
+  extractParagraphContentWithoutLineHeight(
+    pNode: XmlNode,
+    context: ProcessingContext,
+    txBodyNode?: XmlNode,
+    shapeStyleNode?: XmlNode
+  ): Array<{ text: string; style: TextRunStyle }> {
+    const runs = this.xmlParser.findNodes(pNode, "r");
+    const contentItems: Array<{ text: string; style: TextRunStyle }> = [];
+
+    // Process all text runs without paragraph-level line spacing
+    for (const rNode of runs) {
+      const tNode = this.xmlParser.findNode(rNode, "t");
+      if (tNode) {
+        const text = this.xmlParser.getTextContent(tNode);
+        // Include all text content, including empty strings from valid text nodes
+        // PowerPoint preserves spaces and they can be significant for formatting
+        if (text !== undefined && text !== null) {
+          // Extract run properties for each run
+          const rPrNode = this.xmlParser.findNode(rNode, "rPr");
+          const style = this.extractRunStyle(
+            rPrNode,
+            context,
+            pNode,
+            txBodyNode,
+            shapeStyleNode
+          );
+
+          // Do not add line height to individual runs - it will be set on TextElement level
+
+          contentItems.push({
+            text: text,
+            style: style,
+          });
+        }
+      }
+    }
 
     return contentItems;
+  }
+
+  /**
+   * Extract line height from paragraph properties
+   * Handles PowerPoint's line spacing rules according to XML specification:
+   * - spcPct: percentage spacing (val / 1000 = %)
+   * - spcPts: fixed point spacing (val / 100 = pt)
+   * Returns 1.15 as PowerPoint's default if no line spacing is specified
+   */
+  extractLineHeight(pNode: XmlNode): number {
+    const pPrNode = this.xmlParser.findNode(pNode, "pPr");
+    if (!pPrNode) return 1.15; // PowerPoint默认行高为115%
+
+    const lnSpcNode = this.xmlParser.findNode(pPrNode, "lnSpc");
+    if (!lnSpcNode) return 1.15;
+
+    // 1. 优先处理百分比行间距 (spcPct) - 最常用
+    const spcPctNode = this.xmlParser.findNode(lnSpcNode, "spcPct");
+    if (spcPctNode) {
+      const val = this.xmlParser.getAttribute(spcPctNode, "val");
+      if (val) {
+        // PowerPoint规则：val值 ÷ 1000 = 百分比
+        // 例如：val="150000" → 150% → 1.5
+        const parsedVal = parseInt(val);
+        if (!isNaN(parsedVal)) {
+          const percentage = parsedVal / 1000;
+          return percentage / 100; // 转换为小数，150% → 1.5
+        }
+      }
+    }
+
+    // 2. 处理固定点数行间距 (spcPts)
+    const spcPtsNode = this.xmlParser.findNode(lnSpcNode, "spcPts");
+    if (spcPtsNode) {
+      const val = this.xmlParser.getAttribute(spcPtsNode, "val");
+      if (val) {
+        // PowerPoint规则：val值 ÷ 100 = 点数
+        // 例如：val="2400" → 24pt
+        const parsedVal = parseInt(val);
+        if (!isNaN(parsedVal)) {
+          const points = parsedVal / 100;
+          // 固定点数转换为相对行高：基于12pt字体计算
+          // 这是近似值，实际转换依赖字体大小
+          return points / 12;
+        }
+      }
+    }
+
+    // 3. 检查最小行间距 (spcAft, spcBef) - 段前段后间距
+    // 这些通常不影响行高，但可以记录用于调试
+    const spcAfterNode = this.xmlParser.findNode(lnSpcNode, "spcAft");
+    const spcBeforeNode = this.xmlParser.findNode(lnSpcNode, "spcBef");
+
+    if (spcAfterNode || spcBeforeNode) {
+      // 如果只有段前段后间距，使用默认行高
+      return 1.15;
+    }
+
+    // 默认返回PowerPoint标准行高115%
+    return 1.15;
   }
 
   /**

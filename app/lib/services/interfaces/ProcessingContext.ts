@@ -70,6 +70,56 @@ export interface ProcessingContext {
     width: number;
     height: number;
   };
+
+  /**
+   * Group transformation information when processing elements inside a group
+   * Contains scale factors and transformation properties extracted from grpSp xfrm
+   */
+  groupTransform?: GroupTransform;
+}
+
+/**
+ * Group transformation information extracted from PowerPoint group shapes
+ */
+export interface GroupTransform {
+  /**
+   * Horizontal scale factor (actualCx / childCx)
+   */
+  scaleX: number;
+  
+  /**
+   * Vertical scale factor (actualCy / childCy)
+   */
+  scaleY: number;
+  
+  /**
+   * Group position in slide coordinates (a:off)
+   */
+  offset?: {
+    x: number;
+    y: number;
+  };
+  
+  /**
+   * Child coordinate space offset (a:chOff)
+   */
+  childOffset?: {
+    x: number;
+    y: number;
+  };
+  
+  /**
+   * Optional rotation in degrees
+   */
+  rotation?: number;
+  
+  /**
+   * Optional flip transformations
+   */
+  flip?: {
+    horizontal?: boolean;
+    vertical?: boolean;
+  };
 }
 
 export interface RelationshipInfo {

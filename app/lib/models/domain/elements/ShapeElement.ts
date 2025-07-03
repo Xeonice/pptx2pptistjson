@@ -9,6 +9,7 @@ export class ShapeElement extends Element {
   private special?: boolean;
   private shapeText?: ShapeTextContent;
   private fill?: { color: string };
+  private gradient?: GradientFill;
   private stroke?: StrokeProperties;
   private flip?: { horizontal: boolean; vertical: boolean };
   private connectionInfo?: ConnectionInfo;
@@ -130,6 +131,14 @@ export class ShapeElement extends Element {
     return this.fill;
   }
 
+  setGradient(gradient: GradientFill): void {
+    this.gradient = gradient;
+  }
+
+  getGradient(): GradientFill | undefined {
+    return this.gradient;
+  }
+
   setStroke(stroke: StrokeProperties): void {
     this.stroke = stroke;
   }
@@ -163,24 +172,59 @@ export class ShapeElement extends Element {
   }
 
   toJSON(): any {
-    const themeFill = this.getThemeFill();
+    const width = this.size?.width || 0;
+    const height = this.size?.height || 0;
+    
     const result: any = {
       type: this.type,
       id: this.id,
+      width: width,
+      height: height,
       left: this.position?.x || 0,
       top: this.position?.y || 0,
-      width: this.size?.width || 0,
-      height: this.size?.height || 0,
-      viewBox: [this.size?.width || 200, this.size?.height || 200],
+      // Use actual dimensions for viewBox if available, otherwise use preset viewBox or default 200x200
+      viewBox: this.viewBox || (width > 0 && height > 0 ? [width, height] : [200, 200]),
       path: this.path || this.getShapePathInternal(),
-      pathFormula: this.pathFormula,
-      shape: this.shapeType,
-      fill: themeFill.color, // String format for frontend rendering
-      themeFill: themeFill, // Object format for theme management
       fixedRatio: false,
       rotate: this.rotation || 0,
-      enableShrink: true,
     };
+
+    // Add gradient if present, otherwise add fill
+    if (this.gradient) {
+      result.fill = "";
+      result.gradient = this.gradient;
+    } else {
+      const themeFill = this.getThemeFill();
+      result.fill = themeFill.color;
+      result.themeFill = themeFill;
+    }
+
+    // Add shape type and enableShrink for all shapes
+    // Always include shape property, default to "rect" for custom shapes with no path
+    result.shape = this.shapeType !== "custom" ? this.shapeType : "rect";
+    result.enableShrink = true;
+
+    // Add pathFormula if present (but don't include if undefined)
+    if (this.pathFormula !== undefined) {
+      result.pathFormula = this.pathFormula;
+    }
+
+    // Only add legacy properties if they contain meaningful data
+    if (this.stroke && (this.stroke.width && this.stroke.width > 0 || this.stroke.color !== "#000000")) {
+      result.outline = {
+        color: this.stroke.color || "#000000",
+        width: this.stroke.width || 0,
+        style: this.stroke.dashType || "solid"
+      };
+    }
+
+    // Only add flip properties if they are true
+    if (this.flip?.horizontal) {
+      result.flipH = true;
+    }
+    if (this.flip?.vertical) {
+      result.flipV = true;
+    }
 
     // Add keypoints property for roundRect shapes
     if (this.shapeType === "roundRect") {
@@ -274,6 +318,7 @@ export interface ShapeTextContent {
 }
 
 export interface StrokeProperties {
+  color?: string;
   width?: number;
   cap?: string;
   compound?: string;
@@ -297,4 +342,17 @@ export interface ConnectionInfo {
     id: string;
     index?: string;
   };
+}
+
+export interface GradientFill {
+  type: "linear" | "radial";
+  themeColor: Array<{
+    pos: number;
+    color: string;
+  }>;
+  colors: Array<{
+    pos: number;
+    color: string;
+  }>;
+  rotate: number;
 }

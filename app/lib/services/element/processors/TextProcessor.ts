@@ -113,8 +113,14 @@ export class TextProcessor implements IElementProcessor<TextElement> {
       // Extract text content organized by paragraphs
       const txBodyNode = this.xmlParser.findNode(xmlNode, "txBody");
       if (txBodyNode) {
-        const paragraphs = this.textStyleExtractor.extractTextContentByParagraphs(txBodyNode, context);
-        finalTextElement.setParagraphs(paragraphs);
+        const result = this.textStyleExtractor.extractTextContentByParagraphs(txBodyNode, context);
+        finalTextElement.setParagraphs(result.paragraphs);
+        
+        // Set line height on TextElement level if extracted
+        if (result.lineHeight) {
+          const existingStyle = finalTextElement.getTextStyle() || {};
+          finalTextElement.setTextStyle({ ...existingStyle, lineHeight: result.lineHeight });
+        }
       }
 
       return finalTextElement;
@@ -123,8 +129,14 @@ export class TextProcessor implements IElementProcessor<TextElement> {
       // Extract text content organized by paragraphs
       const txBodyNode = this.xmlParser.findNode(xmlNode, "txBody");
       if (txBodyNode) {
-        const paragraphs = this.textStyleExtractor.extractTextContentByParagraphs(txBodyNode, context);
-        textElement.setParagraphs(paragraphs);
+        const result = this.textStyleExtractor.extractTextContentByParagraphs(txBodyNode, context);
+        textElement.setParagraphs(result.paragraphs);
+        
+        // Set line height on TextElement level if extracted
+        if (result.lineHeight) {
+          const existingStyle = textElement.getTextStyle() || {};
+          textElement.setTextStyle({ ...existingStyle, lineHeight: result.lineHeight });
+        }
       }
 
       return textElement;

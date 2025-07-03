@@ -53,14 +53,14 @@ describe("TextStyleExtractor - Multi-paragraph handling", () => {
     `;
 
     const txBodyNode = xmlParser.parse(multiParagraphXml);
-    const paragraphs = textStyleExtractor.extractTextContentByParagraphs(txBodyNode, context);
+    const result = textStyleExtractor.extractTextContentByParagraphs(txBodyNode, context);
 
     // 验证结果 - 应该有2个段落，每个段落包含1个文本项
-    expect(paragraphs).toHaveLength(2);
-    expect(paragraphs[0]).toHaveLength(1);
-    expect(paragraphs[0][0].text).toBe("第一段文字");
-    expect(paragraphs[1]).toHaveLength(1);
-    expect(paragraphs[1][0].text).toBe("第二段文字");
+    expect(result.paragraphs).toHaveLength(2);
+    expect(result.paragraphs[0]).toHaveLength(1);
+    expect(result.paragraphs[0][0].text).toBe("第一段文字");
+    expect(result.paragraphs[1]).toHaveLength(1);
+    expect(result.paragraphs[1][0].text).toBe("第二段文字");
   });
 
   it("should handle single paragraph without adding extra line breaks", () => {

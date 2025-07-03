@@ -171,9 +171,54 @@ ServiceContainer
 utils/
 ├── ColorUtils          # PPTist RGBA 颜色标准化
 ├── IdGenerator         # 唯一元素 ID 管理
-├── UnitConverter       # PPTist EMU 到点转换
+├── UnitConverter       # EMU 到点的精确转换（PPTist 布局）
 └── FillExtractor       # 填充和背景处理
 ```
+
+### 色彩处理管道（v2.1.0 核心特性）
+高级色彩变换系统，匹配 PowerPoint 行为：
+
+```typescript
+FillExtractor.getSolidFill()
+├── ColorUtils.toRgba()           # 将所有颜色格式标准化为 rgba()
+├── getSchemeColorFromTheme()     # 解析主题颜色引用
+├── 颜色变换（按 PowerPoint 顺序应用）:
+│   ├── Alpha (透明度)
+│   ├── HueMod (色相旋转)
+│   ├── LumMod/LumOff (亮度)
+│   ├── SatMod (饱和度)
+│   ├── Shade (变暗)
+│   └── Tint (变亮)
+└── 始终返回一致的 rgba() 格式供 PPTist 使用
+```
+
+### 形状处理架构（v2.1.0 增强）
+支持 100+ PowerPoint 形状类型的全面形状转换：
+
+```typescript
+ShapeProcessor.process()
+├── 几何检测:
+│   ├── prstGeom → 预设形状 (rect, ellipse, triangle, flowChart*, actionButton*)
+│   └── custGeom → 自定义路径分析
+├── 填充提取:
+│   ├── solidFill → FillExtractor.getSolidFill()
+│   ├── noFill → 透明
+│   └── 主题颜色解析与继承
+├── 路径生成:
+│   ├── getCustomShapePath() → SVG 路径（EMU→点转换）
+│   ├── 增强的 arcTo、cubicBezTo 命令支持
+│   └── 不同 viewBox 尺寸的坐标缩放
+└── PPTist 格式输出:
+    ├── pathFormula (PowerPoint 几何标识符)
+    ├── themeFill (带调试信息的解析颜色)
+    └── enableShrink: true (PPTist 兼容性)
+```
+
+### 单位转换系统
+PPTist 布局精度的精确坐标映射：
+- **EMU 到点**: `value * 0.0007874015748031496` (UnitConverter.emuToPointsPrecise)
+- **精度**: 2 位小数，可配置
+- **一致性**: 所有尺寸（位置、大小、路径）都使用点单位供 PPTist 使用
 
 [⬆️ 回到目录](#-目录)
 
@@ -217,6 +262,42 @@ const pptistJson = await parse(arrayBuffer, { imageMode: 'url' })
 ```
 
 ### PPTist 高级图像处理特性
+
+#### 图像处理管道（v2.1.0 增强）
+多格式图像处理，PPTist 优化和 PowerPoint 拉伸偏移处理：
+
+```typescript
+ImageDataService.extractImageData()
+├── 格式检测: JPEG、PNG、GIF、BMP、WebP、TIFF
+├── 处理模式:
+│   ├── base64: 完整的 Data URL 嵌入（离线 PPTist 使用）
+│   └── url: 外部 URL 引用（云存储）
+├── PPTXImageProcessor: 基于 Sharp 的拉伸偏移处理
+│   ├── fillRect 处理（PowerPoint 拉伸算法）
+│   ├── 透明背景合成
+│   ├── 调试图像生成（故障排除）
+│   └── 内存高效处理（回退机制）
+├── 元数据提取: 尺寸、透明度、文件大小
+├── 错误隔离: 个别图像失败不会中断转换
+└── 并发处理: 信号量控制的批处理（默认：3）
+```
+
+#### 调试系统和图像处理（v2.1.0 新增）
+代码库包含图像处理的高级调试功能：
+
+```typescript
+DebugHelper.isDebugEnabled(context)        # 检查是否启用调试模式
+DebugHelper.shouldSaveDebugImages(context) # 检查是否应保存调试图像
+PPTXImageProcessor.applyStretchOffset()    # 应用 PowerPoint 拉伸变换
+ImageOffsetAdjuster.applyOffsetAdjustment() # 处理坐标调整
+```
+
+**主要特性：**
+- **透明填充处理**: 处理负拉伸偏移的图像透明填充
+- **调试图像生成**: 具有元数据和处理步骤可视化
+- **Sharp 库集成**: 在不可用时优雅回退
+- **内存高效处理**: 可配置的并发限制
+- **PowerPoint 兼容的 fillRect 算法**: 精确的拉伸偏移复制
 
 #### Sharp库集成图像处理
 - **透明背景合成**: 自动处理透明填充，确保 PPTist 中的正确显示
@@ -433,11 +514,29 @@ tests/
 
 ### 开发命令
 ```bash
-npm run dev          # 启动热重载开发服务器
-npm run dev:debug    # 启用 Node.js 调试的开发服务器
-npm run build        # 优化的生产构建
-npm run lint         # ESLint 代码质量检查
-npm run type-check   # TypeScript 类型验证
+# 构建和开发
+npm run dev          # 启动 Next.js 开发服务器（热重载）
+npm run dev:debug    # 启动开发服务器（启用 Node.js 调试）
+npm run build        # 生产构建（Next.js 优化）
+npm run start        # 启动生产服务器
+npm run lint         # 对 app 目录运行 ESLint（.js,.jsx,.ts,.tsx 文件）
+npm run type-check   # 运行 TypeScript 类型检查（不输出文件）
+
+# 测试
+npm test             # 运行所有 Jest 测试（850+ 全面测试用例）
+npm run test:watch   # 以监视模式运行测试（用于开发）
+npm run test:coverage # 运行测试并生成覆盖率报告
+
+# 运行单个测试
+npx jest <test-file-name>
+npx jest --testNamePattern="<test name>"
+
+# 运行测试分类
+npx jest background-image    # 背景图像测试
+npx jest color-processing    # 颜色处理测试
+npx jest shape-processor     # 形状处理测试
+npx jest slide-background-format  # 幻灯片背景格式测试
+npx jest background-format  # 背景格式测试
 ```
 
 ### API 端点
@@ -473,8 +572,9 @@ formData.append('options', JSON.stringify({
 ```typescript
 interface ParseOptions {
   imageMode?: 'base64' | 'url'        // PPTist 图像处理模式
+  backgroundFormat?: 'legacy' | 'pptist'  // 背景格式选择
   includeNotes?: boolean              // 包含演讲者备注
-  includeMaster?: boolean             // 包含母版元素
+  includeMaster?: boolean             // 包含母版幻灯片元素
   enableDebug?: boolean               // 调试信息
   maxConcurrency?: number             // 图像处理并发数
   precision?: number                  // PPTist 单位转换精度
@@ -576,6 +676,14 @@ interface ParseOptions {
 - [架构指南](./CLAUDE.md) - 详细开发见解
 - [类型定义](./app/lib/models/) - TypeScript 接口
 
+### v2.1.0 版本更新
+v2.1.0 引入了 PPTist 重点优化的变更：
+- **高级测试套件**: 新增 850+ 测试用例，提升代码覆盖率和测试完整性
+- **PowerPoint 组合形状变换**: 实现复杂的组合形状处理和渐变色提取
+- **行高字体尺寸优化**: 针对 PPTist 布局的精确字体和行高处理
+- **增强的色彩处理管道**: 支持更复杂的 PowerPoint 色彩变换
+- **Sharp 集成的图像处理**: 高性能图像处理和透明度支持
+
 ### 从 v1.x 迁移
 版本 2.0.0+ 引入 PPTist 专注变更：
 - 增强 PPTist 兼容性，优化输出格式
@@ -630,6 +738,13 @@ npm test
 - **ESLint**: 代码风格强制执行
 - **Jest**: 维护测试覆盖率
 - **文档**: 为新 PPTist 功能更新 README
+
+### 修改后验证
+每次修改后，请验证多个命令执行：
+- `npm run build` - 确保生产构建完整性
+- `npm run type-check` - 验证 TypeScript 类型一致性
+- `npm run lint` - 检查代码质量和风格指南
+- `npm run test` - 确认所有测试用例成功通过（所有 850+ 测试必须通过）
 
 [⬆️ 回到目录](#-目录)
 

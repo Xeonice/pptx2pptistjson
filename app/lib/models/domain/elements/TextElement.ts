@@ -51,7 +51,7 @@ export class TextElement extends Element {
     // Convert text content to HTML format like the expected output
     const htmlContent = this.convertToHTML();
 
-    return {
+    const result = {
       type: this.type,
       id: this.id,
       left: this.position?.x || 0,
@@ -65,7 +65,9 @@ export class TextElement extends Element {
       vertical: false,
       fit: "resize",
       enableShrink: true,
+      lineHeight: this.getLineHeight(),
     };
+    return result;
   }
 
   private convertToHTML(): string {
@@ -91,6 +93,17 @@ export class TextElement extends Element {
     };
   }
 
+  private getLineHeight(): number | undefined {
+    const lineHeight = this.textStyle?.lineHeight;
+    
+    // Only include lineHeight in output if it's not PowerPoint's default value of 1.15
+    // 允许小的浮点数误差（±0.01）
+    if (lineHeight && Math.abs(lineHeight - 1.15) > 0.01) {
+      return lineHeight;
+    }
+    
+    return undefined;
+  }
 }
 
 export interface TextContent {
@@ -112,6 +125,7 @@ export interface TextStyle {
   afterSpacing?: number;
   indent?: number;
   bulletStyle?: BulletStyle;
+  lineHeight?: number;
 }
 
 export interface TextRunStyle {
@@ -128,6 +142,7 @@ export interface TextRunStyle {
   link?: string;
   themeColorType?: string; // Store the original theme color type (e.g., 'accent1', 'dk1')
   textAlign?: string; // For paragraph-level alignment
+  lineHeight?: number; // Line height as a multiplier (e.g., 1.5 for 150%)
 }
 
 export interface BulletStyle {
