@@ -43,12 +43,18 @@ export class TextStyleExtractor {
       const listSz = this.xmlParser.getAttribute(listStyleDefRPr, "sz");
       if (listSz) {
         style.fontSize = Math.round((parseInt(listSz) / 100) * 1.39);
-        DebugHelper.log(context, `TextStyleExtractor: Font size inherited from list style: ${style.fontSize}`, "info");
+        DebugHelper.log(
+          context,
+          `TextStyleExtractor: Font size inherited from list style: ${style.fontSize}`,
+          "info"
+        );
       }
     }
 
     // Bold - check run properties first, then inherit from list style
-    const directBold = rPrNode ? this.xmlParser.getAttribute(rPrNode, "b") : undefined;
+    const directBold = rPrNode
+      ? this.xmlParser.getAttribute(rPrNode, "b")
+      : undefined;
     let boldFromRun = directBold === "1" || directBold === "true";
     let boldFromListStyle = false;
 
@@ -60,11 +66,17 @@ export class TextStyleExtractor {
 
     if (boldFromRun || boldFromListStyle) {
       style.bold = true;
-      DebugHelper.log(context, `TextStyleExtractor: Bold applied - direct: ${boldFromRun}, inherited: ${boldFromListStyle}`, "info");
+      DebugHelper.log(
+        context,
+        `TextStyleExtractor: Bold applied - direct: ${boldFromRun}, inherited: ${boldFromListStyle}`,
+        "info"
+      );
     }
 
     // Italic - check run properties first, then inherit from list style
-    const directItalic = rPrNode ? this.xmlParser.getAttribute(rPrNode, "i") : undefined;
+    const directItalic = rPrNode
+      ? this.xmlParser.getAttribute(rPrNode, "i")
+      : undefined;
     let italicFromRun = directItalic === "1" || directItalic === "true";
     let italicFromListStyle = false;
 
@@ -76,12 +88,18 @@ export class TextStyleExtractor {
     if (italicFromRun || italicFromListStyle) {
       style.italic = true;
       if (italicFromListStyle) {
-        DebugHelper.log(context, `TextStyleExtractor: Italic inherited from list style`, "info");
+        DebugHelper.log(
+          context,
+          `TextStyleExtractor: Italic inherited from list style`,
+          "info"
+        );
       }
     }
 
     // Underline - check run properties first, then inherit from list style
-    const directUnderline = rPrNode ? this.xmlParser.getAttribute(rPrNode, "u") : undefined;
+    const directUnderline = rPrNode
+      ? this.xmlParser.getAttribute(rPrNode, "u")
+      : undefined;
     let underlineFromRun = !!(directUnderline && directUnderline !== "none");
     let underlineFromListStyle = false;
 
@@ -93,14 +111,23 @@ export class TextStyleExtractor {
     if (underlineFromRun || underlineFromListStyle) {
       style.underline = true;
       if (underlineFromListStyle) {
-        DebugHelper.log(context, `TextStyleExtractor: Underline inherited from list style`, "info");
+        DebugHelper.log(
+          context,
+          `TextStyleExtractor: Underline inherited from list style`,
+          "info"
+        );
       }
     }
 
     // Color - check run properties first, then inherit from list style
-    const solidFillNode = rPrNode ? this.xmlParser.findNode(rPrNode, "solidFill") : undefined;
+    const solidFillNode = rPrNode
+      ? this.xmlParser.findNode(rPrNode, "solidFill")
+      : undefined;
     if (solidFillNode) {
-      const colorResult = this.extractColorFromSolidFill(solidFillNode, context);
+      const colorResult = this.extractColorFromSolidFill(
+        solidFillNode,
+        context
+      );
       if (colorResult) {
         style.color = colorResult.color;
         if (colorResult.themeColorType) {
@@ -109,21 +136,33 @@ export class TextStyleExtractor {
       }
     } else if (listStyleDefRPr) {
       // Inherit color from list style
-      const listSolidFillNode = this.xmlParser.findNode(listStyleDefRPr, "solidFill");
+      const listSolidFillNode = this.xmlParser.findNode(
+        listStyleDefRPr,
+        "solidFill"
+      );
       if (listSolidFillNode) {
-        const colorResult = this.extractColorFromSolidFill(listSolidFillNode, context);
+        const colorResult = this.extractColorFromSolidFill(
+          listSolidFillNode,
+          context
+        );
         if (colorResult) {
           style.color = colorResult.color;
           if (colorResult.themeColorType) {
             style.themeColorType = colorResult.themeColorType;
           }
-          DebugHelper.log(context, `TextStyleExtractor: Color inherited from list style: ${style.color}`, "info");
+          DebugHelper.log(
+            context,
+            `TextStyleExtractor: Color inherited from list style: ${style.color}`,
+            "info"
+          );
         }
       }
     }
 
     // Font family - check run properties first, then inherit from list style
-    const latinNode = rPrNode ? this.xmlParser.findNode(rPrNode, "latin") : undefined;
+    const latinNode = rPrNode
+      ? this.xmlParser.findNode(rPrNode, "latin")
+      : undefined;
     if (latinNode) {
       const typeface = this.xmlParser.getAttribute(latinNode, "typeface");
       if (typeface) {
@@ -133,17 +172,27 @@ export class TextStyleExtractor {
       // Inherit font family from list style
       const listLatinNode = this.xmlParser.findNode(listStyleDefRPr, "latin");
       if (listLatinNode) {
-        const listTypeface = this.xmlParser.getAttribute(listLatinNode, "typeface");
+        const listTypeface = this.xmlParser.getAttribute(
+          listLatinNode,
+          "typeface"
+        );
         if (listTypeface) {
           style.fontFamily = listTypeface;
-          DebugHelper.log(context, `TextStyleExtractor: Font family inherited from list style: ${style.fontFamily}`, "info");
+          DebugHelper.log(
+            context,
+            `TextStyleExtractor: Font family inherited from list style: ${style.fontFamily}`,
+            "info"
+          );
         }
       }
     }
 
     // If no run properties and shape style is provided, try to inherit from shape style
     if (!rPrNode && shapeStyleNode) {
-      const inheritedStyle = this.extractStyleFromShapeStyle(shapeStyleNode, context);
+      const inheritedStyle = this.extractStyleFromShapeStyle(
+        shapeStyleNode,
+        context
+      );
       Object.assign(style, inheritedStyle);
     }
 
@@ -160,15 +209,16 @@ export class TextStyleExtractor {
     shapeStyleNode?: XmlNode
   ): Array<{ text: string; style: TextRunStyle }> {
     const runs = this.xmlParser.findNodes(pNode, "r");
-    if (runs.length === 0) return [];
-
     const contentItems: Array<{ text: string; style: TextRunStyle }> = [];
 
+    // Process all text runs
     for (const rNode of runs) {
       const tNode = this.xmlParser.findNode(rNode, "t");
       if (tNode) {
         const text = this.xmlParser.getTextContent(tNode);
-        if (text.trim()) {
+        // Include all text content, including empty strings from valid text nodes
+        // PowerPoint preserves spaces and they can be significant for formatting
+        if (text !== undefined && text !== null) {
           // Extract run properties for each run
           const rPrNode = this.xmlParser.findNode(rNode, "rPr");
           const style = this.extractRunStyle(
@@ -187,6 +237,28 @@ export class TextStyleExtractor {
       }
     }
 
+    // Check for end paragraph run properties (endParaRPr)
+    // This indicates the paragraph end and we should add a line break for paragraph separation
+    const endParaRPrNode = this.xmlParser.findNode(pNode, "endParaRPr");
+    if (endParaRPrNode) {
+      // Extract style from endParaRPr for the line break
+      const style = this.extractRunStyle(
+        endParaRPrNode,
+        context,
+        pNode,
+        txBodyNode,
+        shapeStyleNode
+      );
+
+      // Add line break to represent paragraph end
+      contentItems.push({
+        text: "\n",
+        style: style,
+      });
+      
+      DebugHelper.log(context, `TextStyleExtractor: Added line break from endParaRPr`, "info");
+    }
+
     return contentItems;
   }
 
@@ -202,7 +274,7 @@ export class TextStyleExtractor {
     if (pPrNode) {
       const lvl = this.xmlParser.getAttribute(pPrNode, "lvl");
       if (lvl) {
-        paragraphLevel = parseInt(lvl);
+        paragraphLevel = parseInt(lvl === "0" ? "1" : lvl);
       }
     }
 
@@ -212,13 +284,13 @@ export class TextStyleExtractor {
       return undefined;
     }
 
-    // Clamp level to valid range (0-8)
-    const level = Math.max(0, Math.min(8, paragraphLevel));
+    // Clamp level to valid range (1-8)
+    const level = Math.max(1, Math.min(8, paragraphLevel));
 
     // Build level property name (lvl0pPr, lvl1pPr, etc.)
     const levelPropName = `lvl${level}pPr`;
     const levelPrNode = this.xmlParser.findNode(lstStyleNode, levelPropName);
-    
+
     if (levelPrNode) {
       const defRPrNode = this.xmlParser.findNode(levelPrNode, "defRPr");
       if (defRPrNode) {
@@ -229,8 +301,11 @@ export class TextStyleExtractor {
     // Try to inherit from parent levels
     for (let parentLevel = level - 1; parentLevel >= 0; parentLevel--) {
       const parentLevelPropName = `lvl${parentLevel}pPr`;
-      const parentLevelPrNode = this.xmlParser.findNode(lstStyleNode, parentLevelPropName);
-      
+      const parentLevelPrNode = this.xmlParser.findNode(
+        lstStyleNode,
+        parentLevelPropName
+      );
+
       if (parentLevelPrNode) {
         const defRPrNode = this.xmlParser.findNode(parentLevelPrNode, "defRPr");
         if (defRPrNode) {
@@ -245,7 +320,10 @@ export class TextStyleExtractor {
   /**
    * Extract color information from solidFill node
    */
-  extractColorFromSolidFill(solidFillNode: XmlNode, context: ProcessingContext): { color: string; themeColorType?: string } | undefined {
+  extractColorFromSolidFill(
+    solidFillNode: XmlNode,
+    context: ProcessingContext
+  ): { color: string; themeColorType?: string } | undefined {
     // Convert solidFillNode to plain object for FillExtractor
     const solidFillObj = this.xmlNodeToObject(solidFillNode);
 
@@ -263,7 +341,7 @@ export class TextStyleExtractor {
       undefined,
       warpObj
     );
-    
+
     if (color) {
       const result: { color: string; themeColorType?: string } = { color };
 
@@ -299,7 +377,6 @@ export class TextStyleExtractor {
     return false;
   }
 
-
   /**
    * Extract default text styles from shape style references
    * This handles cases where text inherits from shape-level font settings
@@ -320,7 +397,7 @@ export class TextStyleExtractor {
         const fontScheme = context.theme.getFontScheme();
         if (fontScheme) {
           let fontFamily: string | undefined;
-          
+
           switch (idx) {
             case "major":
               fontFamily = fontScheme.majorFont?.latin || "Calibri";
@@ -331,10 +408,14 @@ export class TextStyleExtractor {
             default:
               fontFamily = "Calibri";
           }
-          
+
           if (fontFamily) {
             inheritedStyle.fontFamily = fontFamily;
-            DebugHelper.log(context, `TextStyleExtractor: Inherited font family from shape style: ${fontFamily}`, "info");
+            DebugHelper.log(
+              context,
+              `TextStyleExtractor: Inherited font family from shape style: ${fontFamily}`,
+              "info"
+            );
           }
         }
       }
