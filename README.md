@@ -2,7 +2,7 @@
 
 A comprehensive Next.js application and TypeScript library for converting .pptx files to PPTist-compatible JSON format with advanced image processing, background support, and modern web interface.
 
-[![Tests](https://img.shields.io/badge/tests-450%2B-green)](./tests/)
+[![Tests](https://img.shields.io/badge/tests-850%2B-green)](./tests/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-100%25-blue)](./tsconfig.json)
 [![Next.js](https://img.shields.io/badge/Next.js-14%2B-black)](./package.json)
 [![License](https://img.shields.io/badge/license-MIT-green)](./LICENSE)
@@ -29,10 +29,12 @@ A comprehensive Next.js application and TypeScript library for converting .pptx 
 - **Comprehensive Element Support**: Text, shapes, images, tables, charts optimized for PPTist
 
 ### 🧪 Quality Assurance
-- **450+ Test Cases**: Comprehensive test coverage across all conversion components
-- **PPTist Integration Testing**: End-to-end conversion workflow validation
-- **Edge Case Handling**: Robust error recovery and graceful degradation
-- **Performance Testing**: Memory management and concurrent processing validation
+- **850+ Test Cases**: Comprehensive test coverage across all conversion components with 10 major test categories
+- **PPTist Integration Testing**: End-to-end conversion workflow validation and compatibility testing
+- **Edge Case Handling**: Robust error recovery, graceful degradation, and boundary condition processing
+- **Performance Testing**: Memory management, concurrent processing, and large file handling validation
+- **Image Processing Specialized Testing**: Sharp library integration, offset adjustment, and transparency processing tests
+- **Debug Functionality Testing**: Comprehensive debug system and visualization test coverage
 
 ## 🚀 Quick Start
 
@@ -183,6 +185,30 @@ const pptistJson = await parse(arrayBuffer, { imageMode: 'url' })
 }
 ```
 
+### Advanced PPTist Image Processing Features
+
+#### Sharp Library Integrated Image Processing
+- **Transparent Background Composition**: Automatic transparent fill processing for accurate PPTist display
+- **fillRect Algorithm**: PowerPoint-compatible image stretch offset processing
+- **Debug Image Generation**: Optional debug output with processing step visualization
+- **Memory Optimization**: Efficient large image processing with concurrency control
+
+#### Image Offset Adjustment System
+```javascript
+// Automatic PowerPoint image offset handling
+{
+  "type": "image",
+  "src": "data:image/png;base64,...",
+  "stretchOffset": { "l": -50000, "t": -30000, "r": -50000, "b": -30000 },
+  "processedWithOffset": true,
+  "debugInfo": {
+    "originalSize": { "width": 800, "height": 600 },
+    "finalSize": { "width": 900, "height": 660 },
+    "paddingApplied": { "left": 50, "top": 30, "right": 50, "bottom": 30 }
+  }
+}
+```
+
 ### Background Image Support for PPTist
 Complete slide background processing compatible with PPTist format:
 
@@ -226,9 +252,11 @@ Complete slide background processing compatible with PPTist format:
 
 ### Performance Features
 - **Concurrent Processing**: Semaphore-controlled batch processing (default: 3 concurrent)
-- **Memory Management**: Optimized for large presentations in PPTist
-- **Error Isolation**: Individual image failures don't affect overall conversion
+- **Memory Management**: Optimized for large presentations in PPTist with intelligent garbage collection
+- **Error Isolation**: Individual image failures don't affect overall conversion with graceful degradation
 - **Storage Strategies**: Pluggable storage backends (Base64, CDN, Custom)
+- **Sharp Library Integration**: High-performance image processing with transparency and complex transformations
+- **Debug Mode**: Configurable debug image generation and processing step tracking
 
 ## 📋 PPTist-Compatible Element Support
 
@@ -291,12 +319,15 @@ Complete slide background processing compatible with PPTist format:
 ## 🧪 Testing & Quality
 
 ### Test Suite Overview
-- **450+ Test Cases** across all conversion components
-- **Unit Tests**: Individual service and utility testing
-- **Integration Tests**: End-to-end PPTist conversion workflows  
-- **Background Image Tests**: Comprehensive background processing validation for PPTist
-- **Edge Case Testing**: Error handling and malformed input processing
-- **Performance Tests**: Memory management and concurrent processing
+- **850+ Test Cases** across all conversion components with 10 major test categories
+- **Unit Tests**: Individual service and utility testing with mocking and dependency injection
+- **Integration Tests**: End-to-end PPTist conversion workflows and compatibility validation
+- **Image Processing Specialized Tests**: Comprehensive image processing validation including Sharp library integration
+- **Debug Functionality Tests**: Complete debug system and visualization test coverage
+- **Edge Case Testing**: Error handling, malformed input, and boundary condition processing
+- **Performance Tests**: Memory management, concurrent processing, and large file handling validation
+- **Color Processing Tests**: PowerPoint color transformation and theme color resolution testing
+- **Shape Processing Tests**: 100+ PowerPoint shape type conversion testing
 
 ### Running Tests
 ```bash
@@ -310,19 +341,28 @@ npm run test:watch
 npm run test:coverage
 
 # Run specific test category
-npx jest background-image
-npx jest color-processing
-npx jest image-base64
+npx jest image-processing        # Image processing tests (8 files)
+npx jest color-processing        # Color processing tests (9 files)
+npx jest shape-processor         # Shape processing tests (9 files)
+npx jest debug-helper           # Debug functionality tests (3 files)
+npx jest performance-           # Performance tests (2 files)
+npx jest integration            # Integration tests (3 files)
 ```
 
 ### Test Categories
 ```
 tests/
-├── __tests__/                    # Specialized test suites
-│   ├── color-*.test.ts          # Color processing tests
-│   ├── image-*.test.ts          # Image processing tests
-│   ├── integration.test.ts      # End-to-end tests
-│   └── edge-cases.test.ts       # Error handling tests
+├── __tests__/                    # Specialized test suites (54 files)
+│   ├── color-*.test.ts          # Color processing tests (9 files)
+│   ├── image-*.test.ts          # Image processing tests (8 files)
+│   ├── shape-*.test.ts          # Shape processing tests (9 files)
+│   ├── debug-*.test.ts          # Debug functionality tests (3 files)
+│   ├── performance-*.test.ts    # Performance and error handling tests (2 files)
+│   ├── fill-*.test.ts           # Fill processing tests (3 files)
+│   ├── theme-*.test.ts          # Theme and style tests (2 files)
+│   ├── integration.test.ts      # Integration tests (3 files)
+│   ├── *.test.tsx               # UI component tests (3 files)
+│   └── utils-*.test.ts          # Utility and core function tests (16 files)
 ├── background-image.test.ts     # Background processing
 ├── element-types.test.ts        # Element parsing
 └── pptx-parser-integration.test.ts # Parser integration

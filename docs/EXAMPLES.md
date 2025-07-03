@@ -25,7 +25,12 @@
             try {
                 const arrayBuffer = await file.arrayBuffer()
                 const json = await parse(arrayBuffer, {
-                    imageMode: 'base64'
+                    imageMode: 'base64',
+                    enableDebugMode: true,
+                    debugOptions: {
+                        enableConsoleLogging: true,
+                        logLevel: 'info'
+                    }
                 })
                 
                 document.getElementById('result').innerHTML = 
@@ -150,6 +155,171 @@ app.listen(3000, () => {
 })
 ```
 
+## 新功能示例
+
+### 1. 调试模式使用
+
+```javascript
+// 启用完整调试模式
+const json = await parse(arrayBuffer, {
+    imageMode: 'base64',
+    enableDebugMode: true,
+    debugOptions: {
+        saveDebugImages: true,
+        enableConsoleLogging: true,
+        enableTimingLogs: true,
+        logLevel: 'debug',
+        debugImagePath: './debug-output'
+    }
+})
+
+// 检查调试信息
+console.log('转换统计:', json.debugInfo)
+console.log('处理时间:', json.processingTime)
+```
+
+### 2. PowerPoint拉伸偏移处理
+
+```javascript
+// 解析包含拉伸图片的PPTX
+const json = await parse(arrayBuffer, {
+    imageMode: 'base64',
+    enableStretchProcessing: true,
+    enableImageOffsetAdjustment: true
+})
+
+// 处理拉伸信息
+json.slides.forEach((slide, slideIndex) => {
+    slide.elements.forEach((element, elementIndex) => {
+        if (element.type === 'image' && element.stretchInfo) {
+            console.log(`幻灯片 ${slideIndex + 1}, 图片 ${elementIndex + 1}:`)
+            console.log('- 拉伸信息:', element.stretchInfo.fillRect)
+            console.log('- 偏移信息:', element.offsetInfo)
+            console.log('- 原始位置:', element.offsetInfo?.originalPosition)
+            console.log('- 调整后位置:', element.offsetInfo?.convertedPosition)
+        }
+    })
+})
+```
+
+### 3. Node.js环境下的Sharp处理
+
+```javascript
+import { parse } from 'pptxtojson'
+import { PPTXImageProcessor } from 'pptxtojson/processors'
+
+// 检查Sharp可用性
+const processor = new PPTXImageProcessor()
+
+if (processor.isAvailable()) {
+    console.log('✅ Sharp可用，启用高级图片处理')
+    
+    const json = await parse(arrayBuffer, {
+        imageMode: 'base64',
+        enableStretchProcessing: true,
+        enableDebugMode: true,
+        debugOptions: {
+            saveDebugImages: true,
+            enableTimingLogs: true
+        }
+    })
+    
+    console.log('🖼️ 生成的调试图片保存在:', './debug-images/')
+} else {
+    console.log('⚠️ Sharp不可用，使用JavaScript降级处理')
+    
+    const json = await parse(arrayBuffer, {
+        imageMode: 'url',
+        enableStretchProcessing: false
+    })
+}
+```
+
+### 4. 错误处理和重试机制
+
+```javascript
+async function robustParse(arrayBuffer, maxRetries = 3) {
+    const strategies = [
+        // 策略1: 完整功能
+        {
+            imageMode: 'base64',
+            enableStretchProcessing: true,
+            enableDebugMode: true
+        },
+        // 策略2: 禁用拉伸处理
+        {
+            imageMode: 'base64',
+            enableStretchProcessing: false,
+            enableDebugMode: true
+        },
+        // 策略3: URL模式降级
+        {
+            imageMode: 'url',
+            enableStretchProcessing: false,
+            enableDebugMode: false
+        }
+    ]
+    
+    for (let i = 0; i < strategies.length; i++) {
+        try {
+            console.log(`尝试策略 ${i + 1}...`)
+            const result = await parse(arrayBuffer, strategies[i])
+            console.log(`✅ 策略 ${i + 1} 成功`)
+            return result
+        } catch (error) {
+            console.log(`❌ 策略 ${i + 1} 失败:`, error.message)
+            
+            if (i === strategies.length - 1) {
+                throw new Error(`所有策略都失败了，最后错误: ${error.message}`)
+            }
+        }
+    }
+}
+
+// 使用示例
+try {
+    const result = await robustParse(arrayBuffer)
+    console.log('解析成功!')
+} catch (error) {
+    console.error('最终失败:', error.message)
+}
+```
+
+### 5. 性能监控
+
+```javascript
+async function parseWithMonitoring(arrayBuffer) {
+    const startTime = Date.now()
+    const initialMemory = process.memoryUsage?.() || { heapUsed: 0 }
+    
+    try {
+        const json = await parse(arrayBuffer, {
+            imageMode: 'base64',
+            enableStretchProcessing: true,
+            debugOptions: {
+                enableTimingLogs: true,
+                logLevel: 'info'
+            }
+        })
+        
+        const endTime = Date.now()
+        const finalMemory = process.memoryUsage?.() || { heapUsed: 0 }
+        
+        console.log('📊 性能统计:')
+        console.log(`- 总耗时: ${endTime - startTime}ms`)
+        console.log(`- 内存增长: ${Math.round((finalMemory.heapUsed - initialMemory.heapUsed) / 1024 / 1024)}MB`)
+        console.log(`- 幻灯片数量: ${json.slides.length}`)
+        console.log(`- 图片元素: ${json.slides.reduce((count, slide) => 
+            count + slide.elements.filter(el => el.type === 'image').length, 0)}`)
+        
+        return json
+    } catch (error) {
+        console.error('性能监控中出现错误:', error)
+        throw error
+    }
+}
+```
+
 ## 图片处理示例
 
 ### 1. Base64 模式（完整图片数据）
@@ -255,10 +425,21 @@ function PPTXViewer() {
         try {
             const arrayBuffer = await file.arrayBuffer()
             const json = await parse(arrayBuffer, {
-                imageMode: 'base64'
+                imageMode: 'base64',
+                enableStretchProcessing: true,
+                enableDebugMode: true,
+                debugOptions: {
+                    enableConsoleLogging: true,
+                    logLevel: 'info'
+                }
             })
             setPresentation(json)
             setCurrentSlide(0)
+            
+            // 显示解析统计信息
+            const imageCount = json.slides.reduce((count, slide) => 
+                count + slide.elements.filter(el => el.type === 'image').length, 0)
+            console.log(`✅ 解析完成: ${json.slides.length}张幻灯片, ${imageCount}个图片元素`)
         } catch (error) {
             console.error('解析失败:', error)
             alert('解析失败: ' + error.message)
@@ -464,8 +645,24 @@ export default {
         const arrayBuffer = await file.arrayBuffer()
         this.result = await parse(arrayBuffer, {
           imageMode: 'base64',
-          includeNotes: true
+          includeNotes: true,
+          enableStretchProcessing: true,
+          enableDebugMode: true,
+          debugOptions: {
+            enableConsoleLogging: true,
+            logLevel: 'info'
+          }
         })
+        
+        // 显示解析统计
+        const stats = {
+          slides: this.result.slides.length,
+          images: this.result.slides.reduce((count, slide) => 
+            count + slide.elements.filter(el => el.type === 'image').length, 0),
+          shapes: this.result.slides.reduce((count, slide) => 
+            count + slide.elements.filter(el => el.type === 'shape').length, 0)
+        }
+        console.log('📊 解析统计:', stats)
       } catch (error) {
         console.error('解析失败:', error)
         alert('解析失败: ' + error.message)
@@ -510,40 +707,82 @@ export default {
 
 ## 错误处理和调试
 
+### 1. 渐进式降级策略
+
 ```javascript
 import { parse, PPTXParseError } from 'pptxtojson'
 
 async function robustParse(arrayBuffer) {
-    try {
-        const json = await parse(arrayBuffer, {
-            imageMode: 'base64'
-        })
-        
-        // 验证结果
-        if (!json.slides || json.slides.length === 0) {
-            throw new Error('没有找到有效的幻灯片')
-        }
-        
-        return json
-        
-    } catch (error) {
-        console.error('PPTX 解析错误:', error)
-        
-        if (error instanceof PPTXParseError) {
-            console.error('错误类型:', error.type)
-            console.error('错误详情:', error.details)
-            
-            // 尝试降级处理
-            if (error.type === 'IMAGE_PROCESSING_ERROR') {
-                console.log('尝试使用 URL 模式重新解析...')
-                return await parse(arrayBuffer, {
-                    imageMode: 'url'
-                })
+    const strategies = [
+        // 策略1: 完整功能
+        {
+            name: '完整功能模式',
+            options: {
+                imageMode: 'base64',
+                enableStretchProcessing: true,
+                enableImageOffsetAdjustment: true,
+                enableDebugMode: true,
+                debugOptions: {
+                    enableConsoleLogging: true,
+                    logLevel: 'info'
+                }
+            }
+        },
+        // 策略2: 禁用拉伸处理
+        {
+            name: '禁用拉伸处理模式',
+            options: {
+                imageMode: 'base64',
+                enableStretchProcessing: false,
+                enableImageOffsetAdjustment: true,
+                enableDebugMode: true
+            }
+        },
+        // 策略3: URL模式
+        {
+            name: 'URL模式',
+            options: {
+                imageMode: 'url',
+                enableStretchProcessing: false,
+                enableImageOffsetAdjustment: false,
+                enableDebugMode: false
+            }
+        },
+        // 策略4: 最小化模式
+        {
+            name: '最小化模式',
+            options: {
+                imageMode: 'url',
+                includeNotes: false,
+                includeMaster: false
             }
         }
-        
-        throw error
+    ]
+    
+    for (const strategy of strategies) {
+        try {
+            console.log(`🔄 尝试${strategy.name}...`)
+            const result = await parse(arrayBuffer, strategy.options)
+            
+            // 验证结果
+            if (!result.slides || result.slides.length === 0) {
+                throw new Error('没有找到有效的幻灯片')
+            }
+            
+            console.log(`✅ ${strategy.name}成功`)
+            return result
+            
+        } catch (error) {
+            console.log(`❌ ${strategy.name}失败:`, error.message)
+            
+            if (error instanceof PPTXParseError) {
+                console.error('错误类型:', error.type)
+                console.error('错误详情:', error.details)
+            }
+        }
     }
+    
+    throw new Error('所有解析策略都失败了')
 }
 
 // 使用示例
@@ -552,6 +791,122 @@ try {
     console.log('解析成功:', result)
 } catch (error) {
     console.log('最终解析失败:', error.message)
+}
+```
+
+### 2. 调试信息收集
+
+```javascript
+async function parseWithDebugging(arrayBuffer, filename = 'unknown.pptx') {
+    const debugInfo = {
+        filename,
+        fileSize: arrayBuffer.byteLength,
+        startTime: Date.now(),
+        attempts: []
+    }
+    
+    try {
+        const json = await parse(arrayBuffer, {
+            imageMode: 'base64',
+            enableDebugMode: true,
+            debugOptions: {
+                saveDebugImages: true,
+                enableConsoleLogging: true,
+                enableTimingLogs: true,
+                logLevel: 'debug'
+            }
+        })
+        
+        debugInfo.success = true
+        debugInfo.endTime = Date.now()
+        debugInfo.duration = debugInfo.endTime - debugInfo.startTime
+        debugInfo.slideCount = json.slides.length
+        debugInfo.elementCounts = {
+            total: json.slides.reduce((count, slide) => count + slide.elements.length, 0),
+            images: json.slides.reduce((count, slide) => 
+                count + slide.elements.filter(el => el.type === 'image').length, 0),
+            shapes: json.slides.reduce((count, slide) => 
+                count + slide.elements.filter(el => el.type === 'shape').length, 0),
+            texts: json.slides.reduce((count, slide) => 
+                count + slide.elements.filter(el => el.type === 'text').length, 0)
+        }
+        
+        console.log('🐛 调试信息:', debugInfo)
+        return json
+        
+    } catch (error) {
+        debugInfo.success = false
+        debugInfo.error = {
+            message: error.message,
+            type: error.constructor.name,
+            stack: error.stack
+        }
+        
+        console.error('🐛 调试信息（失败）:', debugInfo)
+        throw error
+    }
+}
+```
+
+### 3. 内存和性能监控
+
+```javascript
+async function parseWithMonitoring(arrayBuffer) {
+    // 监控开始状态
+    const initialMemory = process.memoryUsage?.() || {}
+    const startTime = process.hrtime?.() || [0, 0]
+    
+    console.log('📊 开始监控...')
+    console.log('初始内存:', {
+        heap: Math.round(initialMemory.heapUsed / 1024 / 1024) + 'MB',
+        rss: Math.round(initialMemory.rss / 1024 / 1024) + 'MB'
+    })
+    
+    try {
+        const json = await parse(arrayBuffer, {
+            imageMode: 'base64',
+            enableStretchProcessing: true,
+            enableDebugMode: true,
+            debugOptions: {
+                enableTimingLogs: true,
+                logLevel: 'info'
+            }
+        })
+        
+        // 监控结束状态
+        const finalMemory = process.memoryUsage?.() || {}
+        const endTime = process.hrtime?.(startTime) || [0, 0]
+        
+        const stats = {
+            duration: endTime[0] * 1000 + endTime[1] / 1000000, // ms
+            memoryUsage: {
+                initial: Math.round(initialMemory.heapUsed / 1024 / 1024),
+                final: Math.round(finalMemory.heapUsed / 1024 / 1024),
+                delta: Math.round((finalMemory.heapUsed - initialMemory.heapUsed) / 1024 / 1024)
+            },
+            output: {
+                slides: json.slides.length,
+                elements: json.slides.reduce((count, slide) => count + slide.elements.length, 0),
+                sizeMB: new Blob([JSON.stringify(json)]).size / 1024 / 1024
+            }
+        }
+        
+        console.log('📊 性能统计:', stats)
+        
+        // 性能警告
+        if (stats.duration > 10000) {
+            console.warn('⚠️ 处理时间超过10秒，建议优化')
+        }
+        if (stats.memoryUsage.delta > 500) {
+            console.warn('⚠️ 内存增长超过500MB，建议使用URL模式')
+        }
+        
+        return json
+        
+    } catch (error) {
+        console.error('📊 性能监控中出现错误:', error)
+        throw error
+    }
 }
 ```
 
