@@ -199,11 +199,22 @@ jobs:
 
       - name: Configure NPM authentication
         run: |
+          # Remove any existing npmrc config that might interfere
+          rm -f ~/.npmrc
+          rm -f .npmrc
+          # Set up authentication
           echo "//registry.npmjs.org/:_authToken=${{ secrets.NPM_TOKEN }}" > ~/.npmrc
+          echo "registry=https://registry.npmjs.org/" >> ~/.npmrc
+          echo "access=public" >> ~/.npmrc
+          # Verify authentication
           npm whoami
+        env:
+          NPM_CONFIG_USERCONFIG: ~/.npmrc
 
       - name: Publish to NPM
         run: npm publish --access public
+        env:
+          NPM_CONFIG_USERCONFIG: ~/.npmrc
 
       - name: Notify success
         run: |
