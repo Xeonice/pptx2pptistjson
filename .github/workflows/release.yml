@@ -155,7 +155,7 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
         tag_name: ${{ steps.changelog.outputs.current_tag }}
-        release_name: ${{ steps.changelog.outputs.current_tag }}: Shape Element Enhancements for PPTist Compatibility
+        release_name: "${{ steps.changelog.outputs.current_tag }}: Shape Element Enhancements for PPTist Compatibility"
         body_path: CHANGELOG.md
         draft: false
         prerelease: ${{ github.event.inputs.prerelease || false }}
