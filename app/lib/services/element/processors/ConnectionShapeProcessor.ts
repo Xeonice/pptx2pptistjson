@@ -11,6 +11,7 @@ import { FillExtractor } from "../../utils/FillExtractor";
 import { DebugHelper } from "../../utils/DebugHelper";
 import { TextStyleExtractor } from "../../text/TextStyleExtractor";
 import { TextContent } from "../../../models/domain/elements/TextElement";
+import { HtmlConverter } from "../../utils/HtmlConverter";
 
 /**
  * Processor for PowerPoint connection shapes (p:cxnSp)
@@ -20,6 +21,7 @@ export class ConnectionShapeProcessor
   implements IElementProcessor<ShapeElement>
 {
   private textStyleExtractor: TextStyleExtractor;
+  private lastProcessedParagraphs: TextContent[][] = [];
 
   constructor(private xmlParser: IXmlParseService) {
     this.textStyleExtractor = new TextStyleExtractor(xmlParser);
@@ -413,30 +415,14 @@ export class ConnectionShapeProcessor
     const txBodyNode = this.xmlParser.findNode(xmlNode, "p:txBody");
     if (!txBodyNode) return undefined;
 
-    // Connection shapes rarely have text, but if they do, extract it with full styling
-    const paragraphs = this.xmlParser.findNodes(txBodyNode, "p");
-    const allTextContent: TextContent[] = [];
+    // Use unified text extraction logic with paragraph structure
+    const paragraphs = this.textStyleExtractor.extractTextContentByParagraphs(txBodyNode, context);
+    
+    // Store paragraphs for later use in createShapeTextContent
+    this.lastProcessedParagraphs = paragraphs;
 
-    for (const pNode of paragraphs) {
-      // Use shared text style extractor for consistent styling
-      const paragraphContent = this.textStyleExtractor.extractParagraphContent(
-        pNode,
-        context,
-        txBodyNode
-      );
-
-      // Add paragraph content to the overall text content
-      allTextContent.push(...paragraphContent);
-      
-      // Add line break between paragraphs (except for the last one)
-      if (pNode !== paragraphs[paragraphs.length - 1]) {
-        allTextContent.push({
-          text: "\n",
-          style: {}
-        });
-      }
-    }
-
+    // Flatten for backward compatibility
+    const allTextContent = paragraphs.flat();
     return allTextContent.length > 0 ? allTextContent : undefined;
   }
 
@@ -445,18 +431,29 @@ export class ConnectionShapeProcessor
    * Similar to ShapeProcessor but simplified for connection shape text
    */
   private createShapeTextContent(contentItems: TextContent[]): any {
-    // Format text content to HTML for PPTist
-    const html = this.formatTextContent(contentItems);
+    // Use processed paragraphs if available, otherwise fall back to single paragraph
+    let html: string;
+    if (this.lastProcessedParagraphs.length > 0) {
+      // Generate HTML with proper paragraph structure
+      html = HtmlConverter.convertParagraphsToHtml(this.lastProcessedParagraphs, {
+        wrapInDiv: false // We'll add our own structure
+      });
+    } else {
+      // Fallback to single paragraph
+      html = HtmlConverter.convertSingleParagraphToHtml(contentItems, {
+        wrapInDiv: false
+      });
+    }
 
     // Connection shapes typically use middle alignment
     const align = "middle";
 
-    // Get default font and color from first content item
-    const defaultFontName = contentItems[0]?.style?.fontFamily || "Corbel";
-    const defaultColor = contentItems[0]?.style?.color || "#000000";
+    // Get default font and color using HtmlConverter
+    const defaultFontName = HtmlConverter.getDefaultFontName(contentItems);
+    const defaultColor = HtmlConverter.getDefaultColor(contentItems);
 
     return {
-      content: `<p>${html}</p>`,
+      content: html,
       align: align,
       defaultFontName: defaultFontName,
       defaultColor: defaultColor,

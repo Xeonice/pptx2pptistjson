@@ -16,10 +16,12 @@ import {
 } from "../../../utils";
 import { TextContent } from "../../../models/domain/elements/TextElement";
 import { DebugHelper } from "../../utils/DebugHelper";
+import { HtmlConverter } from "../../utils/HtmlConverter";
 import { TextStyleExtractor } from "../../text/TextStyleExtractor";
 
 export class ShapeProcessor implements IElementProcessor<ShapeElement> {
   private textStyleExtractor: TextStyleExtractor;
+  private lastProcessedParagraphs: TextContent[][] = [];
 
   constructor(private xmlParser: IXmlParseService) {
     this.textStyleExtractor = new TextStyleExtractor(xmlParser);
@@ -277,7 +279,11 @@ export class ShapeProcessor implements IElementProcessor<ShapeElement> {
     const txBodyNode = this.xmlParser.findNode(xmlNode, "txBody");
     if (txBodyNode) {
       // Pass shape style for inheritance
-      const textContent = this.extractTextContentUsingSharedLogic(txBodyNode, context, styleNode);
+      const textContent = this.extractTextContentUsingSharedLogic(
+        txBodyNode,
+        context,
+        styleNode
+      );
       if (textContent && textContent.length > 0) {
         // Create shape text content in PPTist format
         const shapeTextContent = this.createShapeTextContent(
@@ -1407,10 +1413,21 @@ export class ShapeProcessor implements IElementProcessor<ShapeElement> {
     context: ProcessingContext,
     shapeStyleNode?: XmlNode
   ): TextContent[] {
-    const contentItems: TextContent[] = [];
-    const paragraphs = this.xmlParser.findNodes(txBodyNode, "p");
+    // Use unified text extraction logic by paragraphs
+    const paragraphGroups = this.textStyleExtractor.extractTextContentByParagraphs(
+      txBodyNode,
+      context,
+      shapeStyleNode
+    );
 
-    for (const pNode of paragraphs) {
+    // Apply paragraph alignment processing to each paragraph
+    const paragraphNodes = this.xmlParser.findNodes(txBodyNode, "p");
+    const processedParagraphs: TextContent[][] = [];
+
+    for (let i = 0; i < paragraphGroups.length && i < paragraphNodes.length; i++) {
+      const paragraphContent = paragraphGroups[i];
+      const pNode = paragraphNodes[i];
+
       // Extract paragraph properties for alignment
       const pPrNode = this.xmlParser.findNode(pNode, "pPr");
       let paragraphAlign = undefined;
@@ -1422,34 +1439,42 @@ export class ShapeProcessor implements IElementProcessor<ShapeElement> {
         }
       }
 
-      // Use shared text style extractor for consistent styling
-      const paragraphContent = this.textStyleExtractor.extractParagraphContent(
-        pNode,
-        context,
-        txBodyNode,
-        shapeStyleNode
-      );
-
-      // Apply paragraph alignment to each content item if present
-      for (const content of paragraphContent) {
-        if (paragraphAlign) {
-          content.style.textAlign = paragraphAlign;
+      // Apply paragraph alignment to all content items in this paragraph
+      const alignedParagraphContent = paragraphContent.map(content => ({
+        ...content,
+        style: {
+          ...content.style,
+          ...(paragraphAlign && { textAlign: paragraphAlign })
         }
-        contentItems.push(content);
-      }
+      }));
+
+      processedParagraphs.push(alignedParagraphContent);
     }
 
-    return contentItems;
+    // Store processed paragraphs for later use in createShapeTextContent
+    this.lastProcessedParagraphs = processedParagraphs;
+
+    // Return flattened content for backward compatibility
+    return processedParagraphs.flat();
   }
-
-
 
   private createShapeTextContent(
     contentItems: TextContent[],
     txBodyNode: XmlNode
   ): any {
-    // Format text content in PPTist shape text format
-    const html = this.formatTextContent(contentItems);
+    // Use processed paragraphs if available, otherwise fall back to single paragraph
+    let html: string;
+    if (this.lastProcessedParagraphs.length > 0) {
+      // Generate HTML with proper paragraph structure
+      html = HtmlConverter.convertParagraphsToHtml(this.lastProcessedParagraphs, {
+        wrapInDiv: false // We'll add our own structure
+      });
+    } else {
+      // Fallback to single paragraph
+      html = HtmlConverter.convertSingleParagraphToHtml(contentItems, {
+        wrapInDiv: false
+      });
+    }
 
     // Extract vertical alignment from body properties
     let align = "middle"; // default
@@ -1461,24 +1486,12 @@ export class ShapeProcessor implements IElementProcessor<ShapeElement> {
       else align = "middle";
     }
 
-    // Check for text alignment from paragraph properties
-    const hasTextAlign = contentItems.some((item) => item.style?.textAlign);
-    let paragraphStyle = "";
-
-    if (hasTextAlign) {
-      const textAlign = contentItems.find((item) => item.style?.textAlign)
-        ?.style?.textAlign;
-      if (textAlign) {
-        paragraphStyle = ` style="text-align: ${textAlign}"`;
-      }
-    }
-
-    // Get default font and color
-    const defaultFontName = contentItems[0]?.style?.fontFamily || "Corbel";
-    const defaultColor = contentItems[0]?.style?.color || "#333";
+    // Get default font and color using HtmlConverter
+    const defaultFontName = HtmlConverter.getDefaultFontName(contentItems);
+    const defaultColor = HtmlConverter.getDefaultColor(contentItems);
 
     return {
-      content: `<p${paragraphStyle}>${html}</p>`,
+      content: html,
       align: align,
       defaultFontName: defaultFontName,
       defaultColor: defaultColor,
@@ -1518,12 +1531,12 @@ export class ShapeProcessor implements IElementProcessor<ShapeElement> {
       if (styles.length > 0) {
         span += ` style="${styles.join("; ")}"`;
       }
-      
+
       // Add theme color type as data attribute if present
       if (item.style?.themeColorType) {
         span += ` data-theme-color="${item.style.themeColorType}"`;
       }
-      
+
       span += `>${item.text}</span>`;
 
       html += span;
@@ -1545,185 +1558,6 @@ export class ShapeProcessor implements IElementProcessor<ShapeElement> {
       default:
         return "left";
     }
-  }
-
-  /**
-   * Get font size with PPTX priority logic
-   * Priority (highest to lowest):
-   * 1. Text run properties (<a:rPr sz="...">)
-   * 2. List style level properties (<a:lvlXpPr><a:defRPr sz="...">)
-   * 3. Placeholder style (from slideLayout/slideMaster) - Not implemented here
-   * 4. Default text style (<p:defaultTextStyle>) - Not implemented here
-   * 5. Theme default (18pt) - fallback
-   */
-  private getFontSizeWithPriority(
-    rPrNode: XmlNode | undefined,
-    lstStyleNode: XmlNode | undefined,
-    paragraphLevel: number
-  ): number | undefined {
-    console.log(
-      `[FontSize Debug] Starting font size detection for paragraph level ${paragraphLevel}`
-    );
-
-    console.log("lstStyleNode", lstStyleNode);
-
-    // Priority 1: Text run properties (highest priority)
-    if (rPrNode) {
-      const sz = this.xmlParser.getAttribute(rPrNode, "sz");
-      if (sz) {
-        const fontSize = Math.round((parseInt(sz) / 100) * 1.43);
-        console.log(
-          `[FontSize Debug] ✅ Found in text run properties: sz="${sz}" → ${
-            parseInt(sz) / 100
-          }pt → ${fontSize}px (Priority 1)`
-        );
-        return fontSize;
-      } else {
-        console.log(
-          `[FontSize Debug] ❌ Text run properties exist but no 'sz' attribute found`
-        );
-      }
-    } else {
-      console.log(`[FontSize Debug] ❌ No text run properties (rPrNode) found`);
-    }
-
-    // Priority 2: List style level properties
-    if (lstStyleNode) {
-      console.log(
-        `[FontSize Debug] 🔍 Checking list style for level ${paragraphLevel}`
-      );
-      const fontSize = this.getListStyleFontSize(lstStyleNode, paragraphLevel);
-      if (fontSize) {
-        console.log(
-          `[FontSize Debug] ✅ Found in list style: ${fontSize}px (Priority 2)`
-        );
-        return fontSize;
-      } else {
-        console.log(
-          `[FontSize Debug] ❌ No font size found in list style for level ${paragraphLevel}`
-        );
-      }
-    } else {
-      console.log(`[FontSize Debug] ❌ No list style (lstStyleNode) found`);
-    }
-
-    // Priority 3-4: Placeholder and default styles would go here
-    console.log(
-      `[FontSize Debug] ⏭️ Skipping placeholder and default styles (not implemented)`
-    );
-
-    // Priority 5: Theme default (18pt converted with scaling factor)
-    const defaultSize = Math.round(18 * 1.43);
-    console.log(
-      `[FontSize Debug] 🎯 Using theme default: 18pt → ${defaultSize}px (Priority 5)`
-    );
-    return defaultSize;
-  }
-
-  /**
-   * Extract font size from list style based on paragraph level
-   * Supports lvl0pPr through lvl8pPr (levels 0-8)
-   */
-  private getListStyleFontSize(
-    lstStyleNode: XmlNode,
-    paragraphLevel: number
-  ): number | undefined {
-    // Clamp level to valid range (0-8)
-    const level = Math.max(1, Math.min(8, paragraphLevel));
-
-    console.log(
-      `[ListStyle Debug] Searching font size for level ${paragraphLevel} (clamped to ${level})`
-    );
-
-    // Build level property name (lvl0pPr, lvl1pPr, etc.)
-    const levelPropName = `lvl${level}pPr`;
-    console.log(`[ListStyle Debug] Looking for node: ${levelPropName}`);
-
-    const levelPrNode = this.xmlParser.findNode(lstStyleNode, levelPropName);
-    if (levelPrNode) {
-      console.log(`[ListStyle Debug] ✅ Found ${levelPropName} node`);
-      const defRPrNode = this.xmlParser.findNode(levelPrNode, "defRPr");
-      if (defRPrNode) {
-        console.log(
-          `[ListStyle Debug] ✅ Found defRPr node in ${levelPropName}`
-        );
-        const sz = this.xmlParser.getAttribute(defRPrNode, "sz");
-        if (sz) {
-          const fontSize = Math.round((parseInt(sz) / 100) * 1.43);
-          console.log(
-            `[ListStyle Debug] ✅ Found sz="${sz}" in ${levelPropName} → ${
-              parseInt(sz) / 100
-            }pt → ${fontSize}px`
-          );
-          return fontSize;
-        } else {
-          console.log(
-            `[ListStyle Debug] ❌ No 'sz' attribute in ${levelPropName}/defRPr`
-          );
-        }
-      } else {
-        console.log(`[ListStyle Debug] ❌ No defRPr node in ${levelPropName}`);
-      }
-    } else {
-      console.log(`[ListStyle Debug] ❌ No ${levelPropName} node found`);
-    }
-
-    // If current level doesn't have font size, try to inherit from parent levels
-    console.log(
-      `[ListStyle Debug] 🔄 Trying to inherit from parent levels (${
-        level - 1
-      } down to 0)`
-    );
-    for (let parentLevel = level - 1; parentLevel >= 0; parentLevel--) {
-      const parentLevelPropName = `lvl${parentLevel}pPr`;
-      console.log(
-        `[ListStyle Debug] 🔍 Checking inheritance from ${parentLevelPropName}`
-      );
-
-      const parentLevelPrNode = this.xmlParser.findNode(
-        lstStyleNode,
-        parentLevelPropName
-      );
-
-      if (parentLevelPrNode) {
-        console.log(
-          `[ListStyle Debug] ✅ Found parent ${parentLevelPropName} node`
-        );
-        const defRPrNode = this.xmlParser.findNode(parentLevelPrNode, "defRPr");
-        if (defRPrNode) {
-          console.log(
-            `[ListStyle Debug] ✅ Found defRPr in parent ${parentLevelPropName}`
-          );
-          const sz = this.xmlParser.getAttribute(defRPrNode, "sz");
-          if (sz) {
-            const fontSize = Math.round((parseInt(sz) / 100) * 1.43);
-            console.log(
-              `[ListStyle Debug] ✅ Inherited sz="${sz}" from ${parentLevelPropName} → ${
-                parseInt(sz) / 100
-              }pt → ${fontSize}px`
-            );
-            return fontSize;
-          } else {
-            console.log(
-              `[ListStyle Debug] ❌ No 'sz' attribute in parent ${parentLevelPropName}/defRPr`
-            );
-          }
-        } else {
-          console.log(
-            `[ListStyle Debug] ❌ No defRPr in parent ${parentLevelPropName}`
-          );
-        }
-      } else {
-        console.log(
-          `[ListStyle Debug] ❌ No parent ${parentLevelPropName} node found`
-        );
-      }
-    }
-
-    console.log(
-      `[ListStyle Debug] ❌ No font size found in any level (current or inherited)`
-    );
-    return undefined;
   }
 
   /**

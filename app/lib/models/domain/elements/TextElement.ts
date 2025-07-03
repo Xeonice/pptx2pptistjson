@@ -1,7 +1,9 @@
 import { Element } from "./Element";
+import { HtmlConverter } from "../../../services/utils/HtmlConverter";
 
 export class TextElement extends Element {
   private content: TextContent[] = [];
+  private paragraphs: TextContent[][] = [];
   private textStyle?: TextStyle;
 
   constructor(id: string) {
@@ -12,8 +14,29 @@ export class TextElement extends Element {
     this.content.push(content);
   }
 
+  /**
+   * Set content organized by paragraphs
+   */
+  setParagraphs(paragraphs: TextContent[][]): void {
+    this.paragraphs = paragraphs;
+    // Also flatten to maintain compatibility with legacy content access
+    this.content = paragraphs.flat();
+  }
+
+  /**
+   * Add a single paragraph
+   */
+  addParagraph(paragraphContent: TextContent[]): void {
+    this.paragraphs.push(paragraphContent);
+    this.content.push(...paragraphContent);
+  }
+
   getContent(): ReadonlyArray<TextContent> {
     return this.content;
+  }
+
+  getParagraphs(): ReadonlyArray<ReadonlyArray<TextContent>> {
+    return this.paragraphs;
   }
 
   setTextStyle(style: TextStyle): void {
@@ -48,70 +71,24 @@ export class TextElement extends Element {
   private convertToHTML(): string {
     if (this.content.length === 0) return "";
 
-    // Combine all text content with their styles
-    let htmlSpans = this.content
-      .map((content) => {
-        const style = content.style;
-        const styleAttrs: string[] = [];
-
-        let colorType = "";
-
-        if (style?.color) {
-          let colorValue = style.color;
-          colorType = style.themeColorType || "";
-
-          // Handle theme color references
-          if (style.color.startsWith("theme:")) {
-            colorType = style.color.replace("theme:", "");
-            // Get actual color from theme context (would need theme access)
-            // For now, use the expected colors from output.json
-            const themeColorMap: { [key: string]: string } = {
-              accent1: "#5b9bd5ff",
-              dk1: "#333333ff",
-              lt1: "#ffffffff",
-            };
-            colorValue = themeColorMap[colorType] || "#333333ff";
-          }
-
-          styleAttrs.push(`color:${colorValue}`);
-        }
-
-        if (style?.fontSize) {
-          styleAttrs.push(`font-size:${style.fontSize}px`);
-        }
-
-        if (style?.bold) {
-          styleAttrs.push("font-weight:bold");
-        }
-
-        if (style?.italic) {
-          styleAttrs.push("font-style:italic");
-        }
-
-        // Add colortype at the end
-        if (style?.color && (colorType || this.isThemeColor(style.color))) {
-          const finalColorType = colorType || this.getColorType(style.color);
-          styleAttrs.push(`--colortype:${finalColorType}`);
-        }
-
-        const styleStr =
-          styleAttrs.length > 0 ? ` style="${styleAttrs.join(";")}"` : "";
-        return `<span${styleStr}>${content.text}</span>`;
-      })
-      .join("");
-
-    return `<div  style=""><p  style="">${htmlSpans}</p></div>`;
+    // Use paragraph structure if available, otherwise fall back to single paragraph
+    if (this.paragraphs.length > 0) {
+      return HtmlConverter.convertParagraphsToHtml(this.paragraphs);
+    } else {
+      // Legacy single paragraph support
+      return HtmlConverter.convertSingleParagraphToHtml(this.content);
+    }
   }
 
   private getDefaultFontName(): string {
-    // Get font from first content item or use default
-    return this.content[0]?.style?.fontFamily || "Microsoft Yahei";
+    return HtmlConverter.getDefaultFontName(this.content);
   }
 
   private getDefaultColor(): { color: string; colorType: string } {
+    const color = HtmlConverter.getDefaultColor(this.content);
     return {
-      color: "#333333",
-      colorType: "dk1",
+      color: color,
+      colorType: this.getColorType(color),
     };
   }
 

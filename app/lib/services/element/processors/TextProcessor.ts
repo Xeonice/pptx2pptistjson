@@ -110,35 +110,21 @@ export class TextProcessor implements IElementProcessor<TextElement> {
       if (size) finalTextElement.setSize(size);
       if (rotation) finalTextElement.setRotation(rotation);
 
-      // Extract text content for text element
+      // Extract text content organized by paragraphs
       const txBodyNode = this.xmlParser.findNode(xmlNode, "txBody");
       if (txBodyNode) {
-        const paragraphs = this.xmlParser.findNodes(txBodyNode, "p");
-        for (const pNode of paragraphs) {
-          const contentItems = this.textStyleExtractor.extractParagraphContent(pNode, context, txBodyNode);
-          contentItems.forEach((content) => {
-            if (content) {
-              finalTextElement.addContent(content);
-            }
-          });
-        }
+        const paragraphs = this.textStyleExtractor.extractTextContentByParagraphs(txBodyNode, context);
+        finalTextElement.setParagraphs(paragraphs);
       }
 
       return finalTextElement;
     } else {
       // Pure text element without shape background
-      // Extract text content
+      // Extract text content organized by paragraphs
       const txBodyNode = this.xmlParser.findNode(xmlNode, "txBody");
       if (txBodyNode) {
-        const paragraphs = this.xmlParser.findNodes(txBodyNode, "p");
-        for (const pNode of paragraphs) {
-          const contentItems = this.textStyleExtractor.extractParagraphContent(pNode, context, txBodyNode);
-          contentItems.forEach((content) => {
-            if (content) {
-              textElement.addContent(content);
-            }
-          });
-        }
+        const paragraphs = this.textStyleExtractor.extractTextContentByParagraphs(txBodyNode, context);
+        textElement.setParagraphs(paragraphs);
       }
 
       return textElement;

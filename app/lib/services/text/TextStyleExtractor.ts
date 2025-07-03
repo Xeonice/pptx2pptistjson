@@ -200,6 +200,70 @@ export class TextStyleExtractor {
   }
 
   /**
+   * Extract text content from multiple paragraphs grouped by paragraph
+   * Returns array of paragraph content arrays for proper HTML p tag generation
+   */
+  extractTextContentByParagraphs(
+    txBodyNode: XmlNode,
+    context: ProcessingContext,
+    shapeStyleNode?: XmlNode
+  ): Array<Array<{ text: string; style: TextRunStyle }>> {
+    const paragraphs = this.xmlParser.findNodes(txBodyNode, "p");
+    const allParagraphs: Array<Array<{ text: string; style: TextRunStyle }>> = [];
+
+    for (const pNode of paragraphs) {
+      // Extract content for each paragraph
+      const paragraphContent = this.extractParagraphContent(
+        pNode,
+        context,
+        txBodyNode,
+        shapeStyleNode
+      );
+
+      // Only add non-empty paragraphs
+      if (paragraphContent.length > 0) {
+        allParagraphs.push(paragraphContent);
+      }
+    }
+
+    return allParagraphs;
+  }
+
+  /**
+   * Extract text content from multiple paragraphs (legacy method for compatibility)
+   * @deprecated Use extractTextContentByParagraphs for better paragraph structure
+   */
+  extractTextContent(
+    txBodyNode: XmlNode,
+    context: ProcessingContext,
+    shapeStyleNode?: XmlNode
+  ): Array<{ text: string; style: TextRunStyle }> {
+    const paragraphGroups = this.extractTextContentByParagraphs(
+      txBodyNode,
+      context,
+      shapeStyleNode
+    );
+
+    // Flatten paragraphs into a single array (legacy behavior)
+    const allTextContent: Array<{ text: string; style: TextRunStyle }> = [];
+    
+    for (let i = 0; i < paragraphGroups.length; i++) {
+      const paragraphContent = paragraphGroups[i];
+      allTextContent.push(...paragraphContent);
+      
+      // Add line break between paragraphs (except for the last one)
+      if (i < paragraphGroups.length - 1) {
+        allTextContent.push({
+          text: "\n",
+          style: {}
+        });
+      }
+    }
+
+    return allTextContent;
+  }
+
+  /**
    * Extract paragraph content with comprehensive text run processing
    */
   extractParagraphContent(
@@ -237,27 +301,6 @@ export class TextStyleExtractor {
       }
     }
 
-    // Check for end paragraph run properties (endParaRPr)
-    // This indicates the paragraph end and we should add a line break for paragraph separation
-    const endParaRPrNode = this.xmlParser.findNode(pNode, "endParaRPr");
-    if (endParaRPrNode) {
-      // Extract style from endParaRPr for the line break
-      const style = this.extractRunStyle(
-        endParaRPrNode,
-        context,
-        pNode,
-        txBodyNode,
-        shapeStyleNode
-      );
-
-      // Add line break to represent paragraph end
-      contentItems.push({
-        text: "\n",
-        style: style,
-      });
-      
-      DebugHelper.log(context, `TextStyleExtractor: Added line break from endParaRPr`, "info");
-    }
 
     return contentItems;
   }
