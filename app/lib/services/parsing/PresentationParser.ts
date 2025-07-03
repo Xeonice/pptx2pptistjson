@@ -72,7 +72,8 @@ export class PresentationParser implements IPresentationParser {
             slideFile,
             slideNumber,
             presentation.getTheme(),
-            relationships
+            relationships,
+            options
           );
 
           presentation.addSlide(slide);

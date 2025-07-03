@@ -16,6 +16,15 @@ export interface InternalParseOptions {
   includeNotes?: boolean;
   extractMedia?: boolean;
   parseCharts?: boolean;
+  enableDebugMode?: boolean;
+  debugOptions?: {
+    saveDebugImages?: boolean;
+    logProcessingDetails?: boolean;
+    preserveIntermediateSteps?: boolean;
+    includeColorResolutionTrace?: boolean;
+    includeTimingInfo?: boolean;
+    saveXmlFiles?: boolean;
+  };
 }
 
 /**
@@ -116,6 +125,8 @@ export class InternalPPTXParser {
         extractMedia: options?.extractMedia || false,
         parseCharts: options?.parseCharts || true,
         parseMath: true,
+        enableDebugMode: options?.enableDebugMode,
+        debugOptions: options?.debugOptions,
       });
 
       const slides = result.presentation.getSlides();

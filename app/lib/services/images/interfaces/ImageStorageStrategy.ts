@@ -99,6 +99,7 @@ export class Base64StorageStrategy implements ImageStorageStrategy {
     }
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   async generateUrl(imageId: string): Promise<string> {
     // Base64 模式下，URL 就是数据本身，这里无法生成独立的 URL
     throw new Error('Base64 strategy stores data inline, use upload result URL');

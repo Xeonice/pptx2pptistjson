@@ -15,12 +15,25 @@ export class TextProcessor implements IElementProcessor<TextElement> {
   constructor(private xmlParser: IXmlParseService) {}
 
   canProcess(xmlNode: XmlNode): boolean {
+    // Check if this is a text box
+    const nvSpPrNode = this.xmlParser.findNode(xmlNode, "nvSpPr");
+    const cNvSpPrNode = nvSpPrNode ? this.xmlParser.findNode(nvSpPrNode, "cNvSpPr") : undefined;
+    const txBox = cNvSpPrNode ? this.xmlParser.getAttribute(cNvSpPrNode, "txBox") : undefined;
+    
+    if (txBox === "1") {
+      // This is explicitly a text box
+      return true;
+    }
+    
     // Only process pure text elements without shape backgrounds
     // Shape elements with text are handled by ShapeProcessor
-    return xmlNode.name.endsWith("sp") && 
-           this.hasTextContent(xmlNode) && 
-           !this.hasImageFill(xmlNode) &&
-           !this.hasShapeBackground(xmlNode);
+    return (
+      xmlNode.name.endsWith("sp") &&
+      this.hasTextContent(xmlNode) &&
+      !this.hasGeom(xmlNode) &&
+      !this.hasImageFill(xmlNode) &&
+      !this.hasShapeBackground(xmlNode)
+    );
   }
 
   async process(
@@ -80,14 +93,14 @@ export class TextProcessor implements IElementProcessor<TextElement> {
       }
     }
 
-    // Check if this element has a visible shape background  
+    // Check if this element has a visible shape background
     const hasShapeBackground = this.hasShapeBackground(xmlNode);
-    
+
     // If it has both text and shape background, append "_text" to the ID
     if (hasShapeBackground) {
       const textId = id + "_text";
       const finalTextElement = new TextElement(textId);
-      
+
       // Copy position and size to text element
       const position = textElement.getPosition();
       const size = textElement.getSize();
@@ -95,21 +108,21 @@ export class TextProcessor implements IElementProcessor<TextElement> {
       if (position) finalTextElement.setPosition(position);
       if (size) finalTextElement.setSize(size);
       if (rotation) finalTextElement.setRotation(rotation);
-      
+
       // Extract text content for text element
       const txBodyNode = this.xmlParser.findNode(xmlNode, "txBody");
       if (txBodyNode) {
         const paragraphs = this.xmlParser.findNodes(txBodyNode, "p");
         for (const pNode of paragraphs) {
           const contentItems = this.extractParagraphContent(pNode, context);
-          contentItems.forEach(content => {
+          contentItems.forEach((content) => {
             if (content) {
               finalTextElement.addContent(content);
             }
           });
         }
       }
-      
+
       return finalTextElement;
     } else {
       // Pure text element without shape background
@@ -119,14 +132,14 @@ export class TextProcessor implements IElementProcessor<TextElement> {
         const paragraphs = this.xmlParser.findNodes(txBodyNode, "p");
         for (const pNode of paragraphs) {
           const contentItems = this.extractParagraphContent(pNode, context);
-          contentItems.forEach(content => {
+          contentItems.forEach((content) => {
             if (content) {
               textElement.addContent(content);
             }
           });
         }
       }
-      
+
       return textElement;
     }
   }
@@ -153,11 +166,21 @@ export class TextProcessor implements IElementProcessor<TextElement> {
     return false;
   }
 
+  private hasGeom(xmlNode: XmlNode): boolean {
+    // Check if shape has visible background fill
+    const spPrNode = this.xmlParser.findNode(xmlNode, "spPr");
+    if (!spPrNode) return false;
+
+    const customGeomNode = this.xmlParser.findNode(spPrNode, "a:custGeom");
+
+    return !!customGeomNode;
+  }
+
   private hasImageFill(xmlNode: XmlNode): boolean {
     // Check if shape has blipFill (image fill)
     const spPrNode = this.xmlParser.findNode(xmlNode, "spPr");
     if (!spPrNode) return false;
-    
+
     const blipFillNode = this.xmlParser.findNode(spPrNode, "blipFill");
     return !!blipFillNode;
   }
@@ -166,12 +189,12 @@ export class TextProcessor implements IElementProcessor<TextElement> {
     // Check if shape has fill background (solid fill, gradient, etc.)
     const spPrNode = this.xmlParser.findNode(xmlNode, "spPr");
     if (!spPrNode) return false;
-    
+
     // Check for any fill type
     const solidFillNode = this.xmlParser.findNode(spPrNode, "solidFill");
     const gradFillNode = this.xmlParser.findNode(spPrNode, "gradFill");
     const pattFillNode = this.xmlParser.findNode(spPrNode, "pattFill");
-    
+
     return !!(solidFillNode || gradFillNode || pattFillNode);
   }
 
@@ -191,7 +214,9 @@ export class TextProcessor implements IElementProcessor<TextElement> {
         if (text.trim()) {
           // Extract run properties for each run
           const rPrNode = this.xmlParser.findNode(rNode, "rPr");
-          const style = rPrNode ? this.extractRunStyle(rPrNode, context) : undefined;
+          const style = rPrNode
+            ? this.extractRunStyle(rPrNode, context)
+            : undefined;
 
           contentItems.push({
             text: text,
@@ -306,7 +331,6 @@ export class TextProcessor implements IElementProcessor<TextElement> {
 
     return obj;
   }
-
 
   private createThemeContent(theme: Theme): any {
     const colorScheme = theme.getColorScheme();

@@ -10,6 +10,8 @@ import { Element } from '../../models/domain/elements/Element';
 import { IdGenerator } from '../utils/IdGenerator';
 import { ColorUtils } from '../utils/ColorUtils';
 import { ImageDataService } from '../images/ImageDataService';
+import { ParseOptions } from '../../models/dto/ParseOptions';
+import { DebugHelper } from '../utils/DebugHelper';
 
 export class SlideParser {
   private elementProcessors: Map<string, IElementProcessor> = new Map();
@@ -29,7 +31,8 @@ export class SlideParser {
     slidePath: string,
     slideNumber: number,
     theme?: Theme,
-    relationships?: Map<string, any>
+    relationships?: Map<string, any>,
+    options?: ParseOptions
   ): Promise<Slide> {
     try {
       const slideXml = await this.fileService.extractFile(zip, slidePath);
@@ -48,10 +51,12 @@ export class SlideParser {
         theme,
         relationships: relationships || new Map(),
         basePath: slidePath.substring(0, slidePath.lastIndexOf('/')),
-        options: {},
+        options: options || {},
         warnings: [],
         idGenerator: new IdGenerator()
       };
+      
+      DebugHelper.log(context, `=== Starting Slide Processing: ${slideId} ===`, "info");
       
       // Parse background
       const background = await this.parseBackground(slideNode, context);

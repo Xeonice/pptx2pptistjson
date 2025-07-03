@@ -168,7 +168,8 @@ export class Slide {
   }
 
   // Extension point: Override this method to implement cloud upload
-  private uploadToCloudService(imageData: any): string | null {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  private uploadToCloudService(_imageData: any): string | null {
     // TODO: Implement cloud service upload logic
     // Examples:
     // - Upload to AWS S3 and return public URL

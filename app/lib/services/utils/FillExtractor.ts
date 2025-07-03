@@ -95,6 +95,7 @@ export class FillExtractor {
     }
 
     // Check if we need to apply color transformations
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const hasTransformations = clrNode && this.hasColorTransformations(clrNode);
     
     // Always convert to rgba for consistency
@@ -111,6 +112,7 @@ export class FillExtractor {
         const alpha = parseInt(alphaVal) / 100000;
         if (!isNaN(alpha)) {
           rgbaColor = ColorUtils.applyAlpha(rgbaColor, alpha);
+          // eslint-disable-next-line @typescript-eslint/no-unused-vars
           isAlpha = true;
         }
       }
@@ -329,6 +331,7 @@ export class FillExtractor {
   /**
    * Gets gradient fill (placeholder for future implementation)
    */
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   static getGradientFill(gradFill: any, clrMap?: any, phClr?: string, warpObj?: any): any {
     // TODO: Implement gradient fill extraction
     return null;

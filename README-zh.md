@@ -2,7 +2,7 @@
 
 一个基于 Next.js 的综合应用程序和 TypeScript 库，用于将 .pptx 文件转换为 PPTist 兼容的 JSON 格式，具备先进的图像处理、背景支持和现代化网页界面。
 
-[![测试覆盖](https://img.shields.io/badge/tests-450%2B-green)](./tests/)
+[![测试覆盖](https://img.shields.io/badge/tests-850%2B-green)](./tests/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-100%25-blue)](./tsconfig.json)
 [![Next.js](https://img.shields.io/badge/Next.js-14%2B-black)](./package.json)
 [![License](https://img.shields.io/badge/license-MIT-green)](./LICENSE)
@@ -48,10 +48,12 @@
 - **全面元素支持**: 针对 PPTist 优化的文本、形状、图像、表格、图表
 
 ### 🧪 质量保证
-- **450+ 测试用例**: 所有转换组件的综合测试覆盖
-- **PPTist 集成测试**: 端到端转换工作流验证
-- **边界案例处理**: 强大的错误恢复和优雅降级
-- **性能测试**: 内存管理和并发处理验证
+- **850+ 测试用例**: 所有转换组件的全面测试覆盖，包括10个主要测试类别
+- **PPTist 集成测试**: 端到端转换工作流验证和兼容性测试
+- **边界案例处理**: 强大的错误恢复、优雅降级和边界条件处理
+- **性能测试**: 内存管理、并发处理和大文件处理验证
+- **图像处理专项测试**: Sharp库集成、偏移调整、透明度处理测试
+- **调试功能测试**: 全面的调试系统和可视化测试覆盖
 
 [⬆️ 回到目录](#-目录)
 
@@ -210,6 +212,30 @@ const pptistJson = await parse(arrayBuffer, { imageMode: 'url' })
 }
 ```
 
+### PPTist 高级图像处理特性
+
+#### Sharp库集成图像处理
+- **透明背景合成**: 自动处理透明填充，确保 PPTist 中的正确显示
+- **fillRect算法**: PowerPoint兼容的图像拉伸偏移处理
+- **调试图像生成**: 可选的调试输出，包含处理步骤可视化
+- **内存优化**: 高效的大图像处理和并发控制
+
+#### 图像偏移调整系统
+```javascript
+// 自动处理PowerPoint图像偏移
+{
+  "type": "image",
+  "src": "data:image/png;base64,...",
+  "stretchOffset": { "l": -50000, "t": -30000, "r": -50000, "b": -30000 },
+  "processedWithOffset": true,
+  "debugInfo": {
+    "originalSize": { "width": 800, "height": 600 },
+    "finalSize": { "width": 900, "height": 660 },
+    "paddingApplied": { "left": 50, "top": 30, "right": 50, "bottom": 30 }
+  }
+}
+```
+
 [⬆️ 回到目录](#-目录)
 
 ### PPTist 背景图像支持
@@ -255,9 +281,11 @@ const pptistJson = await parse(arrayBuffer, { imageMode: 'url' })
 
 ### 性能特性
 - **并发处理**: 信号量控制的批处理 (默认: 3 个并发)
-- **内存管理**: 针对 PPTist 大型演示文稿优化
-- **错误隔离**: 单个图像失败不影响整体转换
+- **内存管理**: 针对 PPTist 大型演示文稿优化，智能垃圾回收
+- **错误隔离**: 单个图像失败不影响整体转换，优雅降级机制
 - **存储策略**: 可插拔存储后端 (Base64, CDN, 自定义)
+- **Sharp库集成**: 高性能图像处理，支持透明度和复杂变换
+- **调试模式**: 可配置的调试图像生成和处理步骤追踪
 
 [⬆️ 回到目录](#-目录)
 
@@ -324,12 +352,15 @@ const pptistJson = await parse(arrayBuffer, { imageMode: 'url' })
 ## 🧪 测试与质量保证
 
 ### 测试套件概览
-- **450+ 测试用例** 覆盖所有转换组件
-- **单元测试**: 各服务和工具的独立测试
-- **集成测试**: 端到端 PPTist 转换工作流  
-- **背景图像测试**: PPTist 背景处理全面验证
-- **边界案例测试**: 错误处理和畸形输入处理
-- **性能测试**: 内存管理和并发处理
+- **850+ 测试用例** 覆盖所有转换组件，10个主要测试类别
+- **单元测试**: 各服务和工具的独立测试，包括模拟和依赖注入
+- **集成测试**: 端到端 PPTist 转换工作流和兼容性验证
+- **图像处理专项测试**: PPTist 图像处理全面验证，包括Sharp库集成
+- **调试功能测试**: 调试系统、可视化和元数据生成测试
+- **边界案例测试**: 错误处理、畸形输入和边界条件处理
+- **性能测试**: 内存管理、并发处理和大文件处理验证
+- **颜色处理测试**: PowerPoint颜色变换和主题颜色解析测试
+- **形状处理测试**: 100+种PowerPoint形状类型转换测试
 
 ### 运行测试
 ```bash
@@ -343,19 +374,28 @@ npm run test:watch
 npm run test:coverage
 
 # 运行特定测试类别
-npx jest background-image
-npx jest color-processing
-npx jest image-base64
+npx jest image-processing        # 图像处理测试 (8个文件)
+npx jest color-processing        # 颜色处理测试 (9个文件)
+npx jest shape-processor         # 形状处理测试 (9个文件)
+npx jest debug-helper           # 调试功能测试 (3个文件)
+npx jest performance-           # 性能测试 (2个文件)
+npx jest integration            # 集成测试 (3个文件)
 ```
 
 ### 测试分类
 ```
 tests/
-├── __tests__/                    # 专项测试套件
-│   ├── color-*.test.ts          # 颜色处理测试
-│   ├── image-*.test.ts          # 图像处理测试
-│   ├── integration.test.ts      # 端到端测试
-│   └── edge-cases.test.ts       # 错误处理测试
+├── __tests__/                    # 专项测试套件 (54个文件)
+│   ├── color-*.test.ts          # 颜色处理测试 (9个文件)
+│   ├── image-*.test.ts          # 图像处理测试 (8个文件)
+│   ├── shape-*.test.ts          # 形状处理测试 (9个文件)
+│   ├── debug-*.test.ts          # 调试功能测试 (3个文件)
+│   ├── performance-*.test.ts    # 性能和错误处理测试 (2个文件)
+│   ├── fill-*.test.ts           # 填充处理测试 (3个文件)
+│   ├── theme-*.test.ts          # 主题和样式测试 (2个文件)
+│   ├── integration.test.ts      # 集成测试 (3个文件)
+│   ├── *.test.tsx               # UI组件测试 (3个文件)
+│   └── utils-*.test.ts          # 工具和基础功能测试 (16个文件)
 ├── background-image.test.ts     # 背景处理
 ├── element-types.test.ts        # 元素解析
 └── pptx-parser-integration.test.ts # 解析器集成

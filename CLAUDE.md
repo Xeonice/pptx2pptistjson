@@ -13,7 +13,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - `npm run type-check` - Run TypeScript type checking without emitting files
 
 ### Testing
-- `npm test` - Run all Jest tests (450+ comprehensive test cases)
+- `npm test` - Run all Jest tests (850+ comprehensive test cases)
 - `npm run test:watch` - Run tests in watch mode for development
 - `npm run test:coverage` - Run tests with coverage reporting
 - Run single test: `npx jest <test-file-name>` or `npx jest --testNamePattern="<test name>"`
@@ -90,7 +90,7 @@ Precise coordinate mapping for PPTist layout accuracy:
 - **Consistency**: All dimensions (position, size, paths) use points for PPTist
 
 ### Image Processing Pipeline
-Multi-format image handling with PPTist optimization:
+Multi-format image handling with PPTist optimization and PowerPoint stretch offset processing:
 
 ```typescript
 ImageDataService.extractImageData()
@@ -98,6 +98,11 @@ ImageDataService.extractImageData()
 ├── Processing Modes:
 │   ├── base64: Full Data URL embedding for offline PPTist usage
 │   └── url: External URL references for cloud storage
+├── PPTXImageProcessor: Sharp-based stretch offset handling
+│   ├── fillRect processing (PowerPoint stretch algorithm)
+│   ├── Transparent background composition
+│   ├── Debug image generation for troubleshooting
+│   └── Memory-efficient processing with fallback mechanisms
 ├── Metadata Extraction: dimensions, transparency, file size
 ├── Error Isolation: Individual image failures don't break conversion
 └── Concurrent Processing: Semaphore-controlled batch processing (default: 3)
@@ -108,7 +113,7 @@ After each modification, verify multiple command executions:
 - `npm run build` - Ensures production build integrity  
 - `npm run type-check` - Validates TypeScript type consistency
 - `npm run lint` - Checks code quality and style guidelines
-- `npm run test` - Confirms all test cases pass successfully (all 450+ tests must pass)
+- `npm run test` - Confirms all test cases pass successfully (all 850+ tests must pass)
 
 ## Critical Implementation Details
 
@@ -124,15 +129,33 @@ After each modification, verify multiple command executions:
 - **Enhanced preset shapes**: 15+ flowChart series, 7+ actionButton series support added
 
 ### Testing Strategy
-- **450+ test cases** cover color processing, shape conversion, image handling
+- **850+ test cases** cover color processing, shape conversion, image handling
 - **Integration tests** verify end-to-end PPTist compatibility
 - **Performance tests** ensure memory management and concurrent processing
 - **Edge case handling** for malformed PPTX files and missing resources
+- **Comprehensive image processing tests** including PPTXImageProcessor, stretch offset handling, and debug functionality
 
 ### Sample Files Usage
 - `sample/basic/input.pptx` and `output.json` - reference conversion format
 - `sample/sample-1/` - detailed test case with expected outputs
 - **Never delete sample files** - they serve as conversion format reference
+
+### Debug System and Image Processing
+The codebase includes advanced debugging capabilities for image processing:
+
+```typescript
+DebugHelper.isDebugEnabled(context)        # Check if debug mode is enabled
+DebugHelper.shouldSaveDebugImages(context) # Check if debug images should be saved
+PPTXImageProcessor.applyStretchOffset()    # Apply PowerPoint stretch transformations
+ImageOffsetAdjuster.applyOffsetAdjustment() # Handle coordinate adjustments
+```
+
+**Key Features:**
+- **Transparent padding handling** for images with negative stretch offsets
+- **Debug image generation** with metadata and processing steps visualization
+- **Sharp library integration** with graceful fallback when unavailable
+- **Memory-efficient processing** with configurable concurrency limits
+- **PowerPoint-compatible fillRect algorithm** for accurate stretch offset reproduction
 
 ### Service Container Pattern
 Register services with dependency injection for testability:

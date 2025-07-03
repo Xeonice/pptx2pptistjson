@@ -5,6 +5,8 @@ export class ShapeElement extends Element {
   private path?: string;
   private pathFormula?: string;
   private text?: TextContent;
+  private viewBox?: [number, number];
+  private special?: boolean;
   private shapeText?: ShapeTextContent;
   private fill?: { color: string };
   private stroke?: StrokeProperties;
@@ -29,6 +31,14 @@ export class ShapeElement extends Element {
     return this.path;
   }
 
+  getSpecial() {
+    return this.special;
+  }
+
+  setSpecial(special: boolean) {
+    this.special = special;
+  }
+
   setPathFormula(pathFormula: string): void {
     this.pathFormula = pathFormula;
   }
@@ -43,6 +53,14 @@ export class ShapeElement extends Element {
 
   getAdjustmentValues(): Record<string, number> {
     return this.adjustmentValues || {};
+  }
+
+  getViewBox() {
+    return this.viewBox;
+  }
+
+  setViewBox(viewBox: [number, number]) {
+    this.viewBox = viewBox;
   }
 
   /**

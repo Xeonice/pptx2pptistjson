@@ -1,6 +1,7 @@
 import { Theme } from '../../models/domain/Theme';
 import { SlideLayout } from '../../models/domain/Slide';
 import { IdGenerator } from '../utils/IdGenerator';
+import { ParseOptions } from '../../models/dto/ParseOptions';
 import JSZip from 'jszip';
 
 /**
@@ -50,7 +51,7 @@ export interface ProcessingContext {
   /**
    * Options passed to the parser
    */
-  options: any;
+  options: ParseOptions;
 
   /**
    * Warnings collected during parsing
