@@ -31,6 +31,7 @@
 ### 📱 Web 应用程序
 - **交互式文件上传**: 拖放式 .pptx 文件处理，实时转换
 - **PPTist 兼容输出**: 针对 PPTist 演示编辑器优化的 JSON 格式
+- **背景格式切换**: 在传统格式和新版PPTist背景格式间切换
 - **实时 JSON 可视化**: Monaco 编辑器语法高亮和验证
 - **JSON 差异对比**: 转换结果与预期 PPTist 输出的比较
 - **位置测试工具**: PPTist 中元素位置验证实用程序
@@ -96,6 +97,7 @@ const pptistJson = await parse(arrayBuffer)
 // PPTist 高级配置
 const pptistJson = await parse(arrayBuffer, {
   imageMode: 'base64',     // 'base64' | 'url'
+  backgroundFormat: 'pptist', // 'legacy' | 'pptist' - 背景格式
   includeNotes: true,      // 包含演讲者备注
   includeMaster: true,     // 包含母版元素
   enableDebug: false       // 调试信息
@@ -107,6 +109,7 @@ const pptistJson = await parse(arrayBuffer, {
 // 通过 REST API 进行 PPTist 转换
 const formData = new FormData()
 formData.append('file', pptxFile)
+formData.append('backgroundFormat', 'pptist') // 选择背景格式
 
 const response = await fetch('/api/parse-pptx', {
   method: 'POST',
@@ -124,6 +127,7 @@ import fs from 'fs'
 const buffer = fs.readFileSync('presentation.pptx')
 const pptistJson = await parse(buffer, {
   imageMode: 'base64',
+  backgroundFormat: 'pptist',
   includeNotes: true
 })
 ```
@@ -239,10 +243,11 @@ const pptistJson = await parse(arrayBuffer, { imageMode: 'url' })
 [⬆️ 回到目录](#-目录)
 
 ### PPTist 背景图像支持
-完整的幻灯片背景处理，兼容 PPTist 格式：
+完整的幻灯片背景处理，支持双格式切换：
 
+#### 传统格式 (兼容旧版)
 ```javascript
-// PPTist 纯色背景
+// 纯色背景
 {
   "background": {
     "type": "solid",
@@ -250,16 +255,32 @@ const pptistJson = await parse(arrayBuffer, { imageMode: 'url' })
   }
 }
 
-// PPTist 图像背景 (Base64)
+// 图像背景 (传统格式)
 {
   "background": {
     "type": "image",
     "image": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAA...",
-    "imageSize": "cover"
+    "imageSize": "cover",
+    "themeColor": { "color": "#F4F7FF", "colorType": "lt1" }
+  }
+}
+```
+
+#### 新版PPTist格式 (推荐)
+```javascript
+// 图像背景 (新版PPTist格式)
+{
+  "background": {
+    "type": "image",
+    "image": {
+      "src": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAA...",
+      "size": "cover"
+    },
+    "themeColor": { "color": "#F4F7FF", "colorType": "lt1" }
   }
 }
 
-// PPTist 渐变背景
+// 渐变背景 (两种格式相同)
 {
   "background": {
     "type": "gradient",
@@ -270,6 +291,11 @@ const pptistJson = await parse(arrayBuffer, { imageMode: 'url' })
   }
 }
 ```
+
+#### 背景格式选择
+使用 `backgroundFormat` 参数选择输出格式：
+- `legacy`: 传统格式，使用 `image: "url"` 和 `imageSize` 属性
+- `pptist`: 新格式，使用 `image: { src: "url", size: "cover" }` 结构
 
 ### PPTist 支持的格式
 - **JPEG** (.jpg, .jpeg) - 优化压缩

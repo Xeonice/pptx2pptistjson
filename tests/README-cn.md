@@ -6,10 +6,11 @@
 
 ## 测试文件
 
-### 核心测试 (7 个文件)
+### 核心测试 (8 个文件)
 - **`pptxtojson.test.ts`** - 主解析函数的基本功能测试
 - **`utils.test.ts`** - Presentation、Slide 和 Theme 类的领域模型测试
 - **`background-image.test.ts`** - 背景处理验证
+- **`slide-background-format.test.ts`** - 背景格式切换测试 (传统格式 vs PPTist格式)
 - **`element-types.test.ts`** - 元素类型解析验证
 - **`edge-cases.test.ts`** - 错误处理和边缘情况验证
 - **`output-comparison.test.ts`** - 输出比较测试
@@ -75,14 +76,14 @@
 #### UI 组件测试 (3 个文件)
 - **`cdn-file-uploader.test.tsx`** - CDN 文件上传器组件
 - **`monaco-json-loader-large-files.test.tsx`** - Monaco JSON 加载器大文件
-- **`switch-component-integration.test.tsx`** - 开关组件集成
+- **`switch-component-integration.test.tsx`** - 开关组件集成 (背景格式切换)
 
 #### 工具和核心功能测试 (16 个文件)
 - 各种工具和核心功能测试，包括精度、ID生成、单位转换、XML解析和输出结构验证
 
 ## 测试结果汇总
 
-✅ **所有 850+ 个测试通过，跨越 61 个测试文件**
+✅ **所有 850+ 个测试通过，跨越 65+ 个测试文件**
 
 ### 关键验证点
 
@@ -95,7 +96,7 @@
 - **文本内容**: 保留中文字符和格式
 - **定位**: 在可接受容差范围内（±50px）维护元素位置
 - **主题色彩**: 提取主题色彩方案（虽然有一些变化）
-- **背景**: 正确识别幻灯片背景
+- **背景**: 正确识别幻灯片背景，支持双格式输出 (传统格式/PPTist格式)
 
 #### 🔧 **技术验证**
 - **结构**: 维护一致的 JSON 输出格式
@@ -124,7 +125,7 @@
 - **颜色处理**: 100% 覆盖（PowerPoint 变换、主题颜色）
 - **形状处理**: 100% 覆盖（100+ 种 PowerPoint 形状类型）
 - **调试功能**: 100% 覆盖（调试系统、可视化、元数据）
-- **幻灯片功能**: 100% 覆盖（背景、主题、定位）
+- **幻灯片功能**: 100% 覆盖（背景双格式支持、主题、定位）
 - **错误情况**: 全面的错误处理验证和边界条件
 - **边缘情况**: 内存管理、Unicode、性能、大文件
 - **集成测试**: 端到端转换流程和 PPTist 兼容性
@@ -169,6 +170,7 @@ npm run test:watch
 - **输入**: `sample/input.pptx` - 真实 PowerPoint 演示文稿
 - **期望输出**: `sample/output.json` - 参考 JSON 结构
 - **验证**: 实际结果与期望结果的全面比较
+- **背景格式测试**: 传统格式和PPTist格式的双重验证
 
 ## 测试用例说明
 
@@ -208,6 +210,12 @@ npm run test:watch
 - **数据完整性** - 数值精度、坐标处理、颜色精度
 
 ## 新增测试功能
+
+### 背景格式测试
+- **双格式支持**: 传统格式和PPTist格式的测试
+- **格式切换验证**: 带backgroundFormat参数的API端点测试
+- **幻灯片模型测试**: 带backgroundFormat参数的toJSON()方法验证
+- **集成测试**: 背景格式转换的端到端测试
 
 ### 图像处理验证
 - **Sharp 库集成**: Sharp 图像处理和回退机制测试

@@ -17,6 +17,7 @@ export interface InternalParseOptions {
   extractMedia?: boolean;
   parseCharts?: boolean;
   enableDebugMode?: boolean;
+  backgroundFormat?: 'legacy' | 'pptist';
   debugOptions?: {
     saveDebugImages?: boolean;
     logProcessingDetails?: boolean;
@@ -158,10 +159,11 @@ export class InternalPPTXParser {
     const slideSize = result.presentation.getSlideSize();
 
     // Convert to the expected PPTist format with top-level width/height
+    const backgroundFormat = options?.backgroundFormat || 'legacy';
     return {
       width: slideSize.width,
       height: slideSize.height,
-      slides: result.presentation.getSlides().map((slide) => slide.toJSON()),
+      slides: result.presentation.getSlides().map((slide) => slide.toJSON(backgroundFormat)),
       theme: this.convertTheme(result.presentation.getTheme()),
       title: result.presentation.getMetadata().title || "Presentation",
     };

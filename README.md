@@ -14,6 +14,7 @@ A comprehensive Next.js application and TypeScript library for converting .pptx 
 ### 📱 Web Application
 - **Interactive File Upload**: Drag-and-drop .pptx file processing with real-time conversion
 - **PPTist-Compatible Output**: JSON format optimized for PPTist presentation editor
+- **Background Format Toggle**: Switch between legacy and new PPTist background formats
 - **Real-time JSON Visualization**: Monaco Editor with syntax highlighting and validation
 - **JSON Diff Comparison**: Compare conversion results with expected PPTist outputs
 - **Position Testing Tools**: Utilities for element positioning validation in PPTist
@@ -73,6 +74,7 @@ const pptistJson = await parse(arrayBuffer)
 // Advanced configuration for PPTist
 const pptistJson = await parse(arrayBuffer, {
   imageMode: 'base64',     // 'base64' | 'url'
+  backgroundFormat: 'pptist', // 'legacy' | 'pptist' - background format
   includeNotes: true,      // Include speaker notes
   includeMaster: true,     // Include master slide elements
   enableDebug: false       // Debug information
@@ -84,6 +86,7 @@ const pptistJson = await parse(arrayBuffer, {
 // Upload via REST API for PPTist conversion
 const formData = new FormData()
 formData.append('file', pptxFile)
+formData.append('backgroundFormat', 'pptist') // Choose background format
 
 const response = await fetch('/api/parse-pptx', {
   method: 'POST',
@@ -101,6 +104,7 @@ import fs from 'fs'
 const buffer = fs.readFileSync('presentation.pptx')
 const pptistJson = await parse(buffer, {
   imageMode: 'base64',
+  backgroundFormat: 'pptist',
   includeNotes: true
 })
 ```
@@ -210,10 +214,11 @@ const pptistJson = await parse(arrayBuffer, { imageMode: 'url' })
 ```
 
 ### Background Image Support for PPTist
-Complete slide background processing compatible with PPTist format:
+Complete slide background processing with dual format support:
 
+#### Legacy Format (Traditional)
 ```javascript
-// Solid color background for PPTist
+// Solid color background
 {
   "background": {
     "type": "solid",
@@ -221,16 +226,32 @@ Complete slide background processing compatible with PPTist format:
   }
 }
 
-// Image background with base64 for PPTist
+// Image background (legacy format)
 {
   "background": {
     "type": "image",
     "image": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAA...",
-    "imageSize": "cover"
+    "imageSize": "cover",
+    "themeColor": { "color": "#F4F7FF", "colorType": "lt1" }
+  }
+}
+```
+
+#### New PPTist Format (Recommended)
+```javascript
+// Image background (new PPTist format)
+{
+  "background": {
+    "type": "image", 
+    "image": {
+      "src": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAA...",
+      "size": "cover"
+    },
+    "themeColor": { "color": "#F4F7FF", "colorType": "lt1" }
   }
 }
 
-// Gradient background for PPTist
+// Gradient background (same in both formats)
 {
   "background": {
     "type": "gradient",
@@ -241,6 +262,11 @@ Complete slide background processing compatible with PPTist format:
   }
 }
 ```
+
+#### Background Format Selection
+Use the `backgroundFormat` parameter to choose output format:
+- `legacy`: Traditional format with `image: "url"` and `imageSize` properties
+- `pptist`: New format with `image: { src: "url", size: "cover" }` structure
 
 ### Supported Formats for PPTist
 - **JPEG** (.jpg, .jpeg) - Optimized compression
@@ -388,6 +414,7 @@ Parse uploaded PPTX file and return PPTist-compatible JSON structure.
 ```javascript
 const formData = new FormData()
 formData.append('file', pptxFile)
+formData.append('backgroundFormat', 'pptist')
 formData.append('options', JSON.stringify({
   imageMode: 'base64',
   includeNotes: true
@@ -412,6 +439,7 @@ formData.append('options', JSON.stringify({
 ```typescript
 interface ParseOptions {
   imageMode?: 'base64' | 'url'        // Image processing mode for PPTist
+  backgroundFormat?: 'legacy' | 'pptist'  // Background format selection
   includeNotes?: boolean              // Include speaker notes
   includeMaster?: boolean             // Include master slide elements
   enableDebug?: boolean               // Debug information

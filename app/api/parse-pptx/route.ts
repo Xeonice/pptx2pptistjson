@@ -124,6 +124,8 @@ export async function POST(request: NextRequest) {
 
     // 获取输出格式参数
     const format = (formData.get("format") as string) || "legacy";
+    // 获取背景格式参数
+    const backgroundFormat = (formData.get("backgroundFormat") as 'legacy' | 'pptist') || "legacy";
     // 获取 CDN 存储选项
     const useCdn = formData.get("useCdn") === "true";
     const cdnFilename = formData.get("cdnFilename") as string;
@@ -157,6 +159,7 @@ export async function POST(request: NextRequest) {
     const parseOptions = {
       enableDebugMode,
       debugOptions,
+      backgroundFormat,
     };
     const jsonResult = await pptxParser.parseToJSON(fileBuffer, parseOptions);
 

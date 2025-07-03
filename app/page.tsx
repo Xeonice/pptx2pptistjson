@@ -46,6 +46,7 @@ export default function Home() {
     includeTimingInfo: false,
     saveXmlFiles: false,
   });
+  const [backgroundFormat, setBackgroundFormat] = useState<'legacy' | 'pptist'>('legacy');
 
   // 页面加载时的调试信息
   React.useEffect(() => {
@@ -73,6 +74,9 @@ export default function Home() {
       if (options.cdnFilename) {
         formData.append("cdnFilename", options.cdnFilename);
       }
+      
+      // 添加背景格式参数
+      formData.append("backgroundFormat", backgroundFormat);
       
       // 添加调试参数
       if (debugMode) {
@@ -248,6 +252,62 @@ export default function Home() {
             PPTist 格式: 兼容 PPTist 编辑器的标准格式，包含详细的样式和位置信息
             <br />
             传统格式: 原始解析格式，包含基础的元素和主题信息
+          </div>
+        </div>
+
+        {/* 背景格式选择器 */}
+        <div
+          style={{
+            marginTop: "15px",
+            padding: "16px",
+            backgroundColor: "#e8f5e8",
+            borderRadius: "8px",
+            border: "1px solid #28a745",
+          }}
+        >
+          <h4 style={{ margin: "0 0 12px 0", fontSize: "14px", color: "#333" }}>
+            🖼️ 背景图片格式
+          </h4>
+          <div style={{ display: "flex", gap: "12px", alignItems: "center" }}>
+            <label
+              style={{
+                display: "flex",
+                alignItems: "center",
+                cursor: "pointer",
+              }}
+            >
+              <input
+                type="radio"
+                name="backgroundFormat"
+                value="legacy"
+                checked={backgroundFormat === "legacy"}
+                onChange={(e) => setBackgroundFormat(e.target.value as 'legacy' | 'pptist')}
+                style={{ marginRight: "6px" }}
+              />
+              <span style={{ fontSize: "13px" }}>传统格式 (当前)</span>
+            </label>
+            <label
+              style={{
+                display: "flex",
+                alignItems: "center",
+                cursor: "pointer",
+              }}
+            >
+              <input
+                type="radio"
+                name="backgroundFormat"
+                value="pptist"
+                checked={backgroundFormat === "pptist"}
+                onChange={(e) => setBackgroundFormat(e.target.value as 'legacy' | 'pptist')}
+                style={{ marginRight: "6px" }}
+              />
+              <span style={{ fontSize: "13px" }}>新版 PPTist 格式</span>
+            </label>
+          </div>
+          <div style={{ fontSize: "12px", color: "#666", marginTop: "8px" }}>
+            传统格式: <code>image: &quot;url&quot;</code>，<code>imageSize: &quot;cover&quot;</code>
+            <br />
+            新版 PPTist 格式: <code>image: {`{ src: "url", size: "cover" }`}</code>
           </div>
         </div>
 
