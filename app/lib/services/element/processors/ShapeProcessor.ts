@@ -1414,17 +1414,22 @@ export class ShapeProcessor implements IElementProcessor<ShapeElement> {
     shapeStyleNode?: XmlNode
   ): TextContent[] {
     // Use unified text extraction logic by paragraphs
-    const paragraphGroups = this.textStyleExtractor.extractTextContentByParagraphs(
+    const result = this.textStyleExtractor.extractTextContentByParagraphs(
       txBodyNode,
       context,
       shapeStyleNode
     );
+    const paragraphGroups = result.paragraphs;
 
     // Apply paragraph alignment processing to each paragraph
     const paragraphNodes = this.xmlParser.findNodes(txBodyNode, "p");
     const processedParagraphs: TextContent[][] = [];
 
-    for (let i = 0; i < paragraphGroups.length && i < paragraphNodes.length; i++) {
+    for (
+      let i = 0;
+      i < paragraphGroups.length && i < paragraphNodes.length;
+      i++
+    ) {
       const paragraphContent = paragraphGroups[i];
       const pNode = paragraphNodes[i];
 
@@ -1440,12 +1445,12 @@ export class ShapeProcessor implements IElementProcessor<ShapeElement> {
       }
 
       // Apply paragraph alignment to all content items in this paragraph
-      const alignedParagraphContent = paragraphContent.map(content => ({
+      const alignedParagraphContent = paragraphContent.map((content) => ({
         ...content,
         style: {
           ...content.style,
-          ...(paragraphAlign && { textAlign: paragraphAlign })
-        }
+          ...(paragraphAlign && { textAlign: paragraphAlign }),
+        },
       }));
 
       processedParagraphs.push(alignedParagraphContent);
@@ -1466,13 +1471,16 @@ export class ShapeProcessor implements IElementProcessor<ShapeElement> {
     let html: string;
     if (this.lastProcessedParagraphs.length > 0) {
       // Generate HTML with proper paragraph structure
-      html = HtmlConverter.convertParagraphsToHtml(this.lastProcessedParagraphs, {
-        wrapInDiv: false // We'll add our own structure
-      });
+      html = HtmlConverter.convertParagraphsToHtml(
+        this.lastProcessedParagraphs,
+        {
+          wrapInDiv: false, // We'll add our own structure
+        }
+      );
     } else {
       // Fallback to single paragraph
       html = HtmlConverter.convertSingleParagraphToHtml(contentItems, {
-        wrapInDiv: false
+        wrapInDiv: false,
       });
     }
 
@@ -1496,53 +1504,6 @@ export class ShapeProcessor implements IElementProcessor<ShapeElement> {
       defaultFontName: defaultFontName,
       defaultColor: defaultColor,
     };
-  }
-
-  private formatTextContent(contentItems: TextContent[]): string {
-    // Convert text content to HTML format for PPTist
-    let html = "";
-
-    for (const item of contentItems) {
-      let span = "<span";
-      const styles: string[] = [];
-
-      if (item.style) {
-        if (item.style.fontSize) {
-          styles.push(`font-size: ${item.style.fontSize}px`);
-        }
-        if (item.style.color) {
-          styles.push(`color: ${item.style.color}`);
-        }
-        if (item.style.fontFamily) {
-          styles.push(`font-family: '${item.style.fontFamily}'`);
-        }
-        if (item.style.bold) {
-          styles.push("font-weight: bold");
-        }
-        if (item.style.italic) {
-          styles.push("font-style: italic");
-        }
-        if (item.style.underline) {
-          styles.push("text-decoration: underline");
-        }
-        // Don't include textAlign in span styles as it's applied at paragraph level
-      }
-
-      if (styles.length > 0) {
-        span += ` style="${styles.join("; ")}"`;
-      }
-
-      // Add theme color type as data attribute if present
-      if (item.style?.themeColorType) {
-        span += ` data-theme-color="${item.style.themeColorType}"`;
-      }
-
-      span += `>${item.text}</span>`;
-
-      html += span;
-    }
-
-    return html || "";
   }
 
   private mapAlignmentToCSS(algn: string): string {
