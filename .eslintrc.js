@@ -2,6 +2,10 @@ module.exports = {
   extends: ['next/core-web-vitals'],
   parser: '@typescript-eslint/parser',
   plugins: ['@typescript-eslint'],
+  parserOptions: {
+    // Suppress TypeScript version warnings
+    warnOnUnsupportedTypeScriptVersion: false,
+  },
   rules: {
     '@typescript-eslint/no-unused-vars': 'warn',
     '@typescript-eslint/no-explicit-any': 'off',

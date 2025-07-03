@@ -10,6 +10,7 @@ import { ProcessingContext } from "../../interfaces/ProcessingContext";
 import { UnitConverter } from "../../utils/UnitConverter";
 import { Theme } from "../../../models/domain/Theme";
 import { FillExtractor } from "../../utils/FillExtractor";
+import { DebugHelper } from "../../utils/DebugHelper";
 
 export class TextProcessor implements IElementProcessor<TextElement> {
   constructor(private xmlParser: IXmlParseService) {}
@@ -114,7 +115,7 @@ export class TextProcessor implements IElementProcessor<TextElement> {
       if (txBodyNode) {
         const paragraphs = this.xmlParser.findNodes(txBodyNode, "p");
         for (const pNode of paragraphs) {
-          const contentItems = this.extractParagraphContent(pNode, context);
+          const contentItems = this.extractParagraphContent(pNode, context, txBodyNode);
           contentItems.forEach((content) => {
             if (content) {
               finalTextElement.addContent(content);
@@ -131,7 +132,7 @@ export class TextProcessor implements IElementProcessor<TextElement> {
       if (txBodyNode) {
         const paragraphs = this.xmlParser.findNodes(txBodyNode, "p");
         for (const pNode of paragraphs) {
-          const contentItems = this.extractParagraphContent(pNode, context);
+          const contentItems = this.extractParagraphContent(pNode, context, txBodyNode);
           contentItems.forEach((content) => {
             if (content) {
               textElement.addContent(content);
@@ -200,7 +201,8 @@ export class TextProcessor implements IElementProcessor<TextElement> {
 
   private extractParagraphContent(
     pNode: XmlNode,
-    context: ProcessingContext
+    context: ProcessingContext,
+    txBodyNode?: XmlNode
   ): TextContent[] {
     const runs = this.xmlParser.findNodes(pNode, "r");
     if (runs.length === 0) return [];
@@ -215,8 +217,8 @@ export class TextProcessor implements IElementProcessor<TextElement> {
           // Extract run properties for each run
           const rPrNode = this.xmlParser.findNode(rNode, "rPr");
           const style = rPrNode
-            ? this.extractRunStyle(rPrNode, context)
-            : undefined;
+            ? this.extractRunStyle(rPrNode, context, pNode, txBodyNode)
+            : this.extractRunStyle(undefined, context, pNode, txBodyNode);
 
           contentItems.push({
             text: text,
@@ -229,39 +231,50 @@ export class TextProcessor implements IElementProcessor<TextElement> {
     return contentItems;
   }
   private extractRunStyle(
-    rPrNode: XmlNode,
-    context: ProcessingContext
+    rPrNode: XmlNode | undefined,
+    context: ProcessingContext,
+    pNode?: XmlNode,
+    txBodyNode?: XmlNode
   ): TextRunStyle {
     const style: TextRunStyle = {};
 
     // Font size
-    const sz = this.xmlParser.getAttribute(rPrNode, "sz");
+    const sz = rPrNode ? this.xmlParser.getAttribute(rPrNode, "sz") : undefined;
     if (sz) {
       // PowerPoint font size is in hundreds of points, but needs scaling for web display
       // Based on comparison with expected output, applying 1.39 scaling factor
       style.fontSize = style.fontSize = Math.round((parseInt(sz) / 100) * 1.39); // Convert from hundreds of points
     }
 
-    // Bold
-    const b = this.xmlParser.getAttribute(rPrNode, "b");
-    if (b === "1" || b === "true") {
+    // Bold - check run properties first, then inherit from list style
+    const directBold = rPrNode ? this.xmlParser.getAttribute(rPrNode, "b") : undefined;
+    let boldFromRun = directBold === "1" || directBold === "true";
+    let boldFromListStyle = false;
+
+    // If no direct bold setting, check list style inheritance
+    if (!boldFromRun && pNode && txBodyNode) {
+      boldFromListStyle = this.getBoldFromListStyle(pNode, context, txBodyNode);
+    }
+
+    if (boldFromRun || boldFromListStyle) {
       style.bold = true;
+      DebugHelper.log(context, `TextProcessor: Bold applied - direct: ${boldFromRun}, inherited: ${boldFromListStyle}`, "info");
     }
 
     // Italic
-    const i = this.xmlParser.getAttribute(rPrNode, "i");
+    const i = rPrNode ? this.xmlParser.getAttribute(rPrNode, "i") : undefined;
     if (i === "1" || i === "true") {
       style.italic = true;
     }
 
     // Underline
-    const u = this.xmlParser.getAttribute(rPrNode, "u");
+    const u = rPrNode ? this.xmlParser.getAttribute(rPrNode, "u") : undefined;
     if (u && u !== "none") {
       style.underline = true;
     }
 
     // Color
-    const solidFillNode = this.xmlParser.findNode(rPrNode, "solidFill");
+    const solidFillNode = rPrNode ? this.xmlParser.findNode(rPrNode, "solidFill") : undefined;
     if (solidFillNode) {
       // Convert solidFillNode to plain object for FillExtractor
       const solidFillObj = this.xmlNodeToObject(solidFillNode);
@@ -298,7 +311,7 @@ export class TextProcessor implements IElementProcessor<TextElement> {
     }
 
     // Font family
-    const latinNode = this.xmlParser.findNode(rPrNode, "latin");
+    const latinNode = rPrNode ? this.xmlParser.findNode(rPrNode, "latin") : undefined;
     if (latinNode) {
       const typeface = this.xmlParser.getAttribute(latinNode, "typeface");
       if (typeface) {
@@ -455,5 +468,62 @@ export class TextProcessor implements IElementProcessor<TextElement> {
         },
       },
     };
+  }
+
+  /**
+   * Extract bold property from list style inheritance
+   * Follows PowerPoint's priority: direct text properties > list style properties
+   */
+  private getBoldFromListStyle(pNode: XmlNode, context: ProcessingContext, txBodyNode: XmlNode): boolean {
+    try {
+      // Get paragraph properties
+      const pPrNode = this.xmlParser.findNode(pNode, "pPr");
+      if (!pPrNode) {
+        DebugHelper.log(context, "TextProcessor: No paragraph properties found", "info");
+        return false;
+      }
+
+      // Check if there's a list style reference in the paragraph
+      // PowerPoint uses lvl attribute to specify list level
+      const lvl = this.xmlParser.getAttribute(pPrNode, "lvl");
+      const listLevel = lvl ? parseInt(lvl) + 1 : 1; // Convert 0-based to 1-based
+
+      DebugHelper.log(context, `TextProcessor: Checking list style inheritance for level ${listLevel}`, "info");
+
+      // Look for list style in the provided txBody
+      const lstStyleNode = this.xmlParser.findNode(txBodyNode, "lstStyle");
+      if (!lstStyleNode) {
+        DebugHelper.log(context, "TextProcessor: No list style found", "info");
+        return false;
+      }
+
+      // Find the specific level style (lvl1pPr, lvl2pPr, etc.)
+      const levelStyleName = `lvl${listLevel}pPr`;
+      const levelStyleNode = this.xmlParser.findNode(lstStyleNode, levelStyleName);
+      
+      if (!levelStyleNode) {
+        DebugHelper.log(context, `TextProcessor: No style found for level ${levelStyleName}`, "info");
+        return false;
+      }
+
+      // Check for default run properties in the level style
+      const defRPrNode = this.xmlParser.findNode(levelStyleNode, "defRPr");
+      if (!defRPrNode) {
+        DebugHelper.log(context, `TextProcessor: No defRPr found in ${levelStyleName}`, "info");
+        return false;
+      }
+
+      // Check for bold attribute in the default run properties
+      const boldAttr = this.xmlParser.getAttribute(defRPrNode, "b");
+      const isBold = boldAttr === "1" || boldAttr === "true";
+      
+      DebugHelper.log(context, `TextProcessor: List style ${levelStyleName} bold="${boldAttr}" -> ${isBold}`, "info");
+      
+      return isBold;
+
+    } catch (error) {
+      DebugHelper.log(context, `TextProcessor: Error extracting list style bold: ${error}`, "warn");
+      return false;
+    }
   }
 }

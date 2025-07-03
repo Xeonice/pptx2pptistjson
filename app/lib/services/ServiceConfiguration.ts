@@ -50,10 +50,10 @@ export function configureServices(container: ServiceContainer): void {
     
     // Image processor has highest priority
     slideParser.registerElementProcessor(imageProcessor);
-    // Connection shape processor handles p:cxnSp nodes
-    slideParser.registerElementProcessor(connectionShapeProcessor);
-    // Line processor handles connection lines
+    // Line processor handles simple lines (including line and straightConnector1)
     slideParser.registerElementProcessor(lineProcessor);
+    // Connection shape processor handles other p:cxnSp nodes (bent/curved connectors, arrows)
+    slideParser.registerElementProcessor(connectionShapeProcessor);
     // Text processor handles text boxes (txBox="1") and pure text elements
     slideParser.registerElementProcessor(textProcessor);
     // Shape processor handles shapes with or without text (complete shape elements)

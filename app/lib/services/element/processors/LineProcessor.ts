@@ -5,6 +5,7 @@ import { IXmlParseService } from "../../interfaces/IXmlParseService";
 import { ProcessingContext } from "../../interfaces/ProcessingContext";
 import { UnitConverter } from "../../utils/UnitConverter";
 import { ColorUtils } from "../../utils/ColorUtils";
+import { DebugHelper } from "../../utils/DebugHelper";
 
 export class LineElement extends Element {
   private points: { x: number; y: number }[] = [];
@@ -13,6 +14,7 @@ export class LineElement extends Element {
   private strokeStyle: "solid" | "dashed" | "dotted" = "solid";
   private startArrow: string = "";
   private endArrow: string = "";
+  private flip?: { horizontal: boolean; vertical: boolean };
 
   constructor(id: string) {
     super(id, "line");
@@ -43,26 +45,32 @@ export class LineElement extends Element {
     this.endArrow = end;
   }
 
+  setFlip(flip: { horizontal: boolean; vertical: boolean }): void {
+    this.flip = flip;
+  }
+
+  getFlip(): { horizontal: boolean; vertical: boolean } | undefined {
+    return this.flip;
+  }
+
   toJSON(): any {
     const position = this.getPosition();
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const size = this.getSize();
-    
+
     // Calculate relative start and end points from absolute position
     const startPoint = this.points[0] || { x: 0, y: 0 };
     const endPoint = this.points[1] || { x: 0, y: 0 };
-    
+
     const relativeStart = [
       startPoint.x - (position?.x || 0),
-      startPoint.y - (position?.y || 0)
-    ];
-    
-    const relativeEnd = [
-      endPoint.x - (position?.x || 0), 
-      endPoint.y - (position?.y || 0)
+      startPoint.y - (position?.y || 0),
     ];
 
-    return {
+    const relativeEnd = [
+      endPoint.x - (position?.x || 0),
+      endPoint.y - (position?.y || 0),
+    ];
+
+    const result = {
       type: this.type,
       id: this.id,
       width: this.strokeWidth,
@@ -73,10 +81,17 @@ export class LineElement extends Element {
       style: this.strokeStyle,
       color: this.strokeColor,
       themeColor: {
-        color: this.strokeColor
+        color: this.strokeColor,
       },
-      points: [this.startArrow, this.endArrow]
+      points: [this.startArrow, this.endArrow],
     };
+
+    // Debug output only when debug is enabled (checked outside)
+    if (typeof globalThis !== 'undefined' && (globalThis as any).debugContext) {
+      console.log(`LineElement ${this.id} toJSON:`, JSON.stringify(result, null, 2));
+    }
+
+    return result;
   }
 }
 
@@ -85,12 +100,21 @@ export class LineProcessor implements IElementProcessor<LineElement> {
 
   canProcess(xmlNode: XmlNode): boolean {
     // Process connection shapes (lines) - both cxnSp and sp with line geometry
-    if (xmlNode.name.endsWith("cxnSp")) {
-      return true;
+    if (xmlNode.name === "p:cxnSp") {
+      const spPrNode = this.xmlParser.findNode(xmlNode, "spPr");
+      if (spPrNode) {
+        const prstGeomNode = this.xmlParser.findNode(spPrNode, "prstGeom");
+        if (prstGeomNode) {
+          const prst = this.xmlParser.getAttribute(prstGeomNode, "prst");
+          // Only process line and straightConnector1 as lines
+          return prst === "line" || prst === "straightConnector1";
+        }
+      }
+      return false;
     }
-    
+
     // Also process regular shapes that are actually lines (prstGeom prst="line")
-    if (xmlNode.name.endsWith("sp")) {
+    if (xmlNode.name === "p:sp") {
       const spPrNode = this.xmlParser.findNode(xmlNode, "spPr");
       if (spPrNode) {
         const prstGeomNode = this.xmlParser.findNode(spPrNode, "prstGeom");
@@ -100,7 +124,7 @@ export class LineProcessor implements IElementProcessor<LineElement> {
         }
       }
     }
-    
+
     return false;
   }
 
@@ -110,7 +134,7 @@ export class LineProcessor implements IElementProcessor<LineElement> {
   ): Promise<LineElement> {
     // Extract ID - handle both cxnSp and sp elements
     let originalId: string | undefined;
-    
+
     if (xmlNode.name.endsWith("cxnSp")) {
       // Connection shape
       const nvCxnSpPrNode = this.xmlParser.findNode(xmlNode, "nvCxnSpPr");
@@ -134,6 +158,8 @@ export class LineProcessor implements IElementProcessor<LineElement> {
     // Generate unique ID
     const id = context.idGenerator.generateUniqueId(originalId, "line");
     const lineElement = new LineElement(id);
+    
+    DebugHelper.log(context, `LineProcessor: Processing line element with ID ${originalId} -> ${id}`, "info");
 
     // Extract position and size
     const spPrNode = this.xmlParser.findNode(xmlNode, "spPr");
@@ -146,10 +172,10 @@ export class LineProcessor implements IElementProcessor<LineElement> {
           const x = this.xmlParser.getAttribute(offNode, "x");
           const y = this.xmlParser.getAttribute(offNode, "y");
           if (x && y) {
-            lineElement.setPosition({
-              x: UnitConverter.emuToPoints(parseInt(x)),
-              y: UnitConverter.emuToPoints(parseInt(y)),
-            });
+            const posX = UnitConverter.emuToPoints(parseInt(x));
+            const posY = UnitConverter.emuToPoints(parseInt(y));
+            lineElement.setPosition({ x: posX, y: posY });
+            DebugHelper.log(context, `LineProcessor ${id}: Position - x: ${x} EMU (${posX} pt), y: ${y} EMU (${posY} pt)`, "info");
           }
         }
 
@@ -159,11 +185,19 @@ export class LineProcessor implements IElementProcessor<LineElement> {
           const cx = this.xmlParser.getAttribute(extNode, "cx");
           const cy = this.xmlParser.getAttribute(extNode, "cy");
           if (cx && cy) {
-            lineElement.setSize({
-              width: UnitConverter.emuToPoints(parseInt(cx)),
-              height: UnitConverter.emuToPoints(parseInt(cy)),
-            });
+            const width = UnitConverter.emuToPoints(parseInt(cx));
+            const height = UnitConverter.emuToPoints(parseInt(cy));
+            lineElement.setSize({ width, height });
+            DebugHelper.log(context, `LineProcessor ${id}: Size - cx: ${cx} EMU (${width} pt), cy: ${cy} EMU (${height} pt)`, "info");
           }
+        }
+
+        // Flip attributes
+        const flipH = this.xmlParser.getAttribute(xfrmNode, "flipH") === "1";
+        const flipV = this.xmlParser.getAttribute(xfrmNode, "flipV") === "1";
+        if (flipH || flipV) {
+          lineElement.setFlip({ horizontal: flipH, vertical: flipV });
+          DebugHelper.log(context, `LineProcessor ${id}: Flip - horizontal: ${flipH}, vertical: ${flipV}`, "info");
         }
       }
 
@@ -173,7 +207,9 @@ export class LineProcessor implements IElementProcessor<LineElement> {
         // Line width
         const w = this.xmlParser.getAttribute(lnNode, "w");
         if (w) {
-          lineElement.setStrokeWidth(UnitConverter.emuToPoints(parseInt(w)));
+          const strokeWidth = UnitConverter.emuToPoints(parseInt(w));
+          lineElement.setStrokeWidth(strokeWidth);
+          DebugHelper.log(context, `LineProcessor ${id}: Stroke width - ${w} EMU (${strokeWidth} pt)`, "info");
         }
 
         // Line color
@@ -182,6 +218,7 @@ export class LineProcessor implements IElementProcessor<LineElement> {
           const color = this.extractColor(solidFillNode, context);
           if (color) {
             lineElement.setStrokeColor(color);
+            DebugHelper.log(context, `LineProcessor ${id}: Stroke color - ${color}`, "info");
           }
         }
 
@@ -191,15 +228,17 @@ export class LineProcessor implements IElementProcessor<LineElement> {
           const val = this.xmlParser.getAttribute(prstDashNode, "val");
           if (val === "dash" || val === "dashDot") {
             lineElement.setStrokeStyle("dashed");
+            DebugHelper.log(context, `LineProcessor ${id}: Line style - dashed (${val})`, "info");
           } else if (val === "dot" || val === "sysDot") {
             lineElement.setStrokeStyle("dotted");
+            DebugHelper.log(context, `LineProcessor ${id}: Line style - dotted (${val})`, "info");
           }
         }
 
         // Arrow endpoints
         let startArrow = "";
         let endArrow = "";
-        
+
         const headEndNode = this.xmlParser.findNode(lnNode, "headEnd");
         if (headEndNode) {
           const type = this.xmlParser.getAttribute(headEndNode, "type");
@@ -207,7 +246,7 @@ export class LineProcessor implements IElementProcessor<LineElement> {
             startArrow = type === "triangle" ? "arrow" : type;
           }
         }
-        
+
         const tailEndNode = this.xmlParser.findNode(lnNode, "tailEnd");
         if (tailEndNode) {
           const type = this.xmlParser.getAttribute(tailEndNode, "type");
@@ -215,8 +254,11 @@ export class LineProcessor implements IElementProcessor<LineElement> {
             endArrow = type === "triangle" ? "arrow" : type;
           }
         }
-        
+
         lineElement.setArrows(startArrow, endArrow);
+        if (startArrow || endArrow) {
+          DebugHelper.log(context, `LineProcessor ${id}: Arrows - start: "${startArrow}", end: "${endArrow}"`, "info");
+        }
       }
     }
 
@@ -224,12 +266,46 @@ export class LineProcessor implements IElementProcessor<LineElement> {
     const position = lineElement.getPosition();
     const size = lineElement.getSize();
     if (position && size) {
-      const startPoint = { x: position.x, y: position.y };
-      const endPoint = { 
-        x: position.x + size.width, 
-        y: position.y + size.height 
+      // In PowerPoint, a line is defined by its bounding box
+      // The actual line endpoints are at the corners of this box
+      // We need to determine which corners based on the flip attributes or line direction
+
+      // Default: line goes from top-left to bottom-right
+      let startPoint = { x: position.x, y: position.y };
+      let endPoint = {
+        x: position.x + size.width,
+        y: position.y + size.height,
       };
+
+      // Check for flip attributes to determine actual line direction
+      const flipH = lineElement.getFlip()?.horizontal || false;
+      const flipV = lineElement.getFlip()?.vertical || false;
+
+      if (flipH && !flipV) {
+        // Horizontal flip: line goes from top-right to bottom-left
+        startPoint = { x: position.x + size.width, y: position.y };
+        endPoint = { x: position.x, y: position.y + size.height };
+      } else if (!flipH && flipV) {
+        // Vertical flip: line goes from bottom-left to top-right
+        startPoint = { x: position.x, y: position.y + size.height };
+        endPoint = { x: position.x + size.width, y: position.y };
+      } else if (flipH && flipV) {
+        // Both flips: line goes from bottom-right to top-left
+        startPoint = {
+          x: position.x + size.width,
+          y: position.y + size.height,
+        };
+        endPoint = { x: position.x, y: position.y };
+      }
+
       lineElement.setPoints([startPoint, endPoint]);
+      
+      // Debug: Log calculated points
+      DebugHelper.log(context, `LineProcessor ${id}: Calculated points:`, "info");
+      DebugHelper.log(context, `  Start point (absolute): x=${startPoint.x}, y=${startPoint.y}`, "info");
+      DebugHelper.log(context, `  End point (absolute): x=${endPoint.x}, y=${endPoint.y}`, "info");
+      DebugHelper.log(context, `  Start (relative to position): [${startPoint.x - position.x}, ${startPoint.y - position.y}]`, "info");
+      DebugHelper.log(context, `  End (relative to position): [${endPoint.x - position.x}, ${endPoint.y - position.y}]`, "info");
     }
 
     return lineElement;
@@ -239,7 +315,10 @@ export class LineProcessor implements IElementProcessor<LineElement> {
     return "line";
   }
 
-  private extractColor(fillNode: XmlNode, context: ProcessingContext): string | undefined {
+  private extractColor(
+    fillNode: XmlNode,
+    context: ProcessingContext
+  ): string | undefined {
     // Check for srgbClr
     const srgbNode = this.xmlParser.findNode(fillNode, "srgbClr");
     if (srgbNode) {

@@ -37,11 +37,77 @@ describe('ConnectionShapeProcessor', () => {
   });
 
   describe('canProcess', () => {
-    it('should return true for p:cxnSp nodes', () => {
+    it('should return true for p:cxnSp nodes without line geometry', () => {
       const node: XmlNode = {
         name: 'p:cxnSp',
         attributes: {},
         children: []
+      };
+
+      expect(processor.canProcess(node)).toBe(true);
+    });
+
+    it('should return false for p:cxnSp nodes with line geometry', () => {
+      const node: XmlNode = {
+        name: 'p:cxnSp',
+        attributes: {},
+        children: [
+          {
+            name: 'spPr',
+            attributes: {},
+            children: [
+              {
+                name: 'a:prstGeom',
+                attributes: { prst: 'line' },
+                children: []
+              }
+            ]
+          }
+        ]
+      };
+
+      expect(processor.canProcess(node)).toBe(false);
+    });
+
+    it('should return false for p:cxnSp nodes with straightConnector1 geometry', () => {
+      const node: XmlNode = {
+        name: 'p:cxnSp',
+        attributes: {},
+        children: [
+          {
+            name: 'spPr',
+            attributes: {},
+            children: [
+              {
+                name: 'a:prstGeom',
+                attributes: { prst: 'straightConnector1' },
+                children: []
+              }
+            ]
+          }
+        ]
+      };
+
+      expect(processor.canProcess(node)).toBe(false);
+    });
+
+    it('should return true for p:cxnSp nodes with bent connectors', () => {
+      const node: XmlNode = {
+        name: 'p:cxnSp',
+        attributes: {},
+        children: [
+          {
+            name: 'spPr',
+            attributes: {},
+            children: [
+              {
+                name: 'a:prstGeom',
+                attributes: { prst: 'bentConnector2' },
+                children: []
+              }
+            ]
+          }
+        ]
       };
 
       expect(processor.canProcess(node)).toBe(true);
@@ -82,7 +148,7 @@ describe('ConnectionShapeProcessor', () => {
             ]
           },
           {
-            name: 'p:spPr',
+            name: 'spPr',
             attributes: {},
             children: [
               {
@@ -162,7 +228,7 @@ describe('ConnectionShapeProcessor', () => {
             ]
           },
           {
-            name: 'p:spPr',
+            name: 'spPr',
             attributes: {},
             children: [
               {
@@ -215,7 +281,7 @@ describe('ConnectionShapeProcessor', () => {
             ]
           },
           {
-            name: 'p:spPr',
+            name: 'spPr',
             attributes: {},
             children: [
               {
@@ -288,7 +354,7 @@ describe('ConnectionShapeProcessor', () => {
             ]
           },
           {
-            name: 'p:spPr',
+            name: 'spPr',
             attributes: {},
             children: [
               {
@@ -340,7 +406,7 @@ describe('ConnectionShapeProcessor', () => {
             ]
           },
           {
-            name: 'p:spPr',
+            name: 'spPr',
             attributes: {},
             children: [
               {
@@ -377,7 +443,7 @@ describe('ConnectionShapeProcessor', () => {
         attributes: {},
         children: [
           {
-            name: 'p:spPr',
+            name: 'spPr',
             attributes: {},
             children: [
               {
@@ -413,7 +479,7 @@ describe('ConnectionShapeProcessor', () => {
             ]
           },
           {
-            name: 'p:spPr',
+            name: 'spPr',
             attributes: {},
             children: [
               {
@@ -452,18 +518,27 @@ describe('ConnectionShapeProcessor', () => {
   });
 
   describe('geometry mapping', () => {
-    it('should map various connection geometries correctly', () => {
+    it('should map various connection geometries correctly', async () => {
       const testCases = [
-        { prst: 'line', expected: 'line' },
-        { prst: 'straightConnector1', expected: 'line' },
+        // line and straightConnector1 are now handled by LineProcessor
         { prst: 'bentConnector2', expected: 'bentConnector' },
+        { prst: 'bentConnector3', expected: 'bentConnector' },
+        { prst: 'bentConnector4', expected: 'bentConnector' },
+        { prst: 'bentConnector5', expected: 'bentConnector' },
+        { prst: 'curvedConnector2', expected: 'curvedConnector' },
         { prst: 'curvedConnector3', expected: 'curvedConnector' },
+        { prst: 'curvedConnector4', expected: 'curvedConnector' },
+        { prst: 'curvedConnector5', expected: 'curvedConnector' },
         { prst: 'rightArrow', expected: 'arrow' },
+        { prst: 'leftArrow', expected: 'arrow' },
+        { prst: 'upArrow', expected: 'arrow' },
+        { prst: 'downArrow', expected: 'arrow' },
         { prst: 'leftRightArrow', expected: 'doubleArrow' },
+        { prst: 'upDownArrow', expected: 'doubleArrow' },
         { prst: 'unknownShape', expected: 'line' } // fallback
       ];
 
-      testCases.forEach(({ prst, expected }) => {
+      for (const { prst, expected } of testCases) {
         // We need to access the private method indirectly through processing
         const node: XmlNode = {
           name: 'p:cxnSp',
@@ -481,7 +556,7 @@ describe('ConnectionShapeProcessor', () => {
               ]
             },
             {
-              name: 'p:spPr',
+              name: 'spPr',
               attributes: {},
               children: [
                 {
@@ -494,10 +569,9 @@ describe('ConnectionShapeProcessor', () => {
           ]
         };
 
-        processor.process(node, context).then(result => {
-          expect(result.getShapeType()).toBe(expected);
-        });
-      });
+        const result = await processor.process(node, context);
+        expect(result.getShapeType()).toBe(expected);
+      }
     });
   });
 });
