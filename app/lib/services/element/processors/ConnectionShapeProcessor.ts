@@ -9,6 +9,8 @@ import { IXmlParseService } from "../../interfaces/IXmlParseService";
 import { UnitConverter } from "../../utils/UnitConverter";
 import { FillExtractor } from "../../utils/FillExtractor";
 import { DebugHelper } from "../../utils/DebugHelper";
+import { TextStyleExtractor } from "../../text/TextStyleExtractor";
+import { TextContent } from "../../../models/domain/elements/TextElement";
 
 /**
  * Processor for PowerPoint connection shapes (p:cxnSp)
@@ -17,7 +19,11 @@ import { DebugHelper } from "../../utils/DebugHelper";
 export class ConnectionShapeProcessor
   implements IElementProcessor<ShapeElement>
 {
-  constructor(private xmlParser: IXmlParseService) {}
+  private textStyleExtractor: TextStyleExtractor;
+
+  constructor(private xmlParser: IXmlParseService) {
+    this.textStyleExtractor = new TextStyleExtractor(xmlParser);
+  }
 
   canProcess(xmlNode: XmlNode): boolean {
     // Process connection shape nodes, but not simple lines
@@ -167,9 +173,15 @@ export class ConnectionShapeProcessor
     }
 
     // Connection shapes typically don't have text content, but check anyway
-    const textContent = this.extractTextContent(xmlNode);
-    if (textContent) {
-      shapeElement.setTextContent(textContent);
+    const styledTextContent = this.extractTextContent(xmlNode, context);
+    if (styledTextContent && styledTextContent.length > 0) {
+      // Set simple text content for backward compatibility
+      const simpleText = styledTextContent.map(item => item.text).join("").trim();
+      shapeElement.setTextContent(simpleText);
+
+      // Also set styled text content for rich formatting support
+      const shapeTextContent = this.createShapeTextContent(styledTextContent);
+      shapeElement.setShapeTextContent(shapeTextContent);
     }
 
     // Extract connection start and end points (specific to connection shapes)
@@ -393,26 +405,109 @@ export class ConnectionShapeProcessor
     return `M 0 ${height / 2} L ${width} ${height / 2}`;
   }
 
-  private extractTextContent(xmlNode: XmlNode): string | undefined {
+  /**
+   * Extract text content with full style support (bold, italic, underline, etc.)
+   * Uses the shared TextStyleExtractor for consistency across processors
+   */
+  private extractTextContent(xmlNode: XmlNode, context: ProcessingContext): TextContent[] | undefined {
     const txBodyNode = this.xmlParser.findNode(xmlNode, "p:txBody");
     if (!txBodyNode) return undefined;
 
-    // Connection shapes rarely have text, but if they do, extract it
+    // Connection shapes rarely have text, but if they do, extract it with full styling
     const paragraphs = this.xmlParser.findNodes(txBodyNode, "p");
-    let textContent = "";
+    const allTextContent: TextContent[] = [];
 
     for (const pNode of paragraphs) {
-      const runs = this.xmlParser.findNodes(pNode, "r");
-      for (const rNode of runs) {
-        const tNode = this.xmlParser.findNode(rNode, "t");
-        if (tNode) {
-          textContent += this.xmlParser.getTextContent(tNode);
-        }
+      // Use shared text style extractor for consistent styling
+      const paragraphContent = this.textStyleExtractor.extractParagraphContent(
+        pNode,
+        context,
+        txBodyNode
+      );
+
+      // Add paragraph content to the overall text content
+      allTextContent.push(...paragraphContent);
+      
+      // Add line break between paragraphs (except for the last one)
+      if (pNode !== paragraphs[paragraphs.length - 1]) {
+        allTextContent.push({
+          text: "\n",
+          style: {}
+        });
       }
-      textContent += "\n";
     }
 
-    return textContent.trim() || undefined;
+    return allTextContent.length > 0 ? allTextContent : undefined;
+  }
+
+  /**
+   * Create shape text content in PPTist format for connection shapes
+   * Similar to ShapeProcessor but simplified for connection shape text
+   */
+  private createShapeTextContent(contentItems: TextContent[]): any {
+    // Format text content to HTML for PPTist
+    const html = this.formatTextContent(contentItems);
+
+    // Connection shapes typically use middle alignment
+    const align = "middle";
+
+    // Get default font and color from first content item
+    const defaultFontName = contentItems[0]?.style?.fontFamily || "Corbel";
+    const defaultColor = contentItems[0]?.style?.color || "#000000";
+
+    return {
+      content: `<p>${html}</p>`,
+      align: align,
+      defaultFontName: defaultFontName,
+      defaultColor: defaultColor,
+    };
+  }
+
+  /**
+   * Format text content items into HTML string with styles
+   */
+  private formatTextContent(contentItems: TextContent[]): string {
+    let html = "";
+
+    for (const item of contentItems) {
+      let span = "<span";
+      const styles: string[] = [];
+
+      if (item.style) {
+        if (item.style.fontSize) {
+          styles.push(`font-size: ${item.style.fontSize}px`);
+        }
+        if (item.style.color) {
+          styles.push(`color: ${item.style.color}`);
+        }
+        if (item.style.fontFamily) {
+          styles.push(`font-family: '${item.style.fontFamily}'`);
+        }
+        if (item.style.bold) {
+          styles.push("font-weight: bold");
+        }
+        if (item.style.italic) {
+          styles.push("font-style: italic");
+        }
+        if (item.style.underline) {
+          styles.push("text-decoration: underline");
+        }
+      }
+
+      if (styles.length > 0) {
+        span += ` style="${styles.join("; ")}"`;
+      }
+
+      // Add theme color type as data attribute if present
+      if (item.style?.themeColorType) {
+        span += ` data-theme-color="${item.style.themeColorType}"`;
+      }
+
+      span += `>${item.text}</span>`;
+      html += span;
+    }
+
+    return html || "";
   }
 
   private extractConnectionInfo(xmlNode: XmlNode): any {

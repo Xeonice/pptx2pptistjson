@@ -16,9 +16,14 @@ import {
 } from "../../../utils";
 import { TextContent } from "../../../models/domain/elements/TextElement";
 import { DebugHelper } from "../../utils/DebugHelper";
+import { TextStyleExtractor } from "../../text/TextStyleExtractor";
 
 export class ShapeProcessor implements IElementProcessor<ShapeElement> {
-  constructor(private xmlParser: IXmlParseService) {}
+  private textStyleExtractor: TextStyleExtractor;
+
+  constructor(private xmlParser: IXmlParseService) {
+    this.textStyleExtractor = new TextStyleExtractor(xmlParser);
+  }
 
   canProcess(xmlNode: XmlNode): boolean {
     // Skip if it's explicitly a text box
@@ -265,10 +270,14 @@ export class ShapeProcessor implements IElementProcessor<ShapeElement> {
       }
     }
 
+    // Extract style node for text style inheritance
+    const styleNode = this.xmlParser.findNode(xmlNode, "style");
+
     // Extract text content if present
     const txBodyNode = this.xmlParser.findNode(xmlNode, "txBody");
     if (txBodyNode) {
-      const textContent = this.extractTextContent(txBodyNode, context);
+      // Pass shape style for inheritance
+      const textContent = this.extractTextContentUsingSharedLogic(txBodyNode, context, styleNode);
       if (textContent && textContent.length > 0) {
         // Create shape text content in PPTist format
         const shapeTextContent = this.createShapeTextContent(
@@ -1389,186 +1398,51 @@ export class ShapeProcessor implements IElementProcessor<ShapeElement> {
     return adjustmentValues;
   }
 
-  private extractTextContent(
+  /**
+   * Extract text content using shared TextStyleExtractor logic
+   * This ensures consistency between TextProcessor and ShapeProcessor
+   */
+  private extractTextContentUsingSharedLogic(
     txBodyNode: XmlNode,
-    context: ProcessingContext
+    context: ProcessingContext,
+    shapeStyleNode?: XmlNode
   ): TextContent[] {
     const contentItems: TextContent[] = [];
     const paragraphs = this.xmlParser.findNodes(txBodyNode, "p");
 
-    // Extract list style from txBody
-    const lstStyleNode = this.xmlParser.findNode(txBodyNode, "lstStyle");
-    console.log(`[TextExtract Debug] List style node found: ${!!lstStyleNode}`);
-
     for (const pNode of paragraphs) {
-      // Extract paragraph properties
+      // Extract paragraph properties for alignment
       const pPrNode = this.xmlParser.findNode(pNode, "pPr");
       let paragraphAlign = undefined;
-      let paragraphLevel = 0; // Default to level 0
-
-      console.log(
-        `[TextExtract Debug] Processing paragraph, pPr node found: ${!!pPrNode}`
-      );
 
       if (pPrNode) {
         const algn = this.xmlParser.getAttribute(pPrNode, "algn");
         if (algn) {
           paragraphAlign = this.mapAlignmentToCSS(algn);
-          console.log(
-            `[TextExtract Debug] Paragraph alignment: ${algn} → ${paragraphAlign}`
-          );
         }
-
-        // Extract paragraph level (lvl attribute)
-        const lvl = this.xmlParser.getAttribute(pPrNode, "lvl");
-        if (lvl) {
-          paragraphLevel = parseInt(lvl);
-          console.log(
-            `[TextExtract Debug] Paragraph level found: lvl="${lvl}" → ${paragraphLevel}`
-          );
-        } else {
-          console.log(
-            `[TextExtract Debug] No 'lvl' attribute found, using default level 0`
-          );
-        }
-      } else {
-        console.log(
-          `[TextExtract Debug] No paragraph properties, using defaults`
-        );
       }
 
-      const runs = this.xmlParser.findNodes(pNode, "r");
+      // Use shared text style extractor for consistent styling
+      const paragraphContent = this.textStyleExtractor.extractParagraphContent(
+        pNode,
+        context,
+        txBodyNode,
+        shapeStyleNode
+      );
 
-      for (const rNode of runs) {
-        const tNode = this.xmlParser.findNode(rNode, "t");
-        if (tNode) {
-          const text = this.xmlParser.getTextContent(tNode);
-          if (text.trim()) {
-            // Extract run properties with font size priority logic
-            const rPrNode = this.xmlParser.findNode(rNode, "rPr");
-            const style = this.extractRunStyleWithFontSize(
-              rPrNode,
-              lstStyleNode,
-              paragraphLevel,
-              context
-            );
-
-            // Apply paragraph alignment to style if present
-            if (paragraphAlign) {
-              style.textAlign = paragraphAlign;
-            }
-
-            contentItems.push({
-              text: text,
-              style: style,
-            });
-          }
+      // Apply paragraph alignment to each content item if present
+      for (const content of paragraphContent) {
+        if (paragraphAlign) {
+          content.style.textAlign = paragraphAlign;
         }
+        contentItems.push(content);
       }
     }
 
     return contentItems;
   }
 
-  private extractRunStyleWithFontSize(
-    rPrNode: XmlNode | undefined,
-    lstStyleNode: XmlNode | undefined,
-    paragraphLevel: number,
-    context: ProcessingContext
-  ): any {
-    const style: any = {};
 
-    // Apply font size with priority logic
-    const fontSize = this.getFontSizeWithPriority(
-      rPrNode,
-      lstStyleNode,
-      paragraphLevel
-    );
-    if (fontSize) {
-      style.fontSize = fontSize;
-    }
-
-    // Extract other run properties if rPrNode exists
-    if (rPrNode) {
-      // Bold
-      const b = this.xmlParser.getAttribute(rPrNode, "b");
-      if (b === "1" || b === "true") {
-        style.bold = true;
-      }
-
-      // Italic
-      const i = this.xmlParser.getAttribute(rPrNode, "i");
-      if (i === "1" || i === "true") {
-        style.italic = true;
-      }
-
-      // Color
-      const solidFillNode = this.xmlParser.findNode(rPrNode, "solidFill");
-      if (solidFillNode) {
-        const solidFillObj = this.xmlNodeToObject(solidFillNode);
-        const warpObj = {
-          themeContent: context.theme
-            ? this.createThemeContent(context.theme)
-            : undefined,
-        };
-        const color = FillExtractor.getSolidFill(
-          solidFillObj,
-          undefined,
-          undefined,
-          warpObj
-        );
-        if (color) {
-          style.color = color;
-        }
-      }
-    }
-
-    return style;
-  }
-
-  private extractRunStyle(rPrNode: XmlNode, context: ProcessingContext): any {
-    const style: any = {};
-
-    // Font size
-    const sz = this.xmlParser.getAttribute(rPrNode, "sz");
-    if (sz) {
-      style.fontSize = Math.round((parseInt(sz) / 100) * 1.39);
-    }
-
-    // Bold
-    const b = this.xmlParser.getAttribute(rPrNode, "b");
-    if (b === "1" || b === "true") {
-      style.bold = true;
-    }
-
-    // Italic
-    const i = this.xmlParser.getAttribute(rPrNode, "i");
-    if (i === "1" || i === "true") {
-      style.italic = true;
-    }
-
-    // Color
-    const solidFillNode = this.xmlParser.findNode(rPrNode, "solidFill");
-    if (solidFillNode) {
-      const solidFillObj = this.xmlNodeToObject(solidFillNode);
-      const warpObj = {
-        themeContent: context.theme
-          ? this.createThemeContent(context.theme)
-          : undefined,
-      };
-      const color = FillExtractor.getSolidFill(
-        solidFillObj,
-        undefined,
-        undefined,
-        warpObj
-      );
-      if (color) {
-        style.color = color;
-      }
-    }
-
-    return style;
-  }
 
   private createShapeTextContent(
     contentItems: TextContent[],
@@ -1635,12 +1509,21 @@ export class ShapeProcessor implements IElementProcessor<ShapeElement> {
         if (item.style.italic) {
           styles.push("font-style: italic");
         }
+        if (item.style.underline) {
+          styles.push("text-decoration: underline");
+        }
         // Don't include textAlign in span styles as it's applied at paragraph level
       }
 
       if (styles.length > 0) {
         span += ` style="${styles.join("; ")}"`;
       }
+      
+      // Add theme color type as data attribute if present
+      if (item.style?.themeColorType) {
+        span += ` data-theme-color="${item.style.themeColorType}"`;
+      }
+      
       span += `>${item.text}</span>`;
 
       html += span;
@@ -1842,6 +1725,11 @@ export class ShapeProcessor implements IElementProcessor<ShapeElement> {
     );
     return undefined;
   }
+
+  /**
+   * Extract bold setting from list style based on paragraph level
+   * Similar to TextProcessor's getBoldFromListStyle method
+   */
 
   /**
    * Get the range of an SVG path to determine viewBox
