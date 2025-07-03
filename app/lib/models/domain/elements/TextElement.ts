@@ -95,7 +95,14 @@ export class TextElement extends Element {
 
   private getLineHeight(): number | undefined {
     const lineHeight = this.textStyle?.lineHeight;
-    return lineHeight ?? 1;
+    
+    // Only include lineHeight in output if it's not PowerPoint's default value of 1.15
+    // 允许小的浮点数误差（±0.01）
+    if (lineHeight && Math.abs(lineHeight - 1.15) > 0.01) {
+      return lineHeight;
+    }
+    
+    return undefined;
   }
 }
 
