@@ -62,11 +62,11 @@ export class Slide {
     return this.transition;
   }
 
-  toJSON(): any {
+  toJSON(backgroundFormat: 'legacy' | 'pptist' = 'legacy'): any {
     return {
       id: this.generateSlideId(),
       elements: this.elements.map(e => e.toJSON()),
-      background: this.convertBackground(),
+      background: this.convertBackground(backgroundFormat),
       remark: this.notes || ""
     };
   }
@@ -81,22 +81,36 @@ export class Slide {
     return result;
   }
   
-  private convertBackground(): any {
+  private convertBackground(backgroundFormat: 'legacy' | 'pptist' = 'legacy'): any {
     if (!this.background) {
-      return {
+      const baseResult = {
         type: "image",
         themeColor: {
           color: "#F4F7FF",
           colorType: "lt1"
-        },
-        image: "https://example.com/background.png",
-        imageSize: "cover"
+        }
       };
+      
+      if (backgroundFormat === 'pptist') {
+        return {
+          ...baseResult,
+          image: {
+            src: "https://example.com/background.png",
+            size: "cover"
+          }
+        };
+      } else {
+        return {
+          ...baseResult,
+          image: "https://example.com/background.png",
+          imageSize: "cover"
+        };
+      }
     }
     
     switch (this.background.type) {
       case 'image':
-        return this.convertImageBackground(this.background);
+        return this.convertImageBackground(this.background, backgroundFormat);
       case 'solid':
         return {
           type: "solid",
@@ -108,7 +122,17 @@ export class Slide {
           colors: this.background.colors || []
         };
       default:
-        return {
+        return backgroundFormat === 'pptist' ? {
+          type: "image",
+          themeColor: {
+            color: "#F4F7FF",
+            colorType: "lt1"
+          },
+          image: {
+            src: "https://example.com/background.png",
+            size: "cover"
+          }
+        } : {
           type: "image",
           themeColor: {
             color: "#F4F7FF",
@@ -120,44 +144,52 @@ export class Slide {
     }
   }
 
-  private convertImageBackground(background: SlideBackground): any {
+  private convertImageBackground(background: SlideBackground, backgroundFormat: 'legacy' | 'pptist' = 'legacy'): any {
     const baseResult = {
       type: "image",
       themeColor: {
         color: "#F4F7FF",
         colorType: "lt1"
-      },
-      imageSize: "cover"
+      }
     };
 
+    // Determine the image source
+    let imageSrc: string;
+    
     // Priority 1: Use base64 data URL if available (current implementation)
     if (background.imageUrl && background.imageUrl.startsWith('data:')) {
+      imageSrc = background.imageUrl;
+    }
+    // Priority 2: Cloud service URL (extension point for future implementation)
+    else if (background.imageData && this.shouldUseCloudStorage()) {
+      const cloudUrl = this.uploadToCloudService(background.imageData);
+      imageSrc = cloudUrl || (background.imageUrl ? 
+        `https://example.com/backgrounds/${background.imageUrl}.png` : 
+        "https://example.com/background.png");
+    }
+    // Priority 3: Fallback to relationship-based URL or placeholder
+    else {
+      imageSrc = background.imageUrl ? 
+        `https://example.com/backgrounds/${background.imageUrl}.png` : 
+        "https://example.com/background.png";
+    }
+
+    // Return format based on backgroundFormat parameter
+    if (backgroundFormat === 'pptist') {
       return {
         ...baseResult,
-        image: background.imageUrl
+        image: {
+          src: imageSrc,
+          size: "cover"
+        }
+      };
+    } else {
+      return {
+        ...baseResult,
+        image: imageSrc,
+        imageSize: "cover"
       };
     }
-
-    // Priority 2: Cloud service URL (extension point for future implementation)
-    if (background.imageData && this.shouldUseCloudStorage()) {
-      const cloudUrl = this.uploadToCloudService(background.imageData);
-      if (cloudUrl) {
-        return {
-          ...baseResult,
-          image: cloudUrl
-        };
-      }
-    }
-
-    // Priority 3: Fallback to relationship-based URL or placeholder
-    const fallbackImage = background.imageUrl ? 
-      `https://example.com/backgrounds/${background.imageUrl}.png` : 
-      "https://example.com/background.png";
-    
-    return {
-      ...baseResult,
-      image: fallbackImage
-    };
   }
 
   // Extension point: Override this method to enable cloud storage
