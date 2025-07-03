@@ -9,6 +9,7 @@ export class ShapeElement extends Element {
   private special?: boolean;
   private shapeText?: ShapeTextContent;
   private fill?: { color: string };
+  private gradient?: GradientFill;
   private stroke?: StrokeProperties;
   private flip?: { horizontal: boolean; vertical: boolean };
   private connectionInfo?: ConnectionInfo;
@@ -130,6 +131,14 @@ export class ShapeElement extends Element {
     return this.fill;
   }
 
+  setGradient(gradient: GradientFill): void {
+    this.gradient = gradient;
+  }
+
+  getGradient(): GradientFill | undefined {
+    return this.gradient;
+  }
+
   setStroke(stroke: StrokeProperties): void {
     this.stroke = stroke;
   }
@@ -163,24 +172,61 @@ export class ShapeElement extends Element {
   }
 
   toJSON(): any {
-    const themeFill = this.getThemeFill();
     const result: any = {
       type: this.type,
       id: this.id,
-      left: this.position?.x || 0,
-      top: this.position?.y || 0,
       width: this.size?.width || 0,
       height: this.size?.height || 0,
-      viewBox: [this.size?.width || 200, this.size?.height || 200],
+      left: this.position?.x || 0,
+      top: this.position?.y || 0,
+      viewBox: this.viewBox || [200, 200], // Use preset viewBox or default 200x200
       path: this.path || this.getShapePathInternal(),
-      pathFormula: this.pathFormula,
-      shape: this.shapeType,
-      fill: themeFill.color, // String format for frontend rendering
-      themeFill: themeFill, // Object format for theme management
       fixedRatio: false,
       rotate: this.rotation || 0,
-      enableShrink: true,
     };
+
+    // Add gradient if present, otherwise add fill
+    if (this.gradient) {
+      result.fill = "";
+      result.gradient = this.gradient;
+    } else {
+      const themeFill = this.getThemeFill();
+      result.fill = themeFill.color;
+      result.themeFill = themeFill;
+    }
+
+    // Add shape type and enableShrink for all shapes
+    if (this.shapeType !== "custom") {
+      result.shape = this.shapeType;
+    }
+    result.enableShrink = true;
+
+    // Add legacy outline properties
+    if (this.stroke) {
+      result.outline = {
+        color: this.stroke.color || "#000000",
+        width: this.stroke.width || 0,
+        style: this.stroke.dashType || "solid"
+      };
+    } else {
+      result.outline = {
+        color: "#000000",
+        width: 0,
+        style: "solid"
+      };
+    }
+
+    // Add legacy text properties
+    result.text = {
+      content: "",
+      defaultFontName: "Corbel",
+      defaultColor: "#333",
+      align: "middle"
+    };
+
+    // Add legacy flip properties
+    result.flipH = this.flip?.horizontal || false;
+    result.flipV = this.flip?.vertical || false;
 
     // Add keypoints property for roundRect shapes
     if (this.shapeType === "roundRect") {
@@ -274,6 +320,7 @@ export interface ShapeTextContent {
 }
 
 export interface StrokeProperties {
+  color?: string;
   width?: number;
   cap?: string;
   compound?: string;
@@ -297,4 +344,17 @@ export interface ConnectionInfo {
     id: string;
     index?: string;
   };
+}
+
+export interface GradientFill {
+  type: "linear" | "radial";
+  themeColor: Array<{
+    pos: number;
+    color: string;
+  }>;
+  colors: Array<{
+    pos: number;
+    color: string;
+  }>;
+  rotate: number;
 }
