@@ -266,15 +266,15 @@ describe("TextStyleExtractor - Multi-paragraph handling", () => {
     const json = textElement.toJSON();
 
     // 验证生成的 HTML 包含多个 p 标签
-    expect(json.content).toContain('<div style="">');
+    expect(json.content).toContain('<div  style="">');
     expect(json.content).toMatch(/<p[^>]*>.*智子云.*<\/p>/);
     expect(json.content).toMatch(/<p[^>]*>.*数据驱动未来.*<\/p>/);
     
     // 验证样式
-    expect(json.content).toContain('font-size: 107px');
-    expect(json.content).toContain('font-size: 72px');
-    expect(json.content).toContain('font-weight: bold');
-    expect(json.content).toContain('color: rgb(0, 47, 113)');
+    expect(json.content).toContain('font-size:107px');
+    expect(json.content).toContain('font-size:72px');
+    expect(json.content).toContain('font-weight:bold');
+    expect(json.content).toContain('color:rgb(0, 47, 113)');
 
     // 验证结构：应该有两个独立的 p 标签
     const pTagMatches = json.content.match(/<p[^>]*>/g);

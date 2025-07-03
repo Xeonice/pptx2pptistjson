@@ -36,16 +36,16 @@ describe("HtmlConverter - Paragraph structure", () => {
     const html = HtmlConverter.convertParagraphsToHtml(paragraphs);
 
     // 验证生成了包含两个 p 标签的 div
-    expect(html).toContain('<div style="">');
-    expect(html).toContain('<p style="">');
+    expect(html).toContain('<div  style="">');
+    expect(html).toContain('<p  style="">');
     expect(html).toMatch(/<p[^>]*>.*智子云.*<\/p>/);
     expect(html).toMatch(/<p[^>]*>.*数据驱动未来.*<\/p>/);
     
     // 验证样式
-    expect(html).toContain('font-size: 107px');
-    expect(html).toContain('font-size: 72px');
-    expect(html).toContain('font-weight: bold');
-    expect(html).toContain('color: rgb(0, 47, 113)');
+    expect(html).toContain('font-size:107px');
+    expect(html).toContain('font-size:72px');
+    expect(html).toContain('font-weight:bold');
+    expect(html).toContain('color:rgb(0, 47, 113)');
 
     // 验证结构：应该有两个独立的 p 标签
     const pTagMatches = html.match(/<p[^>]*>/g);
@@ -66,8 +66,8 @@ describe("HtmlConverter - Paragraph structure", () => {
     const html = HtmlConverter.convertSingleParagraphToHtml(singleParagraph);
 
     // 验证生成了包含一个 p 标签的 div
-    expect(html).toContain('<div style="">');
-    expect(html).toContain('<p style="">');
+    expect(html).toContain('<div  style="">');
+    expect(html).toContain('<p  style="">');
     expect(html).toContain('单段文字');
     
     // 验证只有一个 p 标签
@@ -98,8 +98,8 @@ describe("HtmlConverter - Paragraph structure", () => {
     const html = HtmlConverter.convertParagraphsToHtml(paragraphs);
 
     // 验证段落样式
-    expect(html).toContain('style="text-align: left"');
-    expect(html).toContain('style="text-align: center"');
+    expect(html).toContain('style="text-align:left"');
+    expect(html).toContain('style="text-align:center"');
   });
 
   it("should not wrap in div when wrapInDiv is false", () => {
@@ -118,7 +118,7 @@ describe("HtmlConverter - Paragraph structure", () => {
 
     // 验证没有包装的 div
     expect(html).not.toContain('<div');
-    expect(html).toContain('<p style="">');
+    expect(html).toContain('<p  style="">');
     expect(html).toContain('测试文字');
   });
 
@@ -132,7 +132,7 @@ describe("HtmlConverter - Paragraph structure", () => {
       ]
     ];
 
-    const html = HtmlConverter.convertParagraphsToHtml(paragraphs);
+    const html = HtmlConverter.convertParagraphsToHtml(paragraphs, { escapeHtml: true });
 
     // 验证 HTML 特殊字符被转义
     expect(html).toContain('&lt;script&gt;');

@@ -18,13 +18,13 @@ export class HtmlConverter {
     if (paragraphs.length === 0) return "";
 
     const pElements = paragraphs.map(paragraphContent => {
-      const spanElements = this.convertContentToSpans(paragraphContent);
+      const spanElements = this.convertContentToSpans(paragraphContent, options);
       const paragraphStyle = this.buildParagraphStyle(paragraphContent, options);
       return `<p${paragraphStyle}>${spanElements}</p>`;
     });
 
     if (options.wrapInDiv !== false) {
-      const divStyle = options.divStyle ? ` style="${options.divStyle}"` : ' style=""';
+      const divStyle = options.divStyle ? ` style="${options.divStyle}"` : '  style=""';
       return `<div${divStyle}>${pElements.join("")}</div>`;
     }
 
@@ -40,12 +40,12 @@ export class HtmlConverter {
     contentItems: TextContent[], 
     options: HtmlConversionOptions = {}
   ): string {
-    const spanElements = this.convertContentToSpans(contentItems);
+    const spanElements = this.convertContentToSpans(contentItems, options);
     const paragraphStyle = this.buildParagraphStyle(contentItems, options);
     const pElement = `<p${paragraphStyle}>${spanElements}</p>`;
 
     if (options.wrapInDiv !== false) {
-      const divStyle = options.divStyle ? ` style="${options.divStyle}"` : ' style=""';
+      const divStyle = options.divStyle ? ` style="${options.divStyle}"` : '  style=""';
       return `<div${divStyle}>${pElement}</div>`;
     }
 
@@ -55,32 +55,36 @@ export class HtmlConverter {
   /**
    * Convert text content items to span elements
    */
-  private static convertContentToSpans(contentItems: TextContent[]): string {
+  private static convertContentToSpans(contentItems: TextContent[], options: HtmlConversionOptions = {}): string {
     return contentItems
-      .map(item => this.convertContentItemToSpan(item))
+      .map(item => this.convertContentItemToSpan(item, options))
       .join("");
   }
 
   /**
    * Convert a single text content item to a span element
    */
-  private static convertContentItemToSpan(item: TextContent): string {
+  private static convertContentItemToSpan(item: TextContent, options: HtmlConversionOptions = {}): string {
     const styles = this.buildSpanStyles(item.style);
     const dataAttributes = this.buildDataAttributes(item.style);
     
     let span = "<span";
     
     if (styles.length > 0) {
-      span += ` style="${styles.join("; ")}"`;
+      span += `  style="${styles.join(";")}"`;
+    } else {
+      // Always add style attribute even if empty for consistency with old format
+      span += '  style=""';
     }
     
     if (dataAttributes.length > 0) {
       span += ` ${dataAttributes.join(" ")}`;
     }
     
-    // Escape HTML content
-    const escapedText = this.escapeHtml(item.text);
-    span += `>${escapedText}</span>`;
+    // For compatibility with old behavior, don't escape HTML by default
+    // Escape HTML content only if explicitly requested
+    const textContent = options.escapeHtml === true ? this.escapeHtml(item.text) : item.text;
+    span += `>${textContent}</span>`;
     
     return span;
   }
@@ -93,39 +97,136 @@ export class HtmlConverter {
     
     if (!style) return styles;
 
-    if (style.fontSize) {
-      styles.push(`font-size: ${style.fontSize}px`);
-    }
-    
+    // Follow the exact order from the old TextElement implementation
     if (style.color) {
-      styles.push(`color: ${style.color}`);
+      styles.push(`color:${style.color}`);
     }
     
-    if (style.fontFamily) {
-      styles.push(`font-family: '${style.fontFamily}'`);
+    if (style.fontSize) {
+      styles.push(`font-size:${style.fontSize}px`);
     }
     
     if (style.bold) {
-      styles.push("font-weight: bold");
+      styles.push("font-weight:bold");
     }
     
     if (style.italic) {
-      styles.push("font-style: italic");
+      styles.push("font-style:italic");
     }
     
     if (style.underline) {
-      styles.push("text-decoration: underline");
+      styles.push("text-decoration:underline");
     }
     
     if (style.strike) {
-      styles.push("text-decoration: line-through");
+      styles.push("text-decoration:line-through");
+    }
+    
+    if (style.fontFamily) {
+      styles.push(`font-family:'${style.fontFamily}'`);
     }
     
     if (style.backgroundColor) {
-      styles.push(`background-color: ${style.backgroundColor}`);
+      styles.push(`background-color:${style.backgroundColor}`);
+    }
+
+    // Add colortype at the end if color exists
+    if (style.color && (style.themeColorType || this.isThemeColor(style.color))) {
+      const colorType = style.themeColorType || this.getColorType(style.color);
+      styles.push(`--colortype:${colorType}`);
     }
 
     return styles;
+  }
+
+  /**
+   * Check if a color is a theme color
+   */
+  private static isThemeColor(color: string): boolean {
+    // Check for theme colors in various formats
+    const normalizedColor = color.toUpperCase();
+
+    // Common theme colors in hex format (including actual values from current PPTX)
+    const themeColors = [
+      "#4472C4",
+      "#4472C4FF",
+      "#ED7D31",
+      "#ED7D31FF",
+      "#A5A5A5",
+      "#A5A5A5FF",
+      "#FFC000",
+      "#FFC000FF",
+      "#5B9BD5",
+      "#5B9BD5FF",
+      "#70AD47",
+      "#70AD47FF",
+      "#333333",
+      "#333333FF",
+      "#000000",
+      "#000000FF",
+      "#00070F",
+      "#00070FFF", // dk1 color from current file
+    ];
+
+    // Also check if it's a dark color that should be treated as dk1
+    if (this.isDarkColor(color)) {
+      return true;
+    }
+
+    return themeColors.includes(normalizedColor);
+  }
+
+  /**
+   * Check if a color is dark
+   */
+  private static isDarkColor(color: string): boolean {
+    // Parse hex color and check if it's dark (suitable for dk1/dk2)
+    let hex = color.replace("#", "").replace("ff", "").replace("FF", "");
+    if (hex.length === 6) {
+      const r = parseInt(hex.substring(0, 2), 16);
+      const g = parseInt(hex.substring(2, 4), 16);
+      const b = parseInt(hex.substring(4, 6), 16);
+
+      // Calculate luminance (0.299*R + 0.587*G + 0.114*B)
+      const luminance = 0.299 * r + 0.587 * g + 0.114 * b;
+
+      // Consider colors with luminance < 50 as dark (dk1/dk2)
+      return luminance < 50;
+    }
+    return false;
+  }
+
+  /**
+   * Get the color type for a given color
+   */
+  private static getColorType(color: string): string {
+    // Map colors to theme types
+    const normalizedColor = color.toUpperCase();
+    const colorMap: { [key: string]: string } = {
+      "#4472C4": "accent1",
+      "#4472C4FF": "accent1",
+      "#5B9BD5": "accent1",
+      "#5B9BD5FF": "accent1",
+      "#333333": "dk1",
+      "#333333FF": "dk1",
+      "#000000": "dk1",
+      "#000000FF": "dk1",
+      "#00070F": "dk1",
+      "#00070FFF": "dk1",
+    };
+
+    // Check explicit mapping first
+    if (colorMap[normalizedColor]) {
+      return colorMap[normalizedColor];
+    }
+
+    // For unmapped colors, use luminance to determine type
+    if (this.isDarkColor(color)) {
+      return "dk1";
+    }
+
+    // Default fallback
+    return "dk1";
   }
 
   /**
@@ -155,7 +256,7 @@ export class HtmlConverter {
     // Get text alignment from content items or options
     const textAlign = this.getTextAlignment(contentItems, options);
     if (textAlign) {
-      styles.push(`text-align: ${textAlign}`);
+      styles.push(`text-align:${textAlign}`);
     }
 
     // Add custom paragraph styles from options
@@ -163,7 +264,7 @@ export class HtmlConverter {
       styles.push(options.paragraphStyle);
     }
 
-    return styles.length > 0 ? ` style="${styles.join("; ")}"` : ' style=""';
+    return styles.length > 0 ? `  style="${styles.join(";")}"` : '  style=""';
   }
 
   /**
@@ -187,6 +288,11 @@ export class HtmlConverter {
    * Escape HTML special characters
    */
   private static escapeHtml(text: string): string {
+    // Handle null, undefined, or non-string values
+    if (text == null || typeof text !== 'string') {
+      return '';
+    }
+
     const htmlEscapeMap: { [key: string]: string } = {
       '&': '&amp;',
       '<': '&lt;',
