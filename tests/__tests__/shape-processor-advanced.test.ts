@@ -17,10 +17,11 @@ describe('ShapeProcessor Advanced Coverage Tests', () => {
     idGenerator = new IdGenerator();
   });
 
-  const createMockXmlNode = (name: string, attributes: Record<string, string> = {}, children: XmlNode[] = []): XmlNode => ({
+  const createMockXmlNode = (name: string, attributes: Record<string, string> = {}, children: XmlNode[] = [], content?: string): XmlNode => ({
     name,
     attributes,
-    children
+    children,
+    content
   });
 
   const createMockContext = (overrides: Partial<ProcessingContext> = {}): ProcessingContext => ({
@@ -330,8 +331,8 @@ describe('ShapeProcessor Advanced Coverage Tests', () => {
       const path = result.getPath();
       
       expect(path).toBeDefined();
-      expect(path).not.toContain('NaN');
-      expect(path.length).toBeGreaterThan(10);
+      expect(path!).not.toContain('NaN');
+      expect(path!.length).toBeGreaterThan(10);
     });
   });
 
@@ -641,8 +642,8 @@ describe('ShapeProcessor Advanced Coverage Tests', () => {
       
       expect(position).toBeDefined();
       // Should have applied group transform calculations
-      expect(position.x).toBeGreaterThan(0);
-      expect(position.y).toBeGreaterThan(0);
+      expect(position!.x).toBeGreaterThan(0);
+      expect(position!.y).toBeGreaterThan(0);
     });
   });
 

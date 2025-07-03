@@ -1688,16 +1688,20 @@ export class ShapeProcessor implements IElementProcessor<ShapeElement> {
   /**
    * 应用饱和度调制
    */
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   private applySaturationModulation(color: string, _modValue: number): string {
     // 简化实现，实际应该转换到HSL空间
+    // _modValue 参数预留用于未来实现
     return color;
   }
 
   /**
    * 应用色相调制
    */
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   private applyHueModulation(color: string, _modValue: number): string {
     // 简化实现，实际应该转换到HSL空间
+    // _modValue 参数预留用于未来实现
     return color;
   }
 
