@@ -164,3 +164,8 @@ container.register('fileService', new FileService());
 container.registerFactory('xmlParser', () => new XmlParseService(), true);
 const service = container.resolve<IFileService>('fileService');
 ```
+
+## Repository Management Guidelines
+
+### Git Branch Strategy
+- 这个项目的 master 分支不能直接提交，每次我需要让你提交时，需要先确保自己不在 master 分支上，在一个从 master 切出来的分支上

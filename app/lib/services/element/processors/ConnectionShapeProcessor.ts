@@ -8,24 +8,52 @@ import { XmlNode } from "../../../models/xml/XmlNode";
 import { IXmlParseService } from "../../interfaces/IXmlParseService";
 import { UnitConverter } from "../../utils/UnitConverter";
 import { FillExtractor } from "../../utils/FillExtractor";
+import { DebugHelper } from "../../utils/DebugHelper";
+import { TextStyleExtractor } from "../../text/TextStyleExtractor";
+import { TextContent } from "../../../models/domain/elements/TextElement";
+import { HtmlConverter } from "../../utils/HtmlConverter";
 
 /**
  * Processor for PowerPoint connection shapes (p:cxnSp)
  * Handles connection lines, arrows, and other connector elements
  */
-export class ConnectionShapeProcessor implements IElementProcessor<ShapeElement> {
-  constructor(private xmlParser: IXmlParseService) {}
+export class ConnectionShapeProcessor
+  implements IElementProcessor<ShapeElement>
+{
+  private textStyleExtractor: TextStyleExtractor;
+  private lastProcessedParagraphs: TextContent[][] = [];
+
+  constructor(private xmlParser: IXmlParseService) {
+    this.textStyleExtractor = new TextStyleExtractor(xmlParser);
+  }
 
   canProcess(xmlNode: XmlNode): boolean {
-    // Process connection shape nodes
-    return xmlNode.name === "p:cxnSp";
+    // Process connection shape nodes, but not simple lines
+    if (xmlNode.name === "p:cxnSp") {
+      const spPrNode = this.xmlParser.findNode(xmlNode, "spPr");
+      if (spPrNode) {
+        const prstGeomNode = this.xmlParser.findNode(spPrNode, "prstGeom");
+        if (prstGeomNode) {
+          const prst = this.xmlParser.getAttribute(prstGeomNode, "prst");
+          // Skip line and straightConnector1 - they are handled by LineProcessor
+          if (prst === "line" || prst === "straightConnector1") {
+            return false;
+          }
+        }
+      }
+      return true; // Process other connection shapes
+    }
+    return false;
   }
 
   getElementType(): string {
     return "connection-shape";
   }
 
-  async process(xmlNode: XmlNode, context: ProcessingContext): Promise<ShapeElement> {
+  async process(
+    xmlNode: XmlNode,
+    context: ProcessingContext
+  ): Promise<ShapeElement> {
     // Extract connection shape properties
     const nvCxnSpPrNode = this.xmlParser.findNode(xmlNode, "nvCxnSpPr");
     const cNvPrNode = nvCxnSpPrNode
@@ -38,10 +66,10 @@ export class ConnectionShapeProcessor implements IElementProcessor<ShapeElement>
       ? this.xmlParser.getAttribute(cNvPrNode, "name")
       : "Connection";
 
-    console.log(`ConnectionShapeProcessor: Processing connection shape "${name}" with ID ${originalId}`);
+    DebugHelper.log(context, `ConnectionShapeProcessor: Processing connection shape "${name}" with ID ${originalId}`, "info");
 
     // Generate unique ID
-    const id = context.idGenerator.generateUniqueId(originalId, 'cxn-shape');
+    const id = context.idGenerator.generateUniqueId(originalId, "cxn-shape");
 
     // Extract geometry
     const spPrNode = this.xmlParser.findNode(xmlNode, "spPr");
@@ -53,8 +81,9 @@ export class ConnectionShapeProcessor implements IElementProcessor<ShapeElement>
       if (prstGeomNode) {
         const prst = this.xmlParser.getAttribute(prstGeomNode, "prst");
         if (prst) {
-          shapeType = this.mapConnectionGeometryToShapeType(prst);
+          shapeType = this.mapConnectionGeometryToShapeType(prst, context);
           pathFormula = prst;
+          DebugHelper.log(context, `ConnectionShapeProcessor ${id}: Geometry type: ${prst} -> ${shapeType}`, "info");
         }
       } else {
         // Check for custom geometry
@@ -62,6 +91,7 @@ export class ConnectionShapeProcessor implements IElementProcessor<ShapeElement>
         if (custGeomNode) {
           shapeType = "custom";
           pathFormula = "custom";
+          DebugHelper.log(context, `ConnectionShapeProcessor ${id}: Custom geometry detected`, "info");
         }
       }
     }
@@ -74,7 +104,8 @@ export class ConnectionShapeProcessor implements IElementProcessor<ShapeElement>
     }
 
     // Extract position and size
-    let width = 0, height = 0;
+    let width = 0,
+      height = 0;
     if (spPrNode) {
       const xfrmNode = this.xmlParser.findNode(spPrNode, "xfrm");
       if (xfrmNode) {
@@ -125,7 +156,7 @@ export class ConnectionShapeProcessor implements IElementProcessor<ShapeElement>
     // Extract fill color (connection shapes often have stroke properties)
     const fillColor = this.extractFillColor(spPrNode, context);
     if (fillColor) {
-      console.log(`ConnectionShapeProcessor ${id}: extracted fill color: ${fillColor}`);
+      DebugHelper.log(context, `ConnectionShapeProcessor ${id}: extracted fill color: ${fillColor}`, "info");
       shapeElement.setFill({ color: fillColor });
     }
 
@@ -136,17 +167,23 @@ export class ConnectionShapeProcessor implements IElementProcessor<ShapeElement>
     }
 
     // Generate path for connection shape
-    if (pathFormula && width > 0 && height > 0) {
-      const svgPath = this.generateConnectionPath(pathFormula, width, height);
+    if (width > 0 && height > 0) {
+      const svgPath = this.generateConnectionPath(shapeType, width, height);
       if (svgPath) {
         shapeElement.setPath(svgPath);
       }
     }
 
     // Connection shapes typically don't have text content, but check anyway
-    const textContent = this.extractTextContent(xmlNode);
-    if (textContent) {
-      shapeElement.setTextContent(textContent);
+    const styledTextContent = this.extractTextContent(xmlNode, context);
+    if (styledTextContent && styledTextContent.length > 0) {
+      // Set simple text content for backward compatibility
+      const simpleText = styledTextContent.map(item => item.text).join("").trim();
+      shapeElement.setTextContent(simpleText);
+
+      // Also set styled text content for rich formatting support
+      const shapeTextContent = this.createShapeTextContent(styledTextContent);
+      shapeElement.setShapeTextContent(shapeTextContent);
     }
 
     // Extract connection start and end points (specific to connection shapes)
@@ -155,16 +192,13 @@ export class ConnectionShapeProcessor implements IElementProcessor<ShapeElement>
       shapeElement.setConnectionInfo(connectionInfo);
     }
 
-    console.log(`ConnectionShapeProcessor: Successfully processed connection shape ${id}`);
+    DebugHelper.log(context, `ConnectionShapeProcessor: Successfully processed connection shape ${id}`, "info");
     return shapeElement;
   }
 
-  private mapConnectionGeometryToShapeType(prst: string): ShapeType {
+  private mapConnectionGeometryToShapeType(prst: string, context?: ProcessingContext): ShapeType {
     // Map PowerPoint connection preset geometries to shape types
     switch (prst) {
-      case "line":
-      case "straightConnector1":
-        return "line";
       case "bentConnector2":
       case "bentConnector3":
       case "bentConnector4":
@@ -184,12 +218,17 @@ export class ConnectionShapeProcessor implements IElementProcessor<ShapeElement>
       case "upDownArrow":
         return "doubleArrow";
       default:
-        console.log(`ConnectionShapeProcessor: Unknown connection geometry: ${prst}, using 'line'`);
+        if (context) {
+          DebugHelper.log(context, `ConnectionShapeProcessor: Unknown connection geometry: ${prst}, using 'line'`, "warn");
+        }
         return "line";
     }
   }
 
-  private extractFillColor(spPrNode: XmlNode | undefined, context: ProcessingContext): string | undefined {
+  private extractFillColor(
+    spPrNode: XmlNode | undefined,
+    context: ProcessingContext
+  ): string | undefined {
     if (!spPrNode) return undefined;
 
     // Create a simple warpObj for FillExtractor
@@ -197,13 +236,13 @@ export class ConnectionShapeProcessor implements IElementProcessor<ShapeElement>
     if (context.theme) {
       // Handle both Theme class instances and plain objects (for tests)
       let cs;
-      if (typeof context.theme.getColorScheme === 'function') {
+      if (typeof context.theme.getColorScheme === "function") {
         cs = context.theme.getColorScheme();
       } else {
         // For test objects that have colorScheme directly
         cs = (context.theme as any).colorScheme;
       }
-      
+
       if (cs) {
         colorScheme.accent1 = cs.accent1;
         colorScheme.accent2 = cs.accent2;
@@ -218,12 +257,17 @@ export class ConnectionShapeProcessor implements IElementProcessor<ShapeElement>
       }
     }
     const warpObj = this.createThemeContent(colorScheme);
-    
+
     // Check for solid fill first
     const solidFillNode = this.xmlParser.findNode(spPrNode, "solidFill");
     if (solidFillNode) {
       const solidFillObj = this.convertXmlNodeToObject(solidFillNode);
-      return FillExtractor.getSolidFill(solidFillObj, undefined, undefined, warpObj);
+      return FillExtractor.getSolidFill(
+        solidFillObj,
+        undefined,
+        undefined,
+        warpObj
+      );
     }
 
     // For connection shapes, stroke color is often more important than fill
@@ -232,7 +276,12 @@ export class ConnectionShapeProcessor implements IElementProcessor<ShapeElement>
       const strokeSolidFillNode = this.xmlParser.findNode(lnNode, "solidFill");
       if (strokeSolidFillNode) {
         const solidFillObj = this.convertXmlNodeToObject(strokeSolidFillNode);
-        return FillExtractor.getSolidFill(solidFillObj, undefined, undefined, warpObj);
+        return FillExtractor.getSolidFill(
+          solidFillObj,
+          undefined,
+          undefined,
+          warpObj
+        );
       }
     }
 
@@ -298,74 +347,175 @@ export class ConnectionShapeProcessor implements IElementProcessor<ShapeElement>
     return Object.keys(strokeProps).length > 0 ? strokeProps : undefined;
   }
 
-  private generateConnectionPath(pathFormula: string, width: number, height: number): string {
+  private generateConnectionPath(
+    shapeType: string,
+    width: number,
+    height: number
+  ): string {
     // Generate SVG paths for common connection shape types
-    switch (pathFormula) {
+    switch (shapeType) {
       case "line":
       case "straightConnector1":
-        return `M 0 ${height/2} L ${width} ${height/2}`;
-      
+        return `M 0 ${height / 2} L ${width} ${height / 2}`;
+
       case "bentConnector2":
-        return `M 0 ${height/2} L ${width/2} ${height/2} L ${width/2} 0 L ${width} 0`;
-      
+        return `M 0 ${height / 2} L ${width / 2} ${height / 2} L ${
+          width / 2
+        } 0 L ${width} 0`;
+
       case "bentConnector3":
-        return `M 0 ${height/2} L ${width/3} ${height/2} L ${width/3} 0 L ${width*2/3} 0 L ${width*2/3} ${height/2} L ${width} ${height/2}`;
-      
+        return `M 0 ${height / 2} L ${width / 3} ${height / 2} L ${
+          width / 3
+        } 0 L ${(width * 2) / 3} 0 L ${(width * 2) / 3} ${
+          height / 2
+        } L ${width} ${height / 2}`;
+
       case "curvedConnector2":
-        return `M 0 ${height/2} Q ${width/2} 0 ${width} ${height/2}`;
-      
+        return `M 0 ${height / 2} Q ${width / 2} 0 ${width} ${height / 2}`;
+
       case "rightArrow":
         const arrowHead = Math.min(width * 0.2, height * 0.4);
-        return `M 0 ${height * 0.3} L ${width - arrowHead} ${height * 0.3} L ${width - arrowHead} 0 L ${width} ${height/2} L ${width - arrowHead} ${height} L ${width - arrowHead} ${height * 0.7} L 0 ${height * 0.7} Z`;
-      
+        return `M 0 ${height * 0.3} L ${width - arrowHead} ${height * 0.3} L ${
+          width - arrowHead
+        } 0 L ${width} ${height / 2} L ${width - arrowHead} ${height} L ${
+          width - arrowHead
+        } ${height * 0.7} L 0 ${height * 0.7} Z`;
+
       case "leftArrow":
         const leftArrowHead = Math.min(width * 0.2, height * 0.4);
-        return `M ${leftArrowHead} ${height * 0.3} L ${width} ${height * 0.3} L ${width} ${height * 0.7} L ${leftArrowHead} ${height * 0.7} L ${leftArrowHead} ${height} L 0 ${height/2} L ${leftArrowHead} 0 Z`;
-      
+        return `M ${leftArrowHead} ${height * 0.3} L ${width} ${
+          height * 0.3
+        } L ${width} ${height * 0.7} L ${leftArrowHead} ${
+          height * 0.7
+        } L ${leftArrowHead} ${height} L 0 ${
+          height / 2
+        } L ${leftArrowHead} 0 Z`;
+
       case "custom":
         // For custom geometry, we'd need to parse the custGeom
         return this.getCustomConnectionPath(width, height);
-      
+
       default:
         // Default to a simple line
-        return `M 0 ${height/2} L ${width} ${height/2}`;
+        return `M 0 ${height / 2} L ${width} ${height / 2}`;
     }
   }
 
   private getCustomConnectionPath(width: number, height: number): string {
     // Placeholder for custom connection geometry parsing
     // This would require implementing the custom geometry parser
-    return `M 0 ${height/2} L ${width} ${height/2}`;
+    return `M 0 ${height / 2} L ${width} ${height / 2}`;
   }
 
-  private extractTextContent(xmlNode: XmlNode): string | undefined {
-    const txBodyNode = this.xmlParser.findNode(xmlNode, "txBody");
+  /**
+   * Extract text content with full style support (bold, italic, underline, etc.)
+   * Uses the shared TextStyleExtractor for consistency across processors
+   */
+  private extractTextContent(xmlNode: XmlNode, context: ProcessingContext): TextContent[] | undefined {
+    const txBodyNode = this.xmlParser.findNode(xmlNode, "p:txBody");
     if (!txBodyNode) return undefined;
 
-    // Connection shapes rarely have text, but if they do, extract it
-    const paragraphs = this.xmlParser.findNodes(txBodyNode, "p");
-    let textContent = "";
+    // Use unified text extraction logic with paragraph structure
+    const paragraphs = this.textStyleExtractor.extractTextContentByParagraphs(txBodyNode, context);
+    
+    // Store paragraphs for later use in createShapeTextContent
+    this.lastProcessedParagraphs = paragraphs;
 
-    for (const pNode of paragraphs) {
-      const runs = this.xmlParser.findNodes(pNode, "r");
-      for (const rNode of runs) {
-        const tNode = this.xmlParser.findNode(rNode, "t");
-        if (tNode) {
-          textContent += this.xmlParser.getTextContent(tNode);
-        }
-      }
-      textContent += "\n";
+    // Flatten for backward compatibility
+    const allTextContent = paragraphs.flat();
+    return allTextContent.length > 0 ? allTextContent : undefined;
+  }
+
+  /**
+   * Create shape text content in PPTist format for connection shapes
+   * Similar to ShapeProcessor but simplified for connection shape text
+   */
+  private createShapeTextContent(contentItems: TextContent[]): any {
+    // Use processed paragraphs if available, otherwise fall back to single paragraph
+    let html: string;
+    if (this.lastProcessedParagraphs.length > 0) {
+      // Generate HTML with proper paragraph structure
+      html = HtmlConverter.convertParagraphsToHtml(this.lastProcessedParagraphs, {
+        wrapInDiv: false // We'll add our own structure
+      });
+    } else {
+      // Fallback to single paragraph
+      html = HtmlConverter.convertSingleParagraphToHtml(contentItems, {
+        wrapInDiv: false
+      });
     }
 
-    return textContent.trim() || undefined;
+    // Connection shapes typically use middle alignment
+    const align = "middle";
+
+    // Get default font and color using HtmlConverter
+    const defaultFontName = HtmlConverter.getDefaultFontName(contentItems);
+    const defaultColor = HtmlConverter.getDefaultColor(contentItems);
+
+    return {
+      content: html,
+      align: align,
+      defaultFontName: defaultFontName,
+      defaultColor: defaultColor,
+    };
+  }
+
+  /**
+   * Format text content items into HTML string with styles
+   */
+  private formatTextContent(contentItems: TextContent[]): string {
+    let html = "";
+
+    for (const item of contentItems) {
+      let span = "<span";
+      const styles: string[] = [];
+
+      if (item.style) {
+        if (item.style.fontSize) {
+          styles.push(`font-size: ${item.style.fontSize}px`);
+        }
+        if (item.style.color) {
+          styles.push(`color: ${item.style.color}`);
+        }
+        if (item.style.fontFamily) {
+          styles.push(`font-family: '${item.style.fontFamily}'`);
+        }
+        if (item.style.bold) {
+          styles.push("font-weight: bold");
+        }
+        if (item.style.italic) {
+          styles.push("font-style: italic");
+        }
+        if (item.style.underline) {
+          styles.push("text-decoration: underline");
+        }
+      }
+
+      if (styles.length > 0) {
+        span += ` style="${styles.join("; ")}"`;
+      }
+
+      // Add theme color type as data attribute if present
+      if (item.style?.themeColorType) {
+        span += ` data-theme-color="${item.style.themeColorType}"`;
+      }
+
+      span += `>${item.text}</span>`;
+      html += span;
+    }
+
+    return html || "";
   }
 
   private extractConnectionInfo(xmlNode: XmlNode): any {
     // Extract connection start and end information
     const connectionInfo: any = {};
 
-    // Start connection
-    const stCxnNode = this.xmlParser.findNode(xmlNode, "stCxn");
+    // Start connection - try both with and without namespace prefix
+    let stCxnNode = this.xmlParser.findNode(xmlNode, "p:stCxn");
+    if (!stCxnNode) {
+      stCxnNode = this.xmlParser.findNode(xmlNode, "stCxn");
+    }
     if (stCxnNode) {
       const stCxnId = this.xmlParser.getAttribute(stCxnNode, "id");
       const stCxnIdx = this.xmlParser.getAttribute(stCxnNode, "idx");
@@ -374,8 +524,11 @@ export class ConnectionShapeProcessor implements IElementProcessor<ShapeElement>
       }
     }
 
-    // End connection
-    const endCxnNode = this.xmlParser.findNode(xmlNode, "endCxn");
+    // End connection - try both with and without namespace prefix
+    let endCxnNode = this.xmlParser.findNode(xmlNode, "p:endCxn");
+    if (!endCxnNode) {
+      endCxnNode = this.xmlParser.findNode(xmlNode, "endCxn");
+    }
     if (endCxnNode) {
       const endCxnId = this.xmlParser.getAttribute(endCxnNode, "id");
       const endCxnIdx = this.xmlParser.getAttribute(endCxnNode, "idx");
@@ -389,14 +542,16 @@ export class ConnectionShapeProcessor implements IElementProcessor<ShapeElement>
 
   private convertXmlNodeToObject(xmlNode: XmlNode): any {
     const obj: any = {};
-    
+
     if (xmlNode.attributes) {
       obj.attrs = xmlNode.attributes;
     }
 
     if (xmlNode.children && xmlNode.children.length > 0) {
       for (const child of xmlNode.children) {
-        const childName = child.name.startsWith('a:') ? child.name : `a:${child.name}`;
+        const childName = child.name.startsWith("a:")
+          ? child.name
+          : `a:${child.name}`;
         obj[childName] = this.convertXmlNodeToObject(child);
       }
     }
@@ -408,37 +563,38 @@ export class ConnectionShapeProcessor implements IElementProcessor<ShapeElement>
     const themeContent: any = {
       "a:theme": {
         "a:themeElements": {
-          "a:clrScheme": {}
-        }
-      }
+          "a:clrScheme": {},
+        },
+      },
     };
 
     // Map common theme colors
     const defaultColors: Record<string, any> = {
-      "a:accent1": { "a:srgbClr": { "attrs": { "val": "002F71" } } },
-      "a:accent2": { "a:srgbClr": { "attrs": { "val": "FBAE01" } } },
-      "a:accent3": { "a:srgbClr": { "attrs": { "val": "002F71" } } },
-      "a:accent4": { "a:srgbClr": { "attrs": { "val": "FBAE01" } } },
-      "a:accent5": { "a:srgbClr": { "attrs": { "val": "002F71" } } },
-      "a:accent6": { "a:srgbClr": { "attrs": { "val": "FBAE01" } } },
-      "a:dk1": { "a:srgbClr": { "attrs": { "val": "000000" } } },
-      "a:dk2": { "a:srgbClr": { "attrs": { "val": "000000" } } },
-      "a:lt1": { "a:srgbClr": { "attrs": { "val": "FFFFFF" } } },
-      "a:lt2": { "a:srgbClr": { "attrs": { "val": "FFFFFF" } } },
-      "a:hlink": { "a:srgbClr": { "attrs": { "val": "0000FF" } } },
-      "a:folHlink": { "a:srgbClr": { "attrs": { "val": "800080" } } }
+      "a:accent1": { "a:srgbClr": { attrs: { val: "002F71" } } },
+      "a:accent2": { "a:srgbClr": { attrs: { val: "FBAE01" } } },
+      "a:accent3": { "a:srgbClr": { attrs: { val: "002F71" } } },
+      "a:accent4": { "a:srgbClr": { attrs: { val: "FBAE01" } } },
+      "a:accent5": { "a:srgbClr": { attrs: { val: "002F71" } } },
+      "a:accent6": { "a:srgbClr": { attrs: { val: "FBAE01" } } },
+      "a:dk1": { "a:srgbClr": { attrs: { val: "000000" } } },
+      "a:dk2": { "a:srgbClr": { attrs: { val: "000000" } } },
+      "a:lt1": { "a:srgbClr": { attrs: { val: "FFFFFF" } } },
+      "a:lt2": { "a:srgbClr": { attrs: { val: "FFFFFF" } } },
+      "a:hlink": { "a:srgbClr": { attrs: { val: "0000FF" } } },
+      "a:folHlink": { "a:srgbClr": { attrs: { val: "800080" } } },
     };
 
     // Override with actual color scheme if provided
-    Object.keys(defaultColors).forEach(key => {
+    Object.keys(defaultColors).forEach((key) => {
       const colorKey = key.substring(2); // Remove 'a:' prefix
       if (colorScheme[colorKey]) {
-        const colorValue = colorScheme[colorKey].replace('#', '');
+        const colorValue = colorScheme[colorKey].replace("#", "");
         themeContent["a:theme"]["a:themeElements"]["a:clrScheme"][key] = {
-          "a:srgbClr": { "attrs": { "val": colorValue } }
+          "a:srgbClr": { attrs: { val: colorValue } },
         };
       } else {
-        themeContent["a:theme"]["a:themeElements"]["a:clrScheme"][key] = defaultColors[key];
+        themeContent["a:theme"]["a:themeElements"]["a:clrScheme"][key] =
+          defaultColors[key];
       }
     });
 

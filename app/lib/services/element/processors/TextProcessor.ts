@@ -1,18 +1,19 @@
 import { IElementProcessor } from "../../interfaces/IElementProcessor";
 import {
   TextElement,
-  TextContent,
-  TextRunStyle,
 } from "../../../models/domain/elements/TextElement";
 import { XmlNode } from "../../../models/xml/XmlNode";
 import { IXmlParseService } from "../../interfaces/IXmlParseService";
 import { ProcessingContext } from "../../interfaces/ProcessingContext";
 import { UnitConverter } from "../../utils/UnitConverter";
-import { Theme } from "../../../models/domain/Theme";
-import { FillExtractor } from "../../utils/FillExtractor";
+import { TextStyleExtractor } from "../../text/TextStyleExtractor";
 
 export class TextProcessor implements IElementProcessor<TextElement> {
-  constructor(private xmlParser: IXmlParseService) {}
+  private textStyleExtractor: TextStyleExtractor;
+
+  constructor(private xmlParser: IXmlParseService) {
+    this.textStyleExtractor = new TextStyleExtractor(xmlParser);
+  }
 
   canProcess(xmlNode: XmlNode): boolean {
     // Check if this is a text box
@@ -109,35 +110,21 @@ export class TextProcessor implements IElementProcessor<TextElement> {
       if (size) finalTextElement.setSize(size);
       if (rotation) finalTextElement.setRotation(rotation);
 
-      // Extract text content for text element
+      // Extract text content organized by paragraphs
       const txBodyNode = this.xmlParser.findNode(xmlNode, "txBody");
       if (txBodyNode) {
-        const paragraphs = this.xmlParser.findNodes(txBodyNode, "p");
-        for (const pNode of paragraphs) {
-          const contentItems = this.extractParagraphContent(pNode, context);
-          contentItems.forEach((content) => {
-            if (content) {
-              finalTextElement.addContent(content);
-            }
-          });
-        }
+        const paragraphs = this.textStyleExtractor.extractTextContentByParagraphs(txBodyNode, context);
+        finalTextElement.setParagraphs(paragraphs);
       }
 
       return finalTextElement;
     } else {
       // Pure text element without shape background
-      // Extract text content
+      // Extract text content organized by paragraphs
       const txBodyNode = this.xmlParser.findNode(xmlNode, "txBody");
       if (txBodyNode) {
-        const paragraphs = this.xmlParser.findNodes(txBodyNode, "p");
-        for (const pNode of paragraphs) {
-          const contentItems = this.extractParagraphContent(pNode, context);
-          contentItems.forEach((content) => {
-            if (content) {
-              textElement.addContent(content);
-            }
-          });
-        }
+        const paragraphs = this.textStyleExtractor.extractTextContentByParagraphs(txBodyNode, context);
+        textElement.setParagraphs(paragraphs);
       }
 
       return textElement;
@@ -196,264 +183,5 @@ export class TextProcessor implements IElementProcessor<TextElement> {
     const pattFillNode = this.xmlParser.findNode(spPrNode, "pattFill");
 
     return !!(solidFillNode || gradFillNode || pattFillNode);
-  }
-
-  private extractParagraphContent(
-    pNode: XmlNode,
-    context: ProcessingContext
-  ): TextContent[] {
-    const runs = this.xmlParser.findNodes(pNode, "r");
-    if (runs.length === 0) return [];
-
-    const contentItems: TextContent[] = [];
-
-    for (const rNode of runs) {
-      const tNode = this.xmlParser.findNode(rNode, "t");
-      if (tNode) {
-        const text = this.xmlParser.getTextContent(tNode);
-        if (text.trim()) {
-          // Extract run properties for each run
-          const rPrNode = this.xmlParser.findNode(rNode, "rPr");
-          const style = rPrNode
-            ? this.extractRunStyle(rPrNode, context)
-            : undefined;
-
-          contentItems.push({
-            text: text,
-            style: style,
-          });
-        }
-      }
-    }
-
-    return contentItems;
-  }
-  private extractRunStyle(
-    rPrNode: XmlNode,
-    context: ProcessingContext
-  ): TextRunStyle {
-    const style: TextRunStyle = {};
-
-    // Font size
-    const sz = this.xmlParser.getAttribute(rPrNode, "sz");
-    if (sz) {
-      // PowerPoint font size is in hundreds of points, but needs scaling for web display
-      // Based on comparison with expected output, applying 1.39 scaling factor
-      style.fontSize = style.fontSize = Math.round((parseInt(sz) / 100) * 1.39); // Convert from hundreds of points
-    }
-
-    // Bold
-    const b = this.xmlParser.getAttribute(rPrNode, "b");
-    if (b === "1" || b === "true") {
-      style.bold = true;
-    }
-
-    // Italic
-    const i = this.xmlParser.getAttribute(rPrNode, "i");
-    if (i === "1" || i === "true") {
-      style.italic = true;
-    }
-
-    // Underline
-    const u = this.xmlParser.getAttribute(rPrNode, "u");
-    if (u && u !== "none") {
-      style.underline = true;
-    }
-
-    // Color
-    const solidFillNode = this.xmlParser.findNode(rPrNode, "solidFill");
-    if (solidFillNode) {
-      // Convert solidFillNode to plain object for FillExtractor
-      const solidFillObj = this.xmlNodeToObject(solidFillNode);
-
-      // Create warpObj with theme content
-      const warpObj = {
-        themeContent: context.theme
-          ? this.createThemeContent(context.theme)
-          : undefined,
-      };
-
-      // Use FillExtractor to get color
-      const color = FillExtractor.getSolidFill(
-        solidFillObj,
-        undefined,
-        undefined,
-        warpObj
-      );
-      if (color) {
-        style.color = color;
-
-        // Extract theme color type if present
-        const schemeClrNode = this.xmlParser.findNode(
-          solidFillNode,
-          "schemeClr"
-        );
-        if (schemeClrNode) {
-          const val = this.xmlParser.getAttribute(schemeClrNode, "val");
-          if (val) {
-            style.themeColorType = val;
-          }
-        }
-      }
-    }
-
-    // Font family
-    const latinNode = this.xmlParser.findNode(rPrNode, "latin");
-    if (latinNode) {
-      const typeface = this.xmlParser.getAttribute(latinNode, "typeface");
-      if (typeface) {
-        style.fontFamily = typeface;
-      }
-    }
-
-    return style;
-  }
-
-  private xmlNodeToObject(node: XmlNode): any {
-    const obj: any = {};
-
-    // Add attributes
-    if (node.attributes && Object.keys(node.attributes).length > 0) {
-      obj.attrs = { ...node.attributes };
-    }
-
-    // Add children
-    if (node.children && node.children.length > 0) {
-      for (const child of node.children) {
-        const childName = child.name.includes(":")
-          ? child.name
-          : `a:${child.name}`;
-        obj[childName] = this.xmlNodeToObject(child);
-      }
-    }
-
-    // Note: Text content is handled separately in XML processing
-
-    return obj;
-  }
-
-  private createThemeContent(theme: Theme): any {
-    const colorScheme = theme.getColorScheme();
-    if (!colorScheme) return undefined;
-
-    // Create theme structure expected by FillExtractor
-    return {
-      "a:theme": {
-        "a:themeElements": {
-          "a:clrScheme": {
-            "a:accent1": {
-              "a:srgbClr": {
-                attrs: {
-                  val:
-                    colorScheme.accent1?.replace("#", "").replace(/ff$/, "") ||
-                    "000000",
-                },
-              },
-            },
-            "a:accent2": {
-              "a:srgbClr": {
-                attrs: {
-                  val:
-                    colorScheme.accent2?.replace("#", "").replace(/ff$/, "") ||
-                    "000000",
-                },
-              },
-            },
-            "a:accent3": {
-              "a:srgbClr": {
-                attrs: {
-                  val:
-                    colorScheme.accent3?.replace("#", "").replace(/ff$/, "") ||
-                    "000000",
-                },
-              },
-            },
-            "a:accent4": {
-              "a:srgbClr": {
-                attrs: {
-                  val:
-                    colorScheme.accent4?.replace("#", "").replace(/ff$/, "") ||
-                    "000000",
-                },
-              },
-            },
-            "a:accent5": {
-              "a:srgbClr": {
-                attrs: {
-                  val:
-                    colorScheme.accent5?.replace("#", "").replace(/ff$/, "") ||
-                    "000000",
-                },
-              },
-            },
-            "a:accent6": {
-              "a:srgbClr": {
-                attrs: {
-                  val:
-                    colorScheme.accent6?.replace("#", "").replace(/ff$/, "") ||
-                    "000000",
-                },
-              },
-            },
-            "a:dk1": {
-              "a:srgbClr": {
-                attrs: {
-                  val:
-                    colorScheme.dk1?.replace("#", "").replace(/ff$/, "") ||
-                    "000000",
-                },
-              },
-            },
-            "a:dk2": {
-              "a:srgbClr": {
-                attrs: {
-                  val:
-                    colorScheme.dk2?.replace("#", "").replace(/ff$/, "") ||
-                    "000000",
-                },
-              },
-            },
-            "a:lt1": {
-              "a:srgbClr": {
-                attrs: {
-                  val:
-                    colorScheme.lt1?.replace("#", "").replace(/ff$/, "") ||
-                    "FFFFFF",
-                },
-              },
-            },
-            "a:lt2": {
-              "a:srgbClr": {
-                attrs: {
-                  val:
-                    colorScheme.lt2?.replace("#", "").replace(/ff$/, "") ||
-                    "FFFFFF",
-                },
-              },
-            },
-            "a:hlink": {
-              "a:srgbClr": {
-                attrs: {
-                  val:
-                    colorScheme.hyperlink
-                      ?.replace("#", "")
-                      .replace(/ff$/, "") || "0000FF",
-                },
-              },
-            },
-            "a:folHlink": {
-              "a:srgbClr": {
-                attrs: {
-                  val:
-                    colorScheme.followedHyperlink
-                      ?.replace("#", "")
-                      .replace(/ff$/, "") || "800080",
-                },
-              },
-            },
-          },
-        },
-      },
-    };
   }
 }

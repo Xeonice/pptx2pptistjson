@@ -100,7 +100,6 @@ export class ImageProcessor implements IElementProcessor<ImageElement> {
     const imageElement = new ImageElement(id, imageUrl, embedId);
 
     // Extract position and size (spPrNode already extracted above)
-    debugger;
     if (spPrNode) {
       const xfrmNode = this.xmlParser.findNode(spPrNode, "xfrm");
       if (xfrmNode) {
