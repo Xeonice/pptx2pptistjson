@@ -6,10 +6,11 @@ This comprehensive test suite provides thorough validation for the PPTX parsing 
 
 ## Test Files
 
-### Core Tests (7 files)
+### Core Tests (8 files)
 - **`pptxtojson.test.ts`** - Basic functionality tests for the main parse function
 - **`utils.test.ts`** - Domain model tests for Presentation, Slide, and Theme classes
 - **`background-image.test.ts`** - Background processing validation
+- **`slide-background-format.test.ts`** - Background format toggle testing (legacy vs PPTist)
 - **`element-types.test.ts`** - Element type parsing validation
 - **`edge-cases.test.ts`** - Error handling and edge case validation
 - **`output-comparison.test.ts`** - Output comparison testing
@@ -75,14 +76,14 @@ This comprehensive test suite provides thorough validation for the PPTX parsing 
 #### UI Component Tests (3 files)
 - **`cdn-file-uploader.test.tsx`** - CDN file uploader component
 - **`monaco-json-loader-large-files.test.tsx`** - Monaco JSON loader for large files
-- **`switch-component-integration.test.tsx`** - Switch component integration
+- **`switch-component-integration.test.tsx`** - Switch component integration (background format toggle)
 
 #### Utility & Core Function Tests (16 files)
 - Various utility and core function tests including precision, ID generation, unit conversion, XML parsing, and output structure validation
 
 ## Test Results Summary
 
-✅ **All 850+ tests passing across 61 test files**
+✅ **All 850+ tests passing across 65+ test files**
 
 ### Key Validation Points
 
@@ -95,7 +96,7 @@ This comprehensive test suite provides thorough validation for the PPTX parsing 
 - **Text Content**: Preserves Chinese characters and formatting
 - **Positioning**: Maintains element positions within acceptable tolerance (±50px)
 - **Theme Colors**: Extracts theme color scheme (though with some variations)
-- **Backgrounds**: Correctly identifies slide backgrounds
+- **Backgrounds**: Correctly identifies slide backgrounds with dual format support (legacy/PPTist)
 
 #### 🔧 **Technical Validation**
 - **Structure**: Maintains consistent JSON output format
@@ -124,7 +125,7 @@ This comprehensive test suite provides thorough validation for the PPTX parsing 
 - **Color Processing**: 100% coverage (PowerPoint transformations, theme colors)
 - **Shape Processing**: 100% coverage (100+ PowerPoint shape types)
 - **Debug Functionality**: 100% coverage (debug system, visualization, metadata)
-- **Slide Features**: 100% coverage (backgrounds, themes, positioning)
+- **Slide Features**: 100% coverage (backgrounds with dual format support, themes, positioning)
 - **Error Cases**: Comprehensive error handling validation with boundary conditions
 - **Edge Cases**: Memory management, Unicode, performance, large files
 - **Integration**: End-to-end conversion flows and PPTist compatibility
@@ -169,10 +170,17 @@ Tests use:
 - **Input**: `sample/input.pptx` - Real PowerPoint presentation
 - **Expected Output**: `sample/output.json` - Reference JSON structure
 - **Validation**: Comprehensive comparison between actual and expected results
+- **Background Format Tests**: Validation of both legacy and PPTist background formats
 - **Debug Samples**: Various debug images and processing step visualizations
 - **Performance Samples**: Large file processing and stress testing data
 
 ## New Testing Features
+
+### Background Format Testing
+- **Dual Format Support**: Tests for both legacy and PPTist background formats
+- **Format Toggle Validation**: API endpoint testing with backgroundFormat parameter
+- **Slide Model Testing**: Validation of toJSON() method with backgroundFormat parameter
+- **Integration Testing**: End-to-end testing of background format conversion
 
 ### Image Processing Validation
 - **Sharp Library Integration**: Tests for Sharp-based image processing with fallback mechanisms

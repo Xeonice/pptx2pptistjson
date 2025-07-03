@@ -18,6 +18,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - `npm run test:coverage` - Run tests with coverage reporting
 - Run single test: `npx jest <test-file-name>` or `npx jest --testNamePattern="<test name>"`
 - Run test category: `npx jest background-image`, `npx jest color-processing`, `npx jest shape-processor`
+- Background format tests: `npx jest slide-background-format`, `npx jest background-format`
 
 ### Project Identity (v2.1.0)
 - **Package Name**: `pptx2pptistjson` (specialized for PPTist integration)
@@ -108,6 +109,18 @@ ImageDataService.extractImageData()
 └── Concurrent Processing: Semaphore-controlled batch processing (default: 3)
 ```
 
+### Background Format Support
+Dual format system for backward compatibility and PPTist optimization:
+
+```typescript
+Slide.toJSON(backgroundFormat: 'legacy' | 'pptist')
+├── Legacy Format: { image: "url", imageSize: "cover" }
+├── PPTist Format: { image: { src: "url", size: "cover" } }
+├── API Parameter: backgroundFormat in FormData
+├── UI Toggle: React state management for format selection
+└── Default: 'legacy' for backward compatibility
+```
+
 ## Post-Modification Verification
 After each modification, verify multiple command executions:
 - `npm run build` - Ensures production build integrity  
@@ -129,11 +142,12 @@ After each modification, verify multiple command executions:
 - **Enhanced preset shapes**: 15+ flowChart series, 7+ actionButton series support added
 
 ### Testing Strategy
-- **850+ test cases** cover color processing, shape conversion, image handling
-- **Integration tests** verify end-to-end PPTist compatibility
+- **850+ test cases** cover color processing, shape conversion, image handling, background formats
+- **Integration tests** verify end-to-end PPTist compatibility with both background formats
 - **Performance tests** ensure memory management and concurrent processing
 - **Edge case handling** for malformed PPTX files and missing resources
 - **Comprehensive image processing tests** including PPTXImageProcessor, stretch offset handling, and debug functionality
+- **Background format tests** validate dual format conversion and API parameter handling
 
 ### Sample Files Usage
 - `sample/basic/input.pptx` and `output.json` - reference conversion format
@@ -165,7 +179,47 @@ container.registerFactory('xmlParser', () => new XmlParseService(), true);
 const service = container.resolve<IFileService>('fileService');
 ```
 
+### Background Format Implementation
+The system supports dual background formats for maximum compatibility:
+
+#### Legacy Format (Default)
+```typescript
+{
+  "background": {
+    "type": "image",
+    "image": "data:image/png;base64,...",
+    "imageSize": "cover"
+  }
+}
+```
+
+#### PPTist Format (Recommended)
+```typescript
+{
+  "background": {
+    "type": "image", 
+    "image": {
+      "src": "data:image/png;base64,...",
+      "size": "cover"
+    }
+  }
+}
+```
+
+**Implementation Points:**
+- `Slide.toJSON()` accepts `backgroundFormat` parameter
+- API endpoint `/api/parse-pptx` accepts `backgroundFormat` FormData parameter
+- UI provides toggle switch for format selection
+- Parser passes format through entire conversion pipeline
+- All tests validate both format outputs
+
 ## Repository Management Guidelines
 
 ### Git Branch Strategy
 - 这个项目的 master 分支不能直接提交，每次我需要让你提交时，需要先确保自己不在 master 分支上，在一个从 master 切出来的分支上
+
+### Background Format Development Guidelines
+- Always test both legacy and PPTist background formats when making changes
+- Use `backgroundFormat` parameter consistently throughout the pipeline
+- Maintain backward compatibility with legacy format as default
+- Update corresponding test cases when modifying background processing logic
