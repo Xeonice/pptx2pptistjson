@@ -197,12 +197,6 @@ jobs:
       - name: Run tests before publish
         run: npm test
 
-      - name: Configure npm authentication
-        run:
-          echo "//registry.npmjs.org/:_authToken=${{ secrets.NPM_TOKEN }}" > ~/.npmrc
-          echo "registry=https://registry.npmjs.org/" >> ~/.npmrc
-          echo "always-auth=true" >> ~/.npmrc
-
       - name: Publish package (if needed)
         run: npm publish
         env:
