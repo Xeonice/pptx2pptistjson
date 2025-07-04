@@ -102,6 +102,25 @@ describe("FontSizeCalculator", () => {
     });
   });
 
+  describe("default font size methods", () => {
+    it("should return correct default PowerPoint font size", () => {
+      expect(FontSizeCalculator.getDefaultPowerPointSize()).toBe(1800);
+    });
+
+    it("should return correct default web font size", () => {
+      // 18pt (1800) should convert to 23.99px
+      expect(FontSizeCalculator.getDefaultWebSize()).toBe(23.99);
+    });
+
+    it("should maintain consistency between default methods", () => {
+      const defaultPowerPointSize = FontSizeCalculator.getDefaultPowerPointSize();
+      const calculatedWebSize = FontSizeCalculator.convertPowerPointToWebSize(defaultPowerPointSize);
+      const defaultWebSize = FontSizeCalculator.getDefaultWebSize();
+      
+      expect(calculatedWebSize).toBe(defaultWebSize);
+    });
+  });
+
   describe("precision and edge cases", () => {
     it("should handle very small values", () => {
       const result = FontSizeCalculator.convertPowerPointToWebSize("100");

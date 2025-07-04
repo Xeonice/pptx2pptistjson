@@ -33,7 +33,7 @@ export class TextStyleExtractor {
       listStyleDefRPr = this.getListStyleDefRPr(pNode, txBodyNode);
     }
 
-    // Font size - check run properties first, then list style inheritance
+    // Font size - check run properties first, then list style inheritance, then default
     const sz = rPrNode ? this.xmlParser.getAttribute(rPrNode, "sz") : undefined;
     if (sz) {
       // PowerPoint font size is in hundreds of points, but needs scaling for web display
@@ -49,7 +49,23 @@ export class TextStyleExtractor {
           `TextStyleExtractor: Font size inherited from list style: ${style.fontSize}`,
           "info"
         );
+      } else {
+        // Use PowerPoint default font size when no explicit size is found
+        style.fontSize = FontSizeCalculator.getDefaultWebSize();
+        DebugHelper.log(
+          context,
+          `TextStyleExtractor: Using PowerPoint default font size: ${style.fontSize}px (18pt)`,
+          "info"
+        );
       }
+    } else {
+      // No explicit font size found, use PowerPoint default (18pt)
+      style.fontSize = FontSizeCalculator.getDefaultWebSize();
+      DebugHelper.log(
+        context,
+        `TextStyleExtractor: Using PowerPoint default font size: ${style.fontSize}px (18pt)`,
+        "info"
+      );
     }
 
     // Bold - check run properties first, then inherit from list style

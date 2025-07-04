@@ -11,6 +11,9 @@ export class FontSizeCalculator {
   // PowerPoint字体大小单位转换因子（百分点）
   private static readonly POWERPOINT_UNIT_DIVISOR = 100;
   
+  // PowerPoint默认字号（18pt = 1800）
+  private static readonly DEFAULT_POWERPOINT_FONT_SIZE = 1800;
+  
   // 小数位数
   private static readonly DECIMAL_PLACES = 2;
 
@@ -66,5 +69,21 @@ export class FontSizeCalculator {
     } catch {
       return false;
     }
+  }
+
+  /**
+   * 获取PowerPoint默认字号（18pt = 1800）
+   * @returns 默认字号的Web显示大小
+   */
+  static getDefaultWebSize(): number {
+    return this.convertPowerPointToWebSize(this.DEFAULT_POWERPOINT_FONT_SIZE);
+  }
+
+  /**
+   * 获取PowerPoint默认字号的原始值（1800）
+   * @returns 默认字号的PowerPoint值
+   */
+  static getDefaultPowerPointSize(): number {
+    return this.DEFAULT_POWERPOINT_FONT_SIZE;
   }
 }
