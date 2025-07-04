@@ -1,7 +1,5 @@
 import { IElementProcessor } from "../../interfaces/IElementProcessor";
-import {
-  TextElement,
-} from "../../../models/domain/elements/TextElement";
+import { TextElement } from "../../../models/domain/elements/TextElement";
 import { XmlNode } from "../../../models/xml/XmlNode";
 import { IXmlParseService } from "../../interfaces/IXmlParseService";
 import { ProcessingContext } from "../../interfaces/ProcessingContext";
@@ -11,6 +9,7 @@ import { GroupTransformUtils } from "../../utils/GroupTransformUtils";
 import { RotationExtractor } from "../../utils/RotationExtractor";
 import { FlipExtractor } from "../../utils/FlipExtractor";
 import { DebugHelper } from "../../utils/DebugHelper";
+import { ShadowExtractor } from "../../utils/ShadowExtractor";
 
 export class TextProcessor implements IElementProcessor<TextElement> {
   private textStyleExtractor: TextStyleExtractor;
@@ -22,14 +21,18 @@ export class TextProcessor implements IElementProcessor<TextElement> {
   canProcess(xmlNode: XmlNode): boolean {
     // Check if this is a text box
     const nvSpPrNode = this.xmlParser.findNode(xmlNode, "nvSpPr");
-    const cNvSpPrNode = nvSpPrNode ? this.xmlParser.findNode(nvSpPrNode, "cNvSpPr") : undefined;
-    const txBox = cNvSpPrNode ? this.xmlParser.getAttribute(cNvSpPrNode, "txBox") : undefined;
-    
+    const cNvSpPrNode = nvSpPrNode
+      ? this.xmlParser.findNode(nvSpPrNode, "cNvSpPr")
+      : undefined;
+    const txBox = cNvSpPrNode
+      ? this.xmlParser.getAttribute(cNvSpPrNode, "txBox")
+      : undefined;
+
     if (txBox === "1") {
       // This is explicitly a text box
       return true;
     }
-    
+
     // Only process pure text elements without shape backgrounds
     // Shape elements with text are handled by ShapeProcessor
     return (
@@ -119,6 +122,17 @@ export class TextProcessor implements IElementProcessor<TextElement> {
           );
         }
       }
+
+      // Extract shadow properties using ShadowExtractor
+      const shadow = ShadowExtractor.extractShadow(spPrNode, this.xmlParser, context);
+      if (shadow) {
+        textElement.setShadow(shadow);
+        DebugHelper.log(
+          context,
+          `Text shadow set - type: ${shadow.type}, h: ${shadow.h}, v: ${shadow.v}, blur: ${shadow.blur}, color: ${shadow.color}`,
+          "success"
+        );
+      }
     }
 
     // Check if this element has a visible shape background
@@ -140,13 +154,19 @@ export class TextProcessor implements IElementProcessor<TextElement> {
       // Extract text content organized by paragraphs
       const txBodyNode = this.xmlParser.findNode(xmlNode, "txBody");
       if (txBodyNode) {
-        const result = this.textStyleExtractor.extractTextContentByParagraphs(txBodyNode, context);
+        const result = this.textStyleExtractor.extractTextContentByParagraphs(
+          txBodyNode,
+          context
+        );
         finalTextElement.setParagraphs(result.paragraphs);
-        
+
         // Set line height on TextElement level if extracted
         if (result.lineHeight) {
           const existingStyle = finalTextElement.getTextStyle() || {};
-          finalTextElement.setTextStyle({ ...existingStyle, lineHeight: result.lineHeight });
+          finalTextElement.setTextStyle({
+            ...existingStyle,
+            lineHeight: result.lineHeight,
+          });
         }
       }
 
@@ -156,13 +176,19 @@ export class TextProcessor implements IElementProcessor<TextElement> {
       // Extract text content organized by paragraphs
       const txBodyNode = this.xmlParser.findNode(xmlNode, "txBody");
       if (txBodyNode) {
-        const result = this.textStyleExtractor.extractTextContentByParagraphs(txBodyNode, context);
+        const result = this.textStyleExtractor.extractTextContentByParagraphs(
+          txBodyNode,
+          context
+        );
         textElement.setParagraphs(result.paragraphs);
-        
+
         // Set line height on TextElement level if extracted
         if (result.lineHeight) {
           const existingStyle = textElement.getTextStyle() || {};
-          textElement.setTextStyle({ ...existingStyle, lineHeight: result.lineHeight });
+          textElement.setTextStyle({
+            ...existingStyle,
+            lineHeight: result.lineHeight,
+          });
         }
       }
 
@@ -197,7 +223,7 @@ export class TextProcessor implements IElementProcessor<TextElement> {
     const spPrNode = this.xmlParser.findNode(xmlNode, "spPr");
     if (!spPrNode) return false;
 
-    const customGeomNode = this.xmlParser.findNode(spPrNode, "a:custGeom");
+    const customGeomNode = this.xmlParser.findNode(spPrNode, "custGeom");
 
     return !!customGeomNode;
   }

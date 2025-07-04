@@ -13,7 +13,6 @@ export interface OutlineResult {
  * Based on PowerPoint line (a:ln) element processing
  */
 export class OutlineExtractor {
-  
   /**
    * Extract outline properties from XML node
    * @param xmlNode - The shape XML node
@@ -26,7 +25,6 @@ export class OutlineExtractor {
     xmlParser: IXmlParseService,
     context: ProcessingContext
   ): OutlineResult | undefined {
-    
     // Find spPr node first
     const spPrNode = xmlParser.findNode(xmlNode, "spPr");
     if (!spPrNode) {
@@ -35,7 +33,7 @@ export class OutlineExtractor {
 
     // Try to get line node from spPr/a:ln
     let lineNode = xmlParser.findNode(spPrNode, "ln");
-    
+
     // If no direct line node, check for style reference
     if (!lineNode) {
       const styleNode = xmlParser.findNode(xmlNode, "style");
@@ -46,7 +44,10 @@ export class OutlineExtractor {
           if (lnIdx && context.theme) {
             // Get line style from theme based on index
             const themeContent = this.createThemeContent(context.theme);
-            const lnStyleLst = themeContent?.["a:theme"]?.["a:themeElements"]?.["a:fmtScheme"]?.["a:lnStyleLst"];
+            const lnStyleLst =
+              themeContent?.["a:theme"]?.["a:themeElements"]?.["a:fmtScheme"]?.[
+                "a:lnStyleLst"
+              ];
             if (lnStyleLst && lnStyleLst["a:ln"]) {
               const lineStyles = lnStyleLst["a:ln"];
               const index = parseInt(lnIdx) - 1;
@@ -73,7 +74,7 @@ export class OutlineExtractor {
     const result: OutlineResult = {
       color: "#000000",
       width: 1,
-      style: "solid"
+      style: "solid",
     };
 
     // Extract width (convert from EMU to points, then to CSS pixels)
@@ -113,7 +114,6 @@ export class OutlineExtractor {
     xmlParser: IXmlParseService,
     context: ProcessingContext
   ): string {
-    
     // Try direct solidFill first
     const solidFillNode = xmlParser.findNode(lineNode, "solidFill");
     if (solidFillNode) {
@@ -132,7 +132,10 @@ export class OutlineExtractor {
         const schemeClr = xmlParser.getAttribute(schemeClrNode, "val");
         if (schemeClr) {
           const themeContent = this.createThemeContent(context.theme);
-          const color = this.getSchemeColorFromTheme(`a:${schemeClr}`, themeContent);
+          const color = this.getSchemeColorFromTheme(
+            `a:${schemeClr}`,
+            themeContent
+          );
           if (color) {
             return `#${color}`;
           }
@@ -150,8 +153,11 @@ export class OutlineExtractor {
           const schemeClr = xmlParser.getAttribute(schemeClrNode, "val");
           if (schemeClr) {
             const themeContent = this.createThemeContent(context.theme);
-            let color = this.getSchemeColorFromTheme(`a:${schemeClr}`, themeContent);
-            
+            let color = this.getSchemeColorFromTheme(
+              `a:${schemeClr}`,
+              themeContent
+            );
+
             if (color) {
               // Apply shade transformation if present
               const shadeNode = xmlParser.findNode(schemeClrNode, "shade");
@@ -179,14 +185,13 @@ export class OutlineExtractor {
     lineNode: any,
     xmlParser: IXmlParseService
   ): { style: string; strokeDasharray?: string } {
-    
     const prstDashNode = xmlParser.findNode(lineNode, "prstDash");
     if (!prstDashNode) {
       return { style: "solid", strokeDasharray: "0" };
     }
 
     const type = xmlParser.getAttribute(prstDashNode, "val");
-    
+
     switch (type) {
       case "solid":
         return { style: "solid", strokeDasharray: "0" };
@@ -219,16 +224,20 @@ export class OutlineExtractor {
   private static createThemeContent(theme: any): any {
     return {
       "a:theme": {
-        "a:themeElements": theme
-      }
+        "a:themeElements": theme,
+      },
     };
   }
 
   /**
    * Get scheme color from theme
    */
-  private static getSchemeColorFromTheme(schemeClr: string, themeContent: any): string | undefined {
-    const colorScheme = themeContent?.["a:theme"]?.["a:themeElements"]?.["a:clrScheme"];
+  private static getSchemeColorFromTheme(
+    schemeClr: string,
+    themeContent: any
+  ): string | undefined {
+    const colorScheme =
+      themeContent?.["a:theme"]?.["a:themeElements"]?.["a:clrScheme"];
     if (!colorScheme) {
       return undefined;
     }
@@ -267,7 +276,8 @@ export class OutlineExtractor {
       const newB = Math.round(b * shade);
 
       // Convert back to hex
-      const toHex = (val: number) => Math.min(255, Math.max(0, val)).toString(16).padStart(2, '0');
+      const toHex = (val: number) =>
+        Math.min(255, Math.max(0, val)).toString(16).padStart(2, "0");
       return toHex(newR) + toHex(newG) + toHex(newB);
     } catch (error) {
       return hexColor; // Return original on error

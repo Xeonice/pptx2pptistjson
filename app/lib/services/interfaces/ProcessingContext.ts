@@ -76,6 +76,12 @@ export interface ProcessingContext {
    * Contains scale factors and transformation properties extracted from grpSp xfrm
    */
   groupTransform?: GroupTransform;
+
+  /**
+   * Parent group fill color when processing elements inside a group
+   * Used for handling grpFill elements that inherit from parent group
+   */
+  parentGroupFillColor?: string;
 }
 
 /**

@@ -9,6 +9,7 @@ export abstract class Element {
   protected rotation?: number;
   protected style?: ElementStyle;
   protected flip?: FlipTransform;
+  protected shadow?: Shadow;
 
   constructor(id: string, type: ElementType) {
     this.id = id;
@@ -63,6 +64,14 @@ export abstract class Element {
     return this.flip;
   }
 
+  setShadow(shadow: Shadow): void {
+    this.shadow = shadow;
+  }
+
+  getShadow(): Shadow | undefined {
+    return this.shadow;
+  }
+
   abstract toJSON(): any;
 }
 
@@ -115,10 +124,11 @@ export interface Border {
 }
 
 export interface Shadow {
-  color: string;
-  blur: number;
-  offsetX: number;
-  offsetY: number;
+  type: "outerShadow" | "innerShadow";
+  h: number;    // 水平偏移（points）
+  v: number;    // 垂直偏移（points）
+  blur: number; // 模糊半径（points）
+  color: string; // 颜色（rgba格式）
 }
 
 export interface FlipTransform {

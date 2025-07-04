@@ -98,6 +98,11 @@ class MockXmlParseService implements IXmlParseService {
     return [];
   }
 
+  getChildNode(parent: XmlNode, tagName: string): XmlNode | undefined {
+    this.callCount++;
+    return undefined;
+  }
+
   stringify(node: XmlNode): string {
     this.callCount++;
     return JSON.stringify(node);

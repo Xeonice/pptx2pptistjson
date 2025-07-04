@@ -36,8 +36,13 @@ class MockXmlParseService implements IXmlParseService {
     throw new Error('Not implemented for tests');
   }
 
-  getChildNodes(node: XmlNode): XmlNode[] {
-    return node.children || [];
+  getChildNodes(parent: XmlNode, tagName: string): XmlNode[] {
+    if (!parent.children) return [];
+    return parent.children.filter((child) => child.name.includes(tagName));
+  }
+
+  getChildNode(parent: XmlNode, tagName: string): XmlNode | undefined {
+    return this.getChildNodes(parent, tagName)[0];
   }
 
   getTextContent(node: XmlNode): string {

@@ -63,6 +63,15 @@ const createImageBuffer = (format: string): Buffer => {
     case 'tiff':
       // Create longer TIFF header
       return Buffer.from([0x49, 0x49, 0x2A, 0x00, 0x08, 0x00, 0x00, 0x00]);
+    case 'emf':
+      // Create EMF header with proper signature
+      const emfBuffer = Buffer.alloc(44);
+      // Set EMF signature at bytes 40-43 (0x464D4520 = "EMF " in ASCII, little-endian)
+      emfBuffer[40] = 0x20; // 空格
+      emfBuffer[41] = 0x45; // E
+      emfBuffer[42] = 0x4D; // M
+      emfBuffer[43] = 0x46; // F
+      return emfBuffer;
     default:
       return Buffer.from('unknown format');
   }
@@ -238,6 +247,21 @@ describe('ImageDataService Unit Tests', () => {
 
       expect(result?.format).toBe('tiff');
       expect(result?.mimeType).toBe('image/tiff');
+    });
+
+    it('should detect EMF format correctly', async () => {
+      const embedId = 'rId1';
+      const emfBuffer = createImageBuffer('emf');
+      
+      const relationships = new Map();
+      relationships.set(embedId, '../media/test.emf');
+      mockFileService.setMockFile('ppt/media/test.emf', emfBuffer);
+
+      const context = createMockContext(relationships);
+      const result = await imageService.extractImageData(embedId, context);
+
+      expect(result?.format).toBe('emf');
+      expect(result?.mimeType).toBe('image/emf');
     });
 
     it('should handle unknown format', async () => {

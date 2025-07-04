@@ -8,6 +8,7 @@ import { ColorUtils } from "../../utils/ColorUtils";
 import { DebugHelper } from "../../utils/DebugHelper";
 import { GroupTransformUtils } from "../../utils/GroupTransformUtils";
 import { FlipExtractor } from "../../utils/FlipExtractor";
+import { ShadowExtractor } from "../../utils/ShadowExtractor";
 
 export class LineElement extends Element {
   private points: { x: number; y: number }[] = [];
@@ -64,7 +65,7 @@ export class LineElement extends Element {
       endPoint.y - (position?.y || 0),
     ];
 
-    const result = {
+    const result: any = {
       type: this.type,
       id: this.id,
       width: this.strokeWidth,
@@ -79,6 +80,18 @@ export class LineElement extends Element {
       },
       points: [this.startArrow, this.endArrow],
     };
+
+    // Add shadow if present
+    const shadow = this.getShadow();
+    if (shadow) {
+      result.shadow = {
+        type: shadow.type,
+        h: shadow.h,
+        v: shadow.v,
+        blur: shadow.blur,
+        color: shadow.color
+      };
+    }
 
     // Debug output only when debug is enabled (checked outside)
     if (typeof globalThis !== 'undefined' && (globalThis as any).debugContext) {
@@ -208,6 +221,17 @@ export class LineProcessor implements IElementProcessor<LineElement> {
             "info"
           );
         }
+      }
+
+      // Extract shadow properties using ShadowExtractor
+      const shadow = ShadowExtractor.extractShadow(spPrNode, this.xmlParser, context);
+      if (shadow) {
+        lineElement.setShadow(shadow);
+        DebugHelper.log(
+          context,
+          `LineProcessor ${id}: shadow set - type: ${shadow.type}, h: ${shadow.h}, v: ${shadow.v}, blur: ${shadow.blur}, color: ${shadow.color}`,
+          "success"
+        );
       }
 
       // Extract line style properties

@@ -14,6 +14,7 @@ import { DebugHelper } from "../../utils/DebugHelper";
 import { GroupTransformUtils } from "../../utils/GroupTransformUtils";
 import { RotationExtractor } from "../../utils/RotationExtractor";
 import { FlipExtractor } from "../../utils/FlipExtractor";
+import { ShadowExtractor } from "../../utils/ShadowExtractor";
 
 export class ImageProcessor implements IElementProcessor<ImageElement> {
   private imageProcessingService?: ImageProcessingService;
@@ -254,6 +255,17 @@ export class ImageProcessor implements IElementProcessor<ImageElement> {
             "info"
           );
         }
+      }
+
+      // Extract shadow properties using ShadowExtractor
+      const shadow = ShadowExtractor.extractShadow(spPrNode, this.xmlParser, context);
+      if (shadow) {
+        imageElement.setShadow(shadow);
+        DebugHelper.log(
+          context,
+          `Image shadow set - type: ${shadow.type}, h: ${shadow.h}, v: ${shadow.v}, blur: ${shadow.blur}, color: ${shadow.color}`,
+          "success"
+        );
       }
     }
 

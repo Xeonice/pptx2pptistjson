@@ -10,9 +10,10 @@ import {
 } from "../interfaces/ProcessingContext";
 import { IElementProcessor } from "../interfaces/IElementProcessor";
 import { Element } from "../../models/domain/elements/Element";
-import { ShapeElement } from "../../models/domain/elements/ShapeElement";
 import { IdGenerator } from "../utils/IdGenerator";
 import { ColorUtils } from "../utils/ColorUtils";
+import { FillExtractor } from "../utils/FillExtractor";
+import { GroupTransformCalculator } from "../utils/GroupTransformCalculator";
 import { ImageDataService } from "../images/ImageDataService";
 import { ParseOptions } from "../../models/dto/ParseOptions";
 import { DebugHelper } from "../utils/DebugHelper";
@@ -270,16 +271,20 @@ export class SlideParser {
       // Extract group transform information
       const currentGroupTransform = this.extractGroupTransformInfo(node);
 
+      // Extract group fill color for child elements
+      const groupFillColor = this.extractGroupFillColor(node, context);
+
       // Accumulate group transforms if we're inside a nested group
       const accumulatedGroupTransform = this.accumulateGroupTransforms(
         context.groupTransform,
         currentGroupTransform
       );
 
-      // Create enhanced context with accumulated group transform
+      // Create enhanced context with accumulated group transform and fill color
       const enhancedContext = {
         ...context,
         groupTransform: accumulatedGroupTransform,
+        parentGroupFillColor: groupFillColor || context.parentGroupFillColor,
       };
 
       for (const child of node.children) {
@@ -295,7 +300,10 @@ export class SlideParser {
 
       // Apply group transforms to all child elements
       if (accumulatedGroupTransform && groupElements.length > 0) {
-        this.applyGroupTransformToElements(groupElements, accumulatedGroupTransform);
+        this.applyGroupTransformToElements(
+          groupElements,
+          accumulatedGroupTransform
+        );
       }
 
       return groupElements.length > 0 ? groupElements : undefined;
@@ -390,90 +398,73 @@ export class SlideParser {
     const childCx = this.xmlParser.getAttribute(chExtNode, "cx");
     const childCy = this.xmlParser.getAttribute(chExtNode, "cy");
 
-    if (!groupX || !groupY || !actualCx || !actualCy || !childOffsetX || !childOffsetY || !childCx || !childCy) return undefined;
+    if (
+      !groupX ||
+      !groupY ||
+      !actualCx ||
+      !actualCy ||
+      !childOffsetX ||
+      !childOffsetY ||
+      !childCx ||
+      !childCy
+    )
+      return undefined;
 
-    // Calculate scale factors
-    const scaleX = parseInt(actualCx) / parseInt(childCx);
-    const scaleY = parseInt(actualCy) / parseInt(childCy);
+    // Calculate scale factors with proper precision
+    const scaleX = parseFloat(actualCx) / parseFloat(childCx);
+    const scaleY = parseFloat(actualCy) / parseFloat(childCy);
+
+    // Validate scale factors
+    if (!isFinite(scaleX) || !isFinite(scaleY) || scaleX <= 0 || scaleY <= 0) {
+      console.warn(`Invalid group scale factors: scaleX=${scaleX}, scaleY=${scaleY}`);
+      return undefined;
+    }
+
+    // Extract rotation (convert from EMU to degrees)
+    const rot = this.xmlParser.getAttribute(xfrmNode, "rot");
+    const rotation = rot ? parseInt(rot) / 60000 : undefined;
+
+    // Extract flip attributes
+    const flipH = this.xmlParser.getAttribute(xfrmNode, "flipH") === "1";
+    const flipV = this.xmlParser.getAttribute(xfrmNode, "flipV") === "1";
+
+    // Debug logging
+    console.log(`[Group Transform] scaleX: ${scaleX.toFixed(4)}, scaleY: ${scaleY.toFixed(4)}, rotation: ${rotation || 0}°`);
 
     return {
       scaleX,
       scaleY,
       offset: {
         x: parseInt(groupX),
-        y: parseInt(groupY)
+        y: parseInt(groupY),
       },
       childOffset: {
         x: parseInt(childOffsetX),
-        y: parseInt(childOffsetY)
+        y: parseInt(childOffsetY),
       },
-      flip: undefined,
-      rotation: undefined
+      flip: flipH || flipV ? { horizontal: flipH, vertical: flipV } : undefined,
+      rotation,
     };
   }
 
   /**
-   * Accumulate group transforms for nested groups
+   * Accumulate group transforms for nested groups using advanced matrix calculations
    * @param parentTransform - Parent group transform (if any)
    * @param currentTransform - Current group transform
-   * @returns Accumulated transform
+   * @returns Accumulated transform with proper rotation and flip handling
    */
   private accumulateGroupTransforms(
     parentTransform: GroupTransform | undefined,
     currentTransform: GroupTransform | undefined
   ): GroupTransform | undefined {
-    if (!currentTransform) return parentTransform;
-    if (!parentTransform) return currentTransform;
-
-    // Accumulate scale factors (multiply)
-    const scaleX = parentTransform.scaleX * currentTransform.scaleX;
-    const scaleY = parentTransform.scaleY * currentTransform.scaleY;
-
-    // Calculate accumulated offsets
-    // Current group's position in parent's coordinate system
-    const currentOffsetX = currentTransform.offset?.x || 0;
-    const currentOffsetY = currentTransform.offset?.y || 0;
-    
-    // Transform current group's position by parent's scale and offset
-    const parentOffsetX = parentTransform.offset?.x || 0;
-    const parentOffsetY = parentTransform.offset?.y || 0;
-    const parentChildOffsetX = parentTransform.childOffset?.x || 0;
-    const parentChildOffsetY = parentTransform.childOffset?.y || 0;
-
-    // Apply parent's transformation to current group's position
-    const transformedOffsetX = 
-      (currentOffsetX - parentChildOffsetX) * parentTransform.scaleX + parentOffsetX;
-    const transformedOffsetY = 
-      (currentOffsetY - parentChildOffsetY) * parentTransform.scaleY + parentOffsetY;
-
-    // Calculate accumulated child offset
-    const currentChildOffsetX = currentTransform.childOffset?.x || 0;
-    const currentChildOffsetY = currentTransform.childOffset?.y || 0;
-    
-    // Transform current group's child offset by parent's scale
-    const accumulatedChildOffsetX = 
-      (currentChildOffsetX - parentChildOffsetX) * parentTransform.scaleX + parentChildOffsetX;
-    const accumulatedChildOffsetY = 
-      (currentChildOffsetY - parentChildOffsetY) * parentTransform.scaleY + parentChildOffsetY;
-
-    return {
-      scaleX,
-      scaleY,
-      offset: {
-        x: transformedOffsetX,
-        y: transformedOffsetY
-      },
-      childOffset: {
-        x: accumulatedChildOffsetX,
-        y: accumulatedChildOffsetY
-      },
-      flip: currentTransform.flip || parentTransform.flip,
-      rotation: (currentTransform.rotation || 0) + (parentTransform.rotation || 0)
-    };
+    // Use advanced transform calculator for precise accumulation
+    return GroupTransformCalculator.accumulateTransforms(parentTransform, currentTransform);
   }
 
   /**
    * Apply group transforms to child elements
+   * Note: Position transforms are already applied by GroupTransformUtils in element processors
+   * This method only applies size scaling, rotation, and flip transformations
    * @param elements - Array of elements to transform
    * @param groupTransform - Group transform information
    */
@@ -481,27 +472,214 @@ export class SlideParser {
     elements: Element[],
     groupTransform: GroupTransform
   ): void {
+    console.log(`[Apply Group Transform] Processing ${elements.length} elements with scale: ${groupTransform.scaleX.toFixed(4)}x${groupTransform.scaleY.toFixed(4)}`);
+    
     for (const element of elements) {
-      if (element instanceof ShapeElement) {
-        // // Apply scale to position
-        // const currentPos = element.getPosition();
-        // if (currentPos) {
-        //   element.setPosition({
-        //     x: currentPos.x * groupTransform.scaleX,
-        //     y: currentPos.y * groupTransform.scaleY
-        //   });
-        // }
-
-        // Apply scale to size
-        const currentSize = element.getSize();
+      // Apply size scaling to all elements that have size properties
+      // Use duck typing to check for size methods
+      if ('getSize' in element && 'setSize' in element && typeof element.getSize === 'function' && typeof element.setSize === 'function') {
+        const currentSize = (element as any).getSize();
         if (currentSize) {
-          element.setSize({
-            width: currentSize.width * groupTransform.scaleX,
-            height: currentSize.height * groupTransform.scaleY,
+          const newWidth = currentSize.width * groupTransform.scaleX;
+          const newHeight = currentSize.height * groupTransform.scaleY;
+          
+          console.log(`[Apply Transform] Element size: ${currentSize.width}x${currentSize.height} -> ${newWidth.toFixed(2)}x${newHeight.toFixed(2)}`);
+          
+          (element as any).setSize({
+            width: newWidth,
+            height: newHeight,
           });
         }
       }
-      // TODO: Handle other element types (TextElement, ImageElement, etc.)
+      
+      // Apply rotation if element supports it
+      if (groupTransform.rotation && 'getRotation' in element && 'setRotation' in element && 
+          typeof element.getRotation === 'function' && typeof element.setRotation === 'function') {
+        const currentRotation = (element as any).getRotation() || 0;
+        const newRotation = currentRotation + groupTransform.rotation;
+        (element as any).setRotation(newRotation);
+        console.log(`[Apply Transform] Element rotation: ${currentRotation}° -> ${newRotation}°`);
+      }
+      
+      // Apply flip if element supports it and group has flip
+      if (groupTransform.flip && 'setFlip' in element && typeof element.setFlip === 'function') {
+        (element as any).setFlip(groupTransform.flip);
+        console.log(`[Apply Transform] Element flip: horizontal=${groupTransform.flip.horizontal}, vertical=${groupTransform.flip.vertical}`);
+      }
     }
+  }
+
+  /**
+   * Extract group fill color from grpSp node
+   * @param grpSpNode - The group shape node
+   * @param context - Processing context
+   * @returns Resolved fill color or undefined
+   */
+  private extractGroupFillColor(
+    grpSpNode: XmlNode,
+    context: ProcessingContext
+  ): string | undefined {
+    // Find grpSpPr node
+    const grpSpPrNode = this.xmlParser.findNode(grpSpNode, "grpSpPr");
+    if (!grpSpPrNode) return undefined;
+
+    // Check for direct solidFill
+    const solidFillNode = this.xmlParser.findNode(grpSpPrNode, "solidFill");
+    if (solidFillNode) {
+      // Check for srgbClr (direct RGB color)
+      const srgbNode = this.xmlParser.findNode(solidFillNode, "srgbClr");
+      if (srgbNode) {
+        const val = this.xmlParser.getAttribute(srgbNode, "val");
+        if (val) {
+          return ColorUtils.toRgba(`#${val}`);
+        }
+      }
+
+      // Check for schemeClr (theme color)
+      const schemeClrNode = this.xmlParser.findNode(solidFillNode, "schemeClr");
+      if (schemeClrNode && context.theme) {
+        const val = this.xmlParser.getAttribute(schemeClrNode, "val");
+        if (val) {
+          // Use FillExtractor for theme color resolution
+          const solidFillObj = {
+            "a:schemeClr": {
+              attrs: { val: val }
+            }
+          };
+          
+          const warpObj = {
+            themeContent: this.createThemeContent(context.theme)
+          };
+
+          return FillExtractor.getSolidFill(solidFillObj, undefined, undefined, warpObj);
+        }
+      }
+    }
+
+    // Check for gradient fill (basic support)
+    const gradFillNode = this.xmlParser.findNode(grpSpPrNode, "gradFill");
+    if (gradFillNode) {
+      // For group fills, we'll use the first color of the gradient
+      const gsLstNode = this.xmlParser.findNode(gradFillNode, "gsLst");
+      if (gsLstNode && gsLstNode.children && gsLstNode.children.length > 0) {
+        const firstGsNode = gsLstNode.children[0];
+        const colorNode = this.xmlParser.findNode(firstGsNode, "srgbClr") || 
+                         this.xmlParser.findNode(firstGsNode, "schemeClr");
+        if (colorNode) {
+          return this.extractColor(firstGsNode);
+        }
+      }
+    }
+
+    return undefined;
+  }
+
+  /**
+   * Create theme content for FillExtractor compatibility
+   */
+  private createThemeContent(theme: any): any {
+    if (!theme || !theme.colorScheme) {
+      return {
+        "a:theme": {
+          "a:themeElements": {
+            "a:clrScheme": {}
+          }
+        }
+      };
+    }
+
+    const colorScheme = theme.colorScheme;
+    return {
+      "a:theme": {
+        "a:themeElements": {
+          "a:clrScheme": {
+            "a:dk1": {
+              "a:srgbClr": {
+                attrs: {
+                  val: colorScheme.dk1?.replace("#", "").replace(/ff$/, "") || "000000"
+                }
+              }
+            },
+            "a:lt1": {
+              "a:srgbClr": {
+                attrs: {
+                  val: colorScheme.lt1?.replace("#", "").replace(/ff$/, "") || "FFFFFF"
+                }
+              }
+            },
+            "a:dk2": {
+              "a:srgbClr": {
+                attrs: {
+                  val: colorScheme.dk2?.replace("#", "").replace(/ff$/, "") || "1F497D"
+                }
+              }
+            },
+            "a:lt2": {
+              "a:srgbClr": {
+                attrs: {
+                  val: colorScheme.lt2?.replace("#", "").replace(/ff$/, "") || "EEECE1"
+                }
+              }
+            },
+            "a:accent1": {
+              "a:srgbClr": {
+                attrs: {
+                  val: colorScheme.accent1?.replace("#", "").replace(/ff$/, "") || "4F81BD"
+                }
+              }
+            },
+            "a:accent2": {
+              "a:srgbClr": {
+                attrs: {
+                  val: colorScheme.accent2?.replace("#", "").replace(/ff$/, "") || "F79646"
+                }
+              }
+            },
+            "a:accent3": {
+              "a:srgbClr": {
+                attrs: {
+                  val: colorScheme.accent3?.replace("#", "").replace(/ff$/, "") || "9BBB59"
+                }
+              }
+            },
+            "a:accent4": {
+              "a:srgbClr": {
+                attrs: {
+                  val: colorScheme.accent4?.replace("#", "").replace(/ff$/, "") || "8064A2"
+                }
+              }
+            },
+            "a:accent5": {
+              "a:srgbClr": {
+                attrs: {
+                  val: colorScheme.accent5?.replace("#", "").replace(/ff$/, "") || "4BACC6"
+                }
+              }
+            },
+            "a:accent6": {
+              "a:srgbClr": {
+                attrs: {
+                  val: colorScheme.accent6?.replace("#", "").replace(/ff$/, "") || "F366A7"
+                }
+              }
+            },
+            "a:hlink": {
+              "a:srgbClr": {
+                attrs: {
+                  val: colorScheme.hyperlink?.replace("#", "").replace(/ff$/, "") || "0000FF"
+                }
+              }
+            },
+            "a:folHlink": {
+              "a:srgbClr": {
+                attrs: {
+                  val: colorScheme.followedHyperlink?.replace("#", "").replace(/ff$/, "") || "800080"
+                }
+              }
+            }
+          }
+        }
+      }
+    };
   }
 }

@@ -1,4 +1,4 @@
-import { XmlNode } from '../../models/xml/XmlNode';
+import { XmlNode } from "../../models/xml/XmlNode";
 
 /**
  * Interface for XML parsing service
@@ -18,6 +18,11 @@ export interface IXmlParseService {
    * Find a single node by selector
    */
   findNode(root: XmlNode, selector: string): XmlNode | undefined;
+
+  /**
+   * Get only one child node by tag name
+   */
+  getChildNode(parent: XmlNode, tagName: string): XmlNode | undefined;
 
   /**
    * Get child nodes by tag name

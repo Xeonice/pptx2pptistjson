@@ -46,6 +46,10 @@ class ThemeTestXmlParser implements IXmlParseService {
     return this.findNodes(parent, tagName);
   }
 
+  getChildNode(parent: XmlNode, tagName: string): XmlNode | undefined {
+    return this.getChildNodes(parent, tagName)[0];
+  }
+
   stringify(node: XmlNode): string {
     return JSON.stringify(node);
   }

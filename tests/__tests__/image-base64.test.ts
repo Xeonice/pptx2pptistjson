@@ -45,9 +45,52 @@ describe('Image Base64 Processing', () => {
       expect(format).toBe('gif');
     });
 
+    test('should detect EMF format correctly', () => {
+      // 创建一个包含EMF签名的buffer
+      const emfBuffer = Buffer.alloc(44);
+      // 在字节40-43处设置EMF签名 (0x464D4520 = "EMF " in ASCII, little-endian)
+      emfBuffer[40] = 0x20; // 空格
+      emfBuffer[41] = 0x45; // E
+      emfBuffer[42] = 0x4d; // M
+      emfBuffer[43] = 0x46; // F
+      
+      const format = (imageDataService as any).detectImageFormat(emfBuffer);
+      expect(format).toBe('emf');
+    });
+
+    test('should detect BMP format correctly', () => {
+      const bmpHeader = Buffer.from([0x42, 0x4d, 0x00, 0x00, 0x00, 0x00]);
+      const format = (imageDataService as any).detectImageFormat(bmpHeader);
+      expect(format).toBe('bmp');
+    });
+
+    test('should detect WebP format correctly', () => {
+      const webpHeader = Buffer.from('RIFF\x00\x00\x00\x00WEBP', 'ascii');
+      const format = (imageDataService as any).detectImageFormat(webpHeader);
+      expect(format).toBe('webp');
+    });
+
+    test('should detect TIFF format correctly', () => {
+      // Little-endian TIFF
+      const tiffHeaderLE = Buffer.from([0x49, 0x49, 0x2a, 0x00, 0x00, 0x00, 0x00, 0x00]);
+      const formatLE = (imageDataService as any).detectImageFormat(tiffHeaderLE);
+      expect(formatLE).toBe('tiff');
+      
+      // Big-endian TIFF
+      const tiffHeaderBE = Buffer.from([0x4d, 0x4d, 0x00, 0x2a, 0x00, 0x00, 0x00, 0x00]);
+      const formatBE = (imageDataService as any).detectImageFormat(tiffHeaderBE);
+      expect(formatBE).toBe('tiff');
+    });
+
     test('should return unknown for invalid format', () => {
       const invalidHeader = Buffer.from([0x00, 0x00, 0x00, 0x00]);
       const format = (imageDataService as any).detectImageFormat(invalidHeader);
+      expect(format).toBe('unknown');
+    });
+
+    test('should return unknown for buffer too short', () => {
+      const shortBuffer = Buffer.from([0x00, 0x00]); // 只有2个字节
+      const format = (imageDataService as any).detectImageFormat(shortBuffer);
       expect(format).toBe('unknown');
     });
 
@@ -55,6 +98,10 @@ describe('Image Base64 Processing', () => {
       expect((imageDataService as any).getMimeType('jpeg')).toBe('image/jpeg');
       expect((imageDataService as any).getMimeType('png')).toBe('image/png');
       expect((imageDataService as any).getMimeType('gif')).toBe('image/gif');
+      expect((imageDataService as any).getMimeType('emf')).toBe('image/emf');
+      expect((imageDataService as any).getMimeType('bmp')).toBe('image/bmp');
+      expect((imageDataService as any).getMimeType('webp')).toBe('image/webp');
+      expect((imageDataService as any).getMimeType('tiff')).toBe('image/tiff');
       expect((imageDataService as any).getMimeType('unknown')).toBe('application/octet-stream');
     });
 
