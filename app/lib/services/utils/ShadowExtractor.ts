@@ -11,7 +11,6 @@ import { DebugHelper } from "./DebugHelper";
  * 用于从PowerPoint XML中提取并转换阴影效果为PPTist格式
  */
 export class ShadowExtractor {
-  
   /**
    * 从XML节点中提取阴影效果
    * @param xmlNode 包含effectLst的XML节点（通常是spPr）
@@ -60,7 +59,9 @@ export class ShadowExtractor {
     const rotWithShape = xmlParser.getAttribute(outerShdwNode, "rotWithShape");
 
     // 转换EMU单位到像素
-    const blurRadius = blurRad ? UnitConverter.emuToPoints(parseInt(blurRad)) : 0;
+    const blurRadius = blurRad
+      ? UnitConverter.emuToPoints(parseInt(blurRad))
+      : 0;
     const distance = dist ? UnitConverter.emuToPoints(parseInt(dist)) : 0;
     const direction = dir ? parseInt(dir) / 60000 : 0; // 转换为度数
 
@@ -69,7 +70,7 @@ export class ShadowExtractor {
       `ShadowExtractor: Raw shadow params - blurRad:${blurRad}, dist:${dist}, dir:${dir}`,
       "info"
     );
-    
+
     DebugHelper.log(
       context,
       `ShadowExtractor: Converted shadow - blur:${blurRadius}pt, distance:${distance}pt, direction:${direction}°`,
@@ -82,14 +83,18 @@ export class ShadowExtractor {
     const offsetY = distance * Math.sin(angleInRadians);
 
     // 提取颜色信息
-    const shadowColor = this.extractShadowColor(outerShdwNode, xmlParser, context);
+    const shadowColor = this.extractShadowColor(
+      outerShdwNode,
+      xmlParser,
+      context
+    );
 
     const result: ShadowResult = {
       type: "outerShadow",
       h: Math.round(offsetX * 100) / 100, // 保留2位小数
       v: Math.round(offsetY * 100) / 100,
       blur: Math.round(blurRadius * 100) / 100,
-      color: shadowColor || "rgba(0, 0, 0, 0.5)" // 默认半透明黑色
+      color: shadowColor || "rgba(0, 0, 0, 0.5)", // 默认半透明黑色
     };
 
     DebugHelper.log(
@@ -100,10 +105,18 @@ export class ShadowExtractor {
 
     // 添加其他属性（用于调试）
     if (algn) {
-      DebugHelper.log(context, `ShadowExtractor: Shadow alignment: ${algn}`, "info");
+      DebugHelper.log(
+        context,
+        `ShadowExtractor: Shadow alignment: ${algn}`,
+        "info"
+      );
     }
     if (rotWithShape) {
-      DebugHelper.log(context, `ShadowExtractor: Rotate with shape: ${rotWithShape}`, "info");
+      DebugHelper.log(
+        context,
+        `ShadowExtractor: Rotate with shape: ${rotWithShape}`,
+        "info"
+      );
     }
 
     return result;
@@ -133,7 +146,11 @@ export class ShadowExtractor {
       const val = xmlParser.getAttribute(prstClrNode, "val");
       if (val) {
         baseColor = ColorUtils.getPresetColor(val) || "#000000";
-        DebugHelper.log(context, `ShadowExtractor: Preset color - ${val} -> ${baseColor}`, "info");
+        DebugHelper.log(
+          context,
+          `ShadowExtractor: Preset color - ${val} -> ${baseColor}`,
+          "info"
+        );
       }
     }
 
@@ -145,7 +162,11 @@ export class ShadowExtractor {
         const val = xmlParser.getAttribute(srgbClrNode, "val");
         if (val) {
           baseColor = `#${val}`;
-          DebugHelper.log(context, `ShadowExtractor: RGB color - ${baseColor}`, "info");
+          DebugHelper.log(
+            context,
+            `ShadowExtractor: RGB color - ${baseColor}`,
+            "info"
+          );
         }
       }
     }
@@ -159,11 +180,11 @@ export class ShadowExtractor {
         if (val && context.theme) {
           // 使用FillExtractor来解析主题颜色
           const solidFillObj = {
-            "a:schemeClr": this.xmlNodeToObject(schemeClrNode, xmlParser)
+            "a:schemeClr": this.xmlNodeToObject(schemeClrNode, xmlParser),
           };
 
           const warpObj = {
-            themeContent: this.createThemeContent(context.theme)
+            themeContent: this.createThemeContent(context.theme),
           };
 
           const resolvedColor = FillExtractor.getSolidFill(
@@ -175,7 +196,11 @@ export class ShadowExtractor {
 
           if (resolvedColor) {
             baseColor = resolvedColor;
-            DebugHelper.log(context, `ShadowExtractor: Theme color - ${val} -> ${baseColor}`, "info");
+            DebugHelper.log(
+              context,
+              `ShadowExtractor: Theme color - ${val} -> ${baseColor}`,
+              "info"
+            );
           }
         }
       }
@@ -188,7 +213,11 @@ export class ShadowExtractor {
         const alphaVal = xmlParser.getAttribute(alphaNode, "val");
         if (alphaVal) {
           alpha = parseInt(alphaVal) / 100000; // PowerPoint alpha值是0-100000
-          DebugHelper.log(context, `ShadowExtractor: Alpha value - ${alphaVal} -> ${alpha}`, "info");
+          DebugHelper.log(
+            context,
+            `ShadowExtractor: Alpha value - ${alphaVal} -> ${alpha}`,
+            "info"
+          );
         }
       }
     }
@@ -198,7 +227,11 @@ export class ShadowExtractor {
     if (rgbaColor && alpha < 1.0) {
       // 应用透明度
       const finalColor = ColorUtils.applyAlpha(rgbaColor, alpha);
-      DebugHelper.log(context, `ShadowExtractor: Final shadow color - ${finalColor}`, "success");
+      DebugHelper.log(
+        context,
+        `ShadowExtractor: Final shadow color - ${finalColor}`,
+        "success"
+      );
       return finalColor;
     }
 
@@ -208,7 +241,10 @@ export class ShadowExtractor {
   /**
    * 将XmlNode转换为对象格式（用于FillExtractor）
    */
-  private static xmlNodeToObject(node: XmlNode, xmlParser: IXmlParseService): any {
+  private static xmlNodeToObject(
+    node: XmlNode,
+    xmlParser: IXmlParseService
+  ): any {
     const obj: any = {};
 
     // 添加属性
@@ -219,7 +255,9 @@ export class ShadowExtractor {
     // 添加子节点
     if (node.children && node.children.length > 0) {
       for (const child of node.children) {
-        const childName = child.name.includes(":") ? child.name : `a:${child.name}`;
+        const childName = child.name.includes(":")
+          ? child.name
+          : `a:${child.name}`;
         obj[childName] = this.xmlNodeToObject(child, xmlParser);
       }
     }
@@ -238,19 +276,99 @@ export class ShadowExtractor {
       "a:theme": {
         "a:themeElements": {
           "a:clrScheme": {
-            "a:dk1": { "a:srgbClr": { attrs: { val: colorScheme.dk1?.replace("#", "").replace(/ff$/, "") || "000000" } } },
-            "a:lt1": { "a:srgbClr": { attrs: { val: colorScheme.lt1?.replace("#", "").replace(/ff$/, "") || "FFFFFF" } } },
-            "a:dk2": { "a:srgbClr": { attrs: { val: colorScheme.dk2?.replace("#", "").replace(/ff$/, "") || "000000" } } },
-            "a:lt2": { "a:srgbClr": { attrs: { val: colorScheme.lt2?.replace("#", "").replace(/ff$/, "") || "FFFFFF" } } },
-            "a:accent1": { "a:srgbClr": { attrs: { val: colorScheme.accent1?.replace("#", "").replace(/ff$/, "") || "000000" } } },
-            "a:accent2": { "a:srgbClr": { attrs: { val: colorScheme.accent2?.replace("#", "").replace(/ff$/, "") || "000000" } } },
-            "a:accent3": { "a:srgbClr": { attrs: { val: colorScheme.accent3?.replace("#", "").replace(/ff$/, "") || "000000" } } },
-            "a:accent4": { "a:srgbClr": { attrs: { val: colorScheme.accent4?.replace("#", "").replace(/ff$/, "") || "000000" } } },
-            "a:accent5": { "a:srgbClr": { attrs: { val: colorScheme.accent5?.replace("#", "").replace(/ff$/, "") || "000000" } } },
-            "a:accent6": { "a:srgbClr": { attrs: { val: colorScheme.accent6?.replace("#", "").replace(/ff$/, "") || "000000" } } }
-          }
-        }
-      }
+            "a:dk1": {
+              "a:srgbClr": {
+                attrs: {
+                  val:
+                    colorScheme.dk1?.replace("#", "").replace(/ff$/, "") ||
+                    "000000",
+                },
+              },
+            },
+            "a:lt1": {
+              "a:srgbClr": {
+                attrs: {
+                  val:
+                    colorScheme.lt1?.replace("#", "").replace(/ff$/, "") ||
+                    "FFFFFF",
+                },
+              },
+            },
+            "a:dk2": {
+              "a:srgbClr": {
+                attrs: {
+                  val:
+                    colorScheme.dk2?.replace("#", "").replace(/ff$/, "") ||
+                    "000000",
+                },
+              },
+            },
+            "a:lt2": {
+              "a:srgbClr": {
+                attrs: {
+                  val:
+                    colorScheme.lt2?.replace("#", "").replace(/ff$/, "") ||
+                    "FFFFFF",
+                },
+              },
+            },
+            "a:accent1": {
+              "a:srgbClr": {
+                attrs: {
+                  val:
+                    colorScheme.accent1?.replace("#", "").replace(/ff$/, "") ||
+                    "000000",
+                },
+              },
+            },
+            "a:accent2": {
+              "a:srgbClr": {
+                attrs: {
+                  val:
+                    colorScheme.accent2?.replace("#", "").replace(/ff$/, "") ||
+                    "000000",
+                },
+              },
+            },
+            "a:accent3": {
+              "a:srgbClr": {
+                attrs: {
+                  val:
+                    colorScheme.accent3?.replace("#", "").replace(/ff$/, "") ||
+                    "000000",
+                },
+              },
+            },
+            "a:accent4": {
+              "a:srgbClr": {
+                attrs: {
+                  val:
+                    colorScheme.accent4?.replace("#", "").replace(/ff$/, "") ||
+                    "000000",
+                },
+              },
+            },
+            "a:accent5": {
+              "a:srgbClr": {
+                attrs: {
+                  val:
+                    colorScheme.accent5?.replace("#", "").replace(/ff$/, "") ||
+                    "000000",
+                },
+              },
+            },
+            "a:accent6": {
+              "a:srgbClr": {
+                attrs: {
+                  val:
+                    colorScheme.accent6?.replace("#", "").replace(/ff$/, "") ||
+                    "000000",
+                },
+              },
+            },
+          },
+        },
+      },
     };
   }
 }
@@ -260,8 +378,8 @@ export class ShadowExtractor {
  */
 export interface ShadowResult {
   type: "outerShadow" | "innerShadow";
-  h: number;    // 水平偏移（points）
-  v: number;    // 垂直偏移（points）
+  h: number; // 水平偏移（points）
+  v: number; // 垂直偏移（points）
   blur: number; // 模糊半径（points）
   color: string; // 颜色（rgba格式）
 }

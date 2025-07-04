@@ -28,7 +28,6 @@ export class ShapeProcessor implements IElementProcessor<ShapeElement> {
     this.textStyleExtractor = new TextStyleExtractor(xmlParser);
   }
 
-
   canProcess(xmlNode: XmlNode): boolean {
     // Skip if it's explicitly a text box
     const nvSpPrNode = this.xmlParser.findNode(xmlNode, "nvSpPr");
@@ -137,11 +136,12 @@ export class ShapeProcessor implements IElementProcessor<ShapeElement> {
             let posY = parseInt(y);
 
             // Apply group transform if exists
-            const transformedCoords = GroupTransformUtils.applyGroupTransformIfExists(
-              posX,
-              posY,
-              context
-            );
+            const transformedCoords =
+              GroupTransformUtils.applyGroupTransformIfExists(
+                posX,
+                posY,
+                context
+              );
             posX = transformedCoords.x;
             posY = transformedCoords.y;
 
@@ -190,7 +190,10 @@ export class ShapeProcessor implements IElementProcessor<ShapeElement> {
         }
 
         // Rotation - 使用统一的旋转提取工具
-        const rotation = RotationExtractor.extractRotation(this.xmlParser, xfrmNode);
+        const rotation = RotationExtractor.extractRotation(
+          this.xmlParser,
+          xfrmNode
+        );
         if (rotation !== 0) {
           shapeElement.setRotation(rotation);
           DebugHelper.log(
@@ -206,7 +209,10 @@ export class ShapeProcessor implements IElementProcessor<ShapeElement> {
           shapeElement.setFlip(flip);
           DebugHelper.log(
             context,
-            `Shape flip: ${FlipExtractor.getFlipDescription(this.xmlParser, xfrmNode)}`,
+            `Shape flip: ${FlipExtractor.getFlipDescription(
+              this.xmlParser,
+              xfrmNode
+            )}`,
             "info"
           );
         }
@@ -314,10 +320,10 @@ export class ShapeProcessor implements IElementProcessor<ShapeElement> {
       }
 
       // Extract style node for style references (fillRef, lnRef, etc.)
-      const styleNode = this.xmlParser.findNode(xmlNode, "style");
+      const styleNode = this.xmlParser.getChildNode(xmlNode, "style");
 
       // Check for gradient fill first
-      const gradFillNode = this.xmlParser.findNode(spPrNode, "gradFill");
+      const gradFillNode = this.xmlParser.getChildNode(spPrNode, "gradFill");
       if (gradFillNode) {
         const gradient = this.extractGradientFill(gradFillNode, context);
         if (gradient) {
@@ -361,7 +367,11 @@ export class ShapeProcessor implements IElementProcessor<ShapeElement> {
     }
 
     // Extract outline properties using OutlineExtractor
-    const outline = OutlineExtractor.extractOutline(xmlNode, this.xmlParser, context);
+    const outline = OutlineExtractor.extractOutline(
+      xmlNode,
+      this.xmlParser,
+      context
+    );
     if (outline) {
       shapeElement.setOutline(outline);
       DebugHelper.log(
@@ -373,7 +383,11 @@ export class ShapeProcessor implements IElementProcessor<ShapeElement> {
 
     // Extract shadow properties using ShadowExtractor
     if (spPrNode) {
-      const shadow = ShadowExtractor.extractShadow(spPrNode, this.xmlParser, context);
+      const shadow = ShadowExtractor.extractShadow(
+        spPrNode,
+        this.xmlParser,
+        context
+      );
       if (shadow) {
         shapeElement.setShadow(shadow);
         DebugHelper.log(
@@ -385,7 +399,7 @@ export class ShapeProcessor implements IElementProcessor<ShapeElement> {
     }
 
     // Extract style node for text style inheritance
-    const styleNode = this.xmlParser.findNode(xmlNode, "style");
+    const styleNode = this.xmlParser.getChildNode(xmlNode, "style");
 
     // Extract text content if present
     const txBodyNode = this.xmlParser.findNode(xmlNode, "txBody");
@@ -492,6 +506,27 @@ export class ShapeProcessor implements IElementProcessor<ShapeElement> {
         "info"
       );
       return "rgba(0,0,0,0)"; // Transparent
+    }
+
+    // Check for group fill first (inherits from parent group)
+    const grpFillNode = this.findDirectChildNode(spPrNode, "grpFill");
+    if (grpFillNode) {
+      DebugHelper.log(context, "Found grpFill, inheriting from parent group", "info");
+      const parentGroupColor = context.parentGroupFillColor;
+      if (parentGroupColor) {
+        DebugHelper.log(
+          context,
+          `Inherited group fill color: ${parentGroupColor}`,
+          "info"
+        );
+        return parentGroupColor;
+      }
+      // If no parent group color found, fall back to style references
+      DebugHelper.log(
+        context,
+        "No parent group color found, falling back to style references",
+        "warn"
+      );
     }
 
     // Check for direct solidFill in spPr (but only direct children of spPr, not in a:ln)
@@ -1325,6 +1360,7 @@ export class ShapeProcessor implements IElementProcessor<ShapeElement> {
     shapeStyleNode?: XmlNode
   ): TextContent[] {
     // Use unified text extraction logic by paragraphs
+    // TextStyleExtractor already handles paragraph alignment automatically
     const result = this.textStyleExtractor.extractTextContentByParagraphs(
       txBodyNode,
       context,
@@ -1332,46 +1368,11 @@ export class ShapeProcessor implements IElementProcessor<ShapeElement> {
     );
     const paragraphGroups = result.paragraphs;
 
-    // Apply paragraph alignment processing to each paragraph
-    const paragraphNodes = this.xmlParser.findNodes(txBodyNode, "p");
-    const processedParagraphs: TextContent[][] = [];
-
-    for (
-      let i = 0;
-      i < paragraphGroups.length && i < paragraphNodes.length;
-      i++
-    ) {
-      const paragraphContent = paragraphGroups[i];
-      const pNode = paragraphNodes[i];
-
-      // Extract paragraph properties for alignment
-      const pPrNode = this.xmlParser.findNode(pNode, "pPr");
-      let paragraphAlign = undefined;
-
-      if (pPrNode) {
-        const algn = this.xmlParser.getAttribute(pPrNode, "algn");
-        if (algn) {
-          paragraphAlign = this.mapAlignmentToCSS(algn);
-        }
-      }
-
-      // Apply paragraph alignment to all content items in this paragraph
-      const alignedParagraphContent = paragraphContent.map((content) => ({
-        ...content,
-        style: {
-          ...content.style,
-          ...(paragraphAlign && { textAlign: paragraphAlign }),
-        },
-      }));
-
-      processedParagraphs.push(alignedParagraphContent);
-    }
-
     // Store processed paragraphs for later use in createShapeTextContent
-    this.lastProcessedParagraphs = processedParagraphs;
+    this.lastProcessedParagraphs = paragraphGroups;
 
     // Return flattened content for backward compatibility
-    return processedParagraphs.flat();
+    return paragraphGroups.flat();
   }
 
   private createShapeTextContent(
@@ -1415,21 +1416,6 @@ export class ShapeProcessor implements IElementProcessor<ShapeElement> {
       defaultFontName: defaultFontName,
       defaultColor: defaultColor,
     };
-  }
-
-  private mapAlignmentToCSS(algn: string): string {
-    switch (algn) {
-      case "l":
-        return "left";
-      case "ctr":
-        return "center";
-      case "r":
-        return "right";
-      case "just":
-        return "justify";
-      default:
-        return "left";
-    }
   }
 
   /**

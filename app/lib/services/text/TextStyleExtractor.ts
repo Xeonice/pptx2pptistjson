@@ -266,6 +266,15 @@ export class TextStyleExtractor {
         shapeStyleNode
       );
 
+      // Extract paragraph alignment and apply to all content items in this paragraph
+      const paragraphAlignment = this.extractParagraphAlignment(pNode);
+      if (paragraphAlignment && paragraphContent.length > 0) {
+        // Apply alignment to all content items in this paragraph
+        paragraphContent.forEach(item => {
+          item.style.textAlign = paragraphAlignment;
+        });
+      }
+
       // Only add non-empty paragraphs
       if (paragraphContent.length > 0) {
         allParagraphs.push(paragraphContent);
@@ -830,5 +839,38 @@ export class TextStyleExtractor {
         },
       },
     };
+  }
+
+  /**
+   * Map PowerPoint alignment values to CSS alignment values
+   * Provides consistent alignment mapping across TextProcessor and ShapeProcessor
+   */
+  mapAlignmentToCSS(algn: string): string {
+    switch (algn) {
+      case "l":
+        return "left";
+      case "ctr":
+        return "center";
+      case "r":
+        return "right";
+      case "just":
+        return "justify";
+      default:
+        return "left";
+    }
+  }
+
+  /**
+   * Extract paragraph alignment from paragraph properties
+   * Returns CSS alignment value or undefined if not specified
+   */
+  extractParagraphAlignment(pNode: XmlNode): string | undefined {
+    const pPrNode = this.xmlParser.findNode(pNode, "pPr");
+    if (!pPrNode) return undefined;
+
+    const algn = this.xmlParser.getAttribute(pPrNode, "algn");
+    if (!algn) return undefined;
+
+    return this.mapAlignmentToCSS(algn);
   }
 }

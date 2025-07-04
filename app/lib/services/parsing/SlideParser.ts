@@ -12,6 +12,8 @@ import { IElementProcessor } from "../interfaces/IElementProcessor";
 import { Element } from "../../models/domain/elements/Element";
 import { IdGenerator } from "../utils/IdGenerator";
 import { ColorUtils } from "../utils/ColorUtils";
+import { FillExtractor } from "../utils/FillExtractor";
+import { GroupTransformCalculator } from "../utils/GroupTransformCalculator";
 import { ImageDataService } from "../images/ImageDataService";
 import { ParseOptions } from "../../models/dto/ParseOptions";
 import { DebugHelper } from "../utils/DebugHelper";
@@ -269,16 +271,20 @@ export class SlideParser {
       // Extract group transform information
       const currentGroupTransform = this.extractGroupTransformInfo(node);
 
+      // Extract group fill color for child elements
+      const groupFillColor = this.extractGroupFillColor(node, context);
+
       // Accumulate group transforms if we're inside a nested group
       const accumulatedGroupTransform = this.accumulateGroupTransforms(
         context.groupTransform,
         currentGroupTransform
       );
 
-      // Create enhanced context with accumulated group transform
+      // Create enhanced context with accumulated group transform and fill color
       const enhancedContext = {
         ...context,
         groupTransform: accumulatedGroupTransform,
+        parentGroupFillColor: groupFillColor || context.parentGroupFillColor,
       };
 
       for (const child of node.children) {
@@ -442,80 +448,17 @@ export class SlideParser {
   }
 
   /**
-   * Accumulate group transforms for nested groups
+   * Accumulate group transforms for nested groups using advanced matrix calculations
    * @param parentTransform - Parent group transform (if any)
    * @param currentTransform - Current group transform
-   * @returns Accumulated transform
+   * @returns Accumulated transform with proper rotation and flip handling
    */
   private accumulateGroupTransforms(
     parentTransform: GroupTransform | undefined,
     currentTransform: GroupTransform | undefined
   ): GroupTransform | undefined {
-    if (!currentTransform) return parentTransform;
-    if (!parentTransform) return currentTransform;
-
-    // Accumulate scale factors (multiply)
-    const scaleX = parentTransform.scaleX * currentTransform.scaleX;
-    const scaleY = parentTransform.scaleY * currentTransform.scaleY;
-
-    // Calculate accumulated offsets
-    // Current group's position in parent's coordinate system
-    const currentOffsetX = currentTransform.offset?.x || 0;
-    const currentOffsetY = currentTransform.offset?.y || 0;
-
-    // Transform current group's position by parent's scale and offset
-    const parentOffsetX = parentTransform.offset?.x || 0;
-    const parentOffsetY = parentTransform.offset?.y || 0;
-    const parentChildOffsetX = parentTransform.childOffset?.x || 0;
-    const parentChildOffsetY = parentTransform.childOffset?.y || 0;
-
-    // Apply parent's transformation to current group's position
-    const transformedOffsetX =
-      (currentOffsetX - parentChildOffsetX) * parentTransform.scaleX +
-      parentOffsetX;
-    const transformedOffsetY =
-      (currentOffsetY - parentChildOffsetY) * parentTransform.scaleY +
-      parentOffsetY;
-
-    // For child offset, we use the current group's child offset directly
-    // It defines the coordinate system for this group's children
-    const currentChildOffsetX = currentTransform.childOffset?.x || 0;
-    const currentChildOffsetY = currentTransform.childOffset?.y || 0;
-
-    // Handle flip accumulation
-    let accumulatedFlip = undefined;
-    if (currentTransform.flip || parentTransform.flip) {
-      const parentFlipH = parentTransform.flip?.horizontal || false;
-      const parentFlipV = parentTransform.flip?.vertical || false;
-      const currentFlipH = currentTransform.flip?.horizontal || false;
-      const currentFlipV = currentTransform.flip?.vertical || false;
-      
-      accumulatedFlip = {
-        horizontal: parentFlipH !== currentFlipH, // XOR for flip accumulation
-        vertical: parentFlipV !== currentFlipV
-      };
-    }
-
-    // Debug logging
-    console.log(`[Accumulate Transform] Parent scale: ${parentTransform.scaleX.toFixed(4)}x${parentTransform.scaleY.toFixed(4)}, ` +
-                `Current scale: ${currentTransform.scaleX.toFixed(4)}x${currentTransform.scaleY.toFixed(4)}, ` +
-                `Accumulated: ${scaleX.toFixed(4)}x${scaleY.toFixed(4)}`);
-
-    return {
-      scaleX,
-      scaleY,
-      offset: {
-        x: transformedOffsetX,
-        y: transformedOffsetY,
-      },
-      childOffset: {
-        x: currentChildOffsetX,
-        y: currentChildOffsetY,
-      },
-      flip: accumulatedFlip,
-      rotation:
-        (currentTransform.rotation || 0) + (parentTransform.rotation || 0),
-    };
+    // Use advanced transform calculator for precise accumulation
+    return GroupTransformCalculator.accumulateTransforms(parentTransform, currentTransform);
   }
 
   /**
@@ -564,5 +507,179 @@ export class SlideParser {
         console.log(`[Apply Transform] Element flip: horizontal=${groupTransform.flip.horizontal}, vertical=${groupTransform.flip.vertical}`);
       }
     }
+  }
+
+  /**
+   * Extract group fill color from grpSp node
+   * @param grpSpNode - The group shape node
+   * @param context - Processing context
+   * @returns Resolved fill color or undefined
+   */
+  private extractGroupFillColor(
+    grpSpNode: XmlNode,
+    context: ProcessingContext
+  ): string | undefined {
+    // Find grpSpPr node
+    const grpSpPrNode = this.xmlParser.findNode(grpSpNode, "grpSpPr");
+    if (!grpSpPrNode) return undefined;
+
+    // Check for direct solidFill
+    const solidFillNode = this.xmlParser.findNode(grpSpPrNode, "solidFill");
+    if (solidFillNode) {
+      // Check for srgbClr (direct RGB color)
+      const srgbNode = this.xmlParser.findNode(solidFillNode, "srgbClr");
+      if (srgbNode) {
+        const val = this.xmlParser.getAttribute(srgbNode, "val");
+        if (val) {
+          return ColorUtils.toRgba(`#${val}`);
+        }
+      }
+
+      // Check for schemeClr (theme color)
+      const schemeClrNode = this.xmlParser.findNode(solidFillNode, "schemeClr");
+      if (schemeClrNode && context.theme) {
+        const val = this.xmlParser.getAttribute(schemeClrNode, "val");
+        if (val) {
+          // Use FillExtractor for theme color resolution
+          const solidFillObj = {
+            "a:schemeClr": {
+              attrs: { val: val }
+            }
+          };
+          
+          const warpObj = {
+            themeContent: this.createThemeContent(context.theme)
+          };
+
+          return FillExtractor.getSolidFill(solidFillObj, undefined, undefined, warpObj);
+        }
+      }
+    }
+
+    // Check for gradient fill (basic support)
+    const gradFillNode = this.xmlParser.findNode(grpSpPrNode, "gradFill");
+    if (gradFillNode) {
+      // For group fills, we'll use the first color of the gradient
+      const gsLstNode = this.xmlParser.findNode(gradFillNode, "gsLst");
+      if (gsLstNode && gsLstNode.children && gsLstNode.children.length > 0) {
+        const firstGsNode = gsLstNode.children[0];
+        const colorNode = this.xmlParser.findNode(firstGsNode, "srgbClr") || 
+                         this.xmlParser.findNode(firstGsNode, "schemeClr");
+        if (colorNode) {
+          return this.extractColor(firstGsNode);
+        }
+      }
+    }
+
+    return undefined;
+  }
+
+  /**
+   * Create theme content for FillExtractor compatibility
+   */
+  private createThemeContent(theme: any): any {
+    if (!theme || !theme.colorScheme) {
+      return {
+        "a:theme": {
+          "a:themeElements": {
+            "a:clrScheme": {}
+          }
+        }
+      };
+    }
+
+    const colorScheme = theme.colorScheme;
+    return {
+      "a:theme": {
+        "a:themeElements": {
+          "a:clrScheme": {
+            "a:dk1": {
+              "a:srgbClr": {
+                attrs: {
+                  val: colorScheme.dk1?.replace("#", "").replace(/ff$/, "") || "000000"
+                }
+              }
+            },
+            "a:lt1": {
+              "a:srgbClr": {
+                attrs: {
+                  val: colorScheme.lt1?.replace("#", "").replace(/ff$/, "") || "FFFFFF"
+                }
+              }
+            },
+            "a:dk2": {
+              "a:srgbClr": {
+                attrs: {
+                  val: colorScheme.dk2?.replace("#", "").replace(/ff$/, "") || "1F497D"
+                }
+              }
+            },
+            "a:lt2": {
+              "a:srgbClr": {
+                attrs: {
+                  val: colorScheme.lt2?.replace("#", "").replace(/ff$/, "") || "EEECE1"
+                }
+              }
+            },
+            "a:accent1": {
+              "a:srgbClr": {
+                attrs: {
+                  val: colorScheme.accent1?.replace("#", "").replace(/ff$/, "") || "4F81BD"
+                }
+              }
+            },
+            "a:accent2": {
+              "a:srgbClr": {
+                attrs: {
+                  val: colorScheme.accent2?.replace("#", "").replace(/ff$/, "") || "F79646"
+                }
+              }
+            },
+            "a:accent3": {
+              "a:srgbClr": {
+                attrs: {
+                  val: colorScheme.accent3?.replace("#", "").replace(/ff$/, "") || "9BBB59"
+                }
+              }
+            },
+            "a:accent4": {
+              "a:srgbClr": {
+                attrs: {
+                  val: colorScheme.accent4?.replace("#", "").replace(/ff$/, "") || "8064A2"
+                }
+              }
+            },
+            "a:accent5": {
+              "a:srgbClr": {
+                attrs: {
+                  val: colorScheme.accent5?.replace("#", "").replace(/ff$/, "") || "4BACC6"
+                }
+              }
+            },
+            "a:accent6": {
+              "a:srgbClr": {
+                attrs: {
+                  val: colorScheme.accent6?.replace("#", "").replace(/ff$/, "") || "F366A7"
+                }
+              }
+            },
+            "a:hlink": {
+              "a:srgbClr": {
+                attrs: {
+                  val: colorScheme.hyperlink?.replace("#", "").replace(/ff$/, "") || "0000FF"
+                }
+              }
+            },
+            "a:folHlink": {
+              "a:srgbClr": {
+                attrs: {
+                  val: colorScheme.followedHyperlink?.replace("#", "").replace(/ff$/, "") || "800080"
+                }
+              }
+            }
+          }
+        }
+      }
+    };
   }
 }

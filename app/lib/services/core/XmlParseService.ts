@@ -1,26 +1,25 @@
-import { parse as txmlParse } from 'txml';
-import { IXmlParseService } from '../interfaces/IXmlParseService';
-import { XmlNode, XmlNodeHelper } from '../../models/xml/XmlNode';
+import { parse as txmlParse } from "txml";
+import { IXmlParseService } from "../interfaces/IXmlParseService";
+import { XmlNode, XmlNodeHelper } from "../../models/xml/XmlNode";
 
 export class XmlParseService implements IXmlParseService {
   parse(xmlContent: string): XmlNode {
     try {
       const parsed = txmlParse(xmlContent);
       if (!parsed || parsed.length === 0) {
-        throw new Error('Empty XML content');
+        throw new Error("Empty XML content");
       }
-      
+
       // Find the actual root node (skip XML declaration)
-      const rootNode = parsed.find((node: any) => 
-        typeof node === 'object' && 
-        node.tagName && 
-        node.tagName !== '?xml'
+      const rootNode = parsed.find(
+        (node: any) =>
+          typeof node === "object" && node.tagName && node.tagName !== "?xml"
       );
-      
+
       if (!rootNode) {
-        throw new Error('No valid root node found');
+        throw new Error("No valid root node found");
       }
-      
+
       // Convert txml format to our XmlNode format
       return this.convertToXmlNode(rootNode);
     } catch (error) {
@@ -41,8 +40,12 @@ export class XmlParseService implements IXmlParseService {
     if (!parent.children) {
       return [];
     }
-    
-    return parent.children.filter(child => child.name === tagName);
+
+    return parent.children.filter((child) => child.name.includes(tagName));
+  }
+
+  getChildNode(parent: XmlNode, tagName: string): XmlNode | undefined {
+    return this.getChildNodes(parent, tagName)[0];
   }
 
   getAttribute(node: XmlNode, attributeName: string): string | undefined {
@@ -60,7 +63,7 @@ export class XmlParseService implements IXmlParseService {
 
   private convertToXmlNode(txmlNode: any): XmlNode {
     const xmlNode: XmlNode = {
-      name: txmlNode.tagName
+      name: txmlNode.tagName,
     };
 
     // Convert attributes
@@ -75,10 +78,10 @@ export class XmlParseService implements IXmlParseService {
     if (txmlNode.children && txmlNode.children.length > 0) {
       xmlNode.children = [];
       for (const child of txmlNode.children) {
-        if (typeof child === 'string') {
+        if (typeof child === "string") {
           // Text content
           if (child.trim()) {
-            xmlNode.content = (xmlNode.content || '') + child;
+            xmlNode.content = (xmlNode.content || "") + child;
           }
         } else {
           // Element node
@@ -91,7 +94,7 @@ export class XmlParseService implements IXmlParseService {
   }
 
   private nodeToXml(node: XmlNode, indent = 0): string {
-    const spaces = ' '.repeat(indent);
+    const spaces = " ".repeat(indent);
     let xml = `${spaces}<${node.name}`;
 
     // Add attributes
@@ -103,11 +106,11 @@ export class XmlParseService implements IXmlParseService {
 
     // Self-closing tag if no children or content
     if (!node.children && !node.content) {
-      xml += '/>';
+      xml += "/>";
       return xml;
     }
 
-    xml += '>';
+    xml += ">";
 
     // Add content
     if (node.content) {
@@ -116,9 +119,9 @@ export class XmlParseService implements IXmlParseService {
 
     // Add children
     if (node.children) {
-      xml += '\n';
+      xml += "\n";
       for (const child of node.children) {
-        xml += this.nodeToXml(child, indent + 2) + '\n';
+        xml += this.nodeToXml(child, indent + 2) + "\n";
       }
       xml += spaces;
     }
@@ -129,10 +132,10 @@ export class XmlParseService implements IXmlParseService {
 
   private escapeXml(text: string): string {
     return text
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;')
-      .replace(/'/g, '&apos;');
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&apos;");
   }
 }
