@@ -10,7 +10,6 @@ import {
 } from "../interfaces/ProcessingContext";
 import { IElementProcessor } from "../interfaces/IElementProcessor";
 import { Element } from "../../models/domain/elements/Element";
-import { ShapeElement } from "../../models/domain/elements/ShapeElement";
 import { IdGenerator } from "../utils/IdGenerator";
 import { ColorUtils } from "../utils/ColorUtils";
 import { ImageDataService } from "../images/ImageDataService";
@@ -295,7 +294,10 @@ export class SlideParser {
 
       // Apply group transforms to all child elements
       if (accumulatedGroupTransform && groupElements.length > 0) {
-        this.applyGroupTransformToElements(groupElements, accumulatedGroupTransform);
+        this.applyGroupTransformToElements(
+          groupElements,
+          accumulatedGroupTransform
+        );
       }
 
       return groupElements.length > 0 ? groupElements : undefined;
@@ -390,25 +392,52 @@ export class SlideParser {
     const childCx = this.xmlParser.getAttribute(chExtNode, "cx");
     const childCy = this.xmlParser.getAttribute(chExtNode, "cy");
 
-    if (!groupX || !groupY || !actualCx || !actualCy || !childOffsetX || !childOffsetY || !childCx || !childCy) return undefined;
+    if (
+      !groupX ||
+      !groupY ||
+      !actualCx ||
+      !actualCy ||
+      !childOffsetX ||
+      !childOffsetY ||
+      !childCx ||
+      !childCy
+    )
+      return undefined;
 
-    // Calculate scale factors
-    const scaleX = parseInt(actualCx) / parseInt(childCx);
-    const scaleY = parseInt(actualCy) / parseInt(childCy);
+    // Calculate scale factors with proper precision
+    const scaleX = parseFloat(actualCx) / parseFloat(childCx);
+    const scaleY = parseFloat(actualCy) / parseFloat(childCy);
+
+    // Validate scale factors
+    if (!isFinite(scaleX) || !isFinite(scaleY) || scaleX <= 0 || scaleY <= 0) {
+      console.warn(`Invalid group scale factors: scaleX=${scaleX}, scaleY=${scaleY}`);
+      return undefined;
+    }
+
+    // Extract rotation (convert from EMU to degrees)
+    const rot = this.xmlParser.getAttribute(xfrmNode, "rot");
+    const rotation = rot ? parseInt(rot) / 60000 : undefined;
+
+    // Extract flip attributes
+    const flipH = this.xmlParser.getAttribute(xfrmNode, "flipH") === "1";
+    const flipV = this.xmlParser.getAttribute(xfrmNode, "flipV") === "1";
+
+    // Debug logging
+    console.log(`[Group Transform] scaleX: ${scaleX.toFixed(4)}, scaleY: ${scaleY.toFixed(4)}, rotation: ${rotation || 0}°`);
 
     return {
       scaleX,
       scaleY,
       offset: {
         x: parseInt(groupX),
-        y: parseInt(groupY)
+        y: parseInt(groupY),
       },
       childOffset: {
         x: parseInt(childOffsetX),
-        y: parseInt(childOffsetY)
+        y: parseInt(childOffsetY),
       },
-      flip: undefined,
-      rotation: undefined
+      flip: flipH || flipV ? { horizontal: flipH, vertical: flipV } : undefined,
+      rotation,
     };
   }
 
@@ -433,7 +462,7 @@ export class SlideParser {
     // Current group's position in parent's coordinate system
     const currentOffsetX = currentTransform.offset?.x || 0;
     const currentOffsetY = currentTransform.offset?.y || 0;
-    
+
     // Transform current group's position by parent's scale and offset
     const parentOffsetX = parentTransform.offset?.x || 0;
     const parentOffsetY = parentTransform.offset?.y || 0;
@@ -441,39 +470,58 @@ export class SlideParser {
     const parentChildOffsetY = parentTransform.childOffset?.y || 0;
 
     // Apply parent's transformation to current group's position
-    const transformedOffsetX = 
-      (currentOffsetX - parentChildOffsetX) * parentTransform.scaleX + parentOffsetX;
-    const transformedOffsetY = 
-      (currentOffsetY - parentChildOffsetY) * parentTransform.scaleY + parentOffsetY;
+    const transformedOffsetX =
+      (currentOffsetX - parentChildOffsetX) * parentTransform.scaleX +
+      parentOffsetX;
+    const transformedOffsetY =
+      (currentOffsetY - parentChildOffsetY) * parentTransform.scaleY +
+      parentOffsetY;
 
-    // Calculate accumulated child offset
+    // For child offset, we use the current group's child offset directly
+    // It defines the coordinate system for this group's children
     const currentChildOffsetX = currentTransform.childOffset?.x || 0;
     const currentChildOffsetY = currentTransform.childOffset?.y || 0;
-    
-    // Transform current group's child offset by parent's scale
-    const accumulatedChildOffsetX = 
-      (currentChildOffsetX - parentChildOffsetX) * parentTransform.scaleX + parentChildOffsetX;
-    const accumulatedChildOffsetY = 
-      (currentChildOffsetY - parentChildOffsetY) * parentTransform.scaleY + parentChildOffsetY;
+
+    // Handle flip accumulation
+    let accumulatedFlip = undefined;
+    if (currentTransform.flip || parentTransform.flip) {
+      const parentFlipH = parentTransform.flip?.horizontal || false;
+      const parentFlipV = parentTransform.flip?.vertical || false;
+      const currentFlipH = currentTransform.flip?.horizontal || false;
+      const currentFlipV = currentTransform.flip?.vertical || false;
+      
+      accumulatedFlip = {
+        horizontal: parentFlipH !== currentFlipH, // XOR for flip accumulation
+        vertical: parentFlipV !== currentFlipV
+      };
+    }
+
+    // Debug logging
+    console.log(`[Accumulate Transform] Parent scale: ${parentTransform.scaleX.toFixed(4)}x${parentTransform.scaleY.toFixed(4)}, ` +
+                `Current scale: ${currentTransform.scaleX.toFixed(4)}x${currentTransform.scaleY.toFixed(4)}, ` +
+                `Accumulated: ${scaleX.toFixed(4)}x${scaleY.toFixed(4)}`);
 
     return {
       scaleX,
       scaleY,
       offset: {
         x: transformedOffsetX,
-        y: transformedOffsetY
+        y: transformedOffsetY,
       },
       childOffset: {
-        x: accumulatedChildOffsetX,
-        y: accumulatedChildOffsetY
+        x: currentChildOffsetX,
+        y: currentChildOffsetY,
       },
-      flip: currentTransform.flip || parentTransform.flip,
-      rotation: (currentTransform.rotation || 0) + (parentTransform.rotation || 0)
+      flip: accumulatedFlip,
+      rotation:
+        (currentTransform.rotation || 0) + (parentTransform.rotation || 0),
     };
   }
 
   /**
    * Apply group transforms to child elements
+   * Note: Position transforms are already applied by GroupTransformUtils in element processors
+   * This method only applies size scaling, rotation, and flip transformations
    * @param elements - Array of elements to transform
    * @param groupTransform - Group transform information
    */
@@ -481,27 +529,40 @@ export class SlideParser {
     elements: Element[],
     groupTransform: GroupTransform
   ): void {
+    console.log(`[Apply Group Transform] Processing ${elements.length} elements with scale: ${groupTransform.scaleX.toFixed(4)}x${groupTransform.scaleY.toFixed(4)}`);
+    
     for (const element of elements) {
-      if (element instanceof ShapeElement) {
-        // // Apply scale to position
-        // const currentPos = element.getPosition();
-        // if (currentPos) {
-        //   element.setPosition({
-        //     x: currentPos.x * groupTransform.scaleX,
-        //     y: currentPos.y * groupTransform.scaleY
-        //   });
-        // }
-
-        // Apply scale to size
-        const currentSize = element.getSize();
+      // Apply size scaling to all elements that have size properties
+      // Use duck typing to check for size methods
+      if ('getSize' in element && 'setSize' in element && typeof element.getSize === 'function' && typeof element.setSize === 'function') {
+        const currentSize = (element as any).getSize();
         if (currentSize) {
-          element.setSize({
-            width: currentSize.width * groupTransform.scaleX,
-            height: currentSize.height * groupTransform.scaleY,
+          const newWidth = currentSize.width * groupTransform.scaleX;
+          const newHeight = currentSize.height * groupTransform.scaleY;
+          
+          console.log(`[Apply Transform] Element size: ${currentSize.width}x${currentSize.height} -> ${newWidth.toFixed(2)}x${newHeight.toFixed(2)}`);
+          
+          (element as any).setSize({
+            width: newWidth,
+            height: newHeight,
           });
         }
       }
-      // TODO: Handle other element types (TextElement, ImageElement, etc.)
+      
+      // Apply rotation if element supports it
+      if (groupTransform.rotation && 'getRotation' in element && 'setRotation' in element && 
+          typeof element.getRotation === 'function' && typeof element.setRotation === 'function') {
+        const currentRotation = (element as any).getRotation() || 0;
+        const newRotation = currentRotation + groupTransform.rotation;
+        (element as any).setRotation(newRotation);
+        console.log(`[Apply Transform] Element rotation: ${currentRotation}° -> ${newRotation}°`);
+      }
+      
+      // Apply flip if element supports it and group has flip
+      if (groupTransform.flip && 'setFlip' in element && typeof element.setFlip === 'function') {
+        (element as any).setFlip(groupTransform.flip);
+        console.log(`[Apply Transform] Element flip: horizontal=${groupTransform.flip.horizontal}, vertical=${groupTransform.flip.vertical}`);
+      }
     }
   }
 }
