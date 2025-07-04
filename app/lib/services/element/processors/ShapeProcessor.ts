@@ -46,6 +46,7 @@ export class ShapeProcessor implements IElementProcessor<ShapeElement> {
     // Process shape nodes that have visible shape backgrounds and don't have image fill
     // This includes pure shapes and shapes with text (for the background shape)
     return (
+      !xmlNode.name.endsWith("grpSp") &&
       xmlNode.name.endsWith("sp") &&
       this.hasVisibleShapeBackground(xmlNode) &&
       !this.hasImageFill(xmlNode)
@@ -511,7 +512,11 @@ export class ShapeProcessor implements IElementProcessor<ShapeElement> {
     // Check for group fill first (inherits from parent group)
     const grpFillNode = this.findDirectChildNode(spPrNode, "grpFill");
     if (grpFillNode) {
-      DebugHelper.log(context, "Found grpFill, inheriting from parent group", "info");
+      DebugHelper.log(
+        context,
+        "Found grpFill, inheriting from parent group",
+        "info"
+      );
       const parentGroupColor = context.parentGroupFillColor;
       if (parentGroupColor) {
         DebugHelper.log(
@@ -542,9 +547,11 @@ export class ShapeProcessor implements IElementProcessor<ShapeElement> {
         );
       }
 
-      const warpObj = hasSchemeColor ? {
-        themeContent: this.createThemeContent(context.theme),
-      } : undefined;
+      const warpObj = hasSchemeColor
+        ? {
+            themeContent: this.createThemeContent(context.theme),
+          }
+        : undefined;
 
       const color = FillExtractor.getSolidFill(
         solidFillObj,
