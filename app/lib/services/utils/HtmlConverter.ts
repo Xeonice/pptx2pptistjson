@@ -1,4 +1,5 @@
 import { TextContent, TextRunStyle } from "../../models/domain/elements/TextElement";
+import { FontSizeCalculator } from "./FontSizeCalculator";
 
 /**
  * Utility class for converting text content to HTML format
@@ -95,15 +96,15 @@ export class HtmlConverter {
   private static buildSpanStyles(style?: TextRunStyle): string[] {
     const styles: string[] = [];
     
+    // Always include font-size, use PowerPoint default (18pt) if not specified
+    const fontSize = style?.fontSize || FontSizeCalculator.getDefaultWebSize();
+    styles.push(`font-size:${fontSize}px`);
+    
     if (!style) return styles;
 
     // Follow the exact order from the old TextElement implementation
     if (style.color) {
       styles.push(`color:${style.color}`);
-    }
-    
-    if (style.fontSize) {
-      styles.push(`font-size:${style.fontSize}px`);
     }
     
     if (style.bold) {

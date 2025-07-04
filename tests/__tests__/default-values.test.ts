@@ -94,6 +94,45 @@ describe('Default Values Tests', () => {
       
       expect(json.defaultFontName).toBe('Microsoft Yahei');
     });
+
+    test('should use PowerPoint default font size when no fontSize is provided', () => {
+      const textElement = new TextElement('default-font-size-test');
+      textElement.addContent({
+        text: 'Default Font Size Text',
+        style: { bold: true } // No fontSize specified
+      });
+      
+      const json = textElement.toJSON();
+      
+      // Should contain default font size (18pt = 23.99px) in the HTML content
+      expect(json.content).toContain('font-size:23.99px');
+    });
+
+    test('should use PowerPoint default font size when empty style is provided', () => {
+      const textElement = new TextElement('empty-style-font-size-test');
+      textElement.addContent({
+        text: 'Empty Style Text',
+        style: {} // Empty style object
+      });
+      
+      const json = textElement.toJSON();
+      
+      // Should contain default font size (18pt = 23.99px) in the HTML content
+      expect(json.content).toContain('font-size:23.99px');
+    });
+
+    test('should use PowerPoint default font size when no style is provided', () => {
+      const textElement = new TextElement('no-style-font-size-test');
+      textElement.addContent({
+        text: 'No Style Text'
+        // No style object at all
+      });
+      
+      const json = textElement.toJSON();
+      
+      // Should contain default font size (18pt = 23.99px) in the HTML content
+      expect(json.content).toContain('font-size:23.99px');
+    });
     
     test('should extract defaultFontName from content when available', () => {
       const textElement = new TextElement('content-font-test');
@@ -257,7 +296,8 @@ describe('Default Values Tests', () => {
       
       expect(json.content).toContain('Empty Style Test');
       expect(json.content).not.toContain('color:');
-      expect(json.content).not.toContain('font-size:');
+      // font-size will always be present now (PowerPoint default 18pt = 23.99px)
+      expect(json.content).toContain('font-size:23.99px');
       expect(json.content).not.toContain('font-weight:');
     });
     
