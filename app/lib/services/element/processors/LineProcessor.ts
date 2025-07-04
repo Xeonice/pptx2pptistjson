@@ -6,6 +6,8 @@ import { ProcessingContext } from "../../interfaces/ProcessingContext";
 import { UnitConverter } from "../../utils/UnitConverter";
 import { ColorUtils } from "../../utils/ColorUtils";
 import { DebugHelper } from "../../utils/DebugHelper";
+import { GroupTransformUtils } from "../../utils/GroupTransformUtils";
+import { FlipExtractor } from "../../utils/FlipExtractor";
 
 export class LineElement extends Element {
   private points: { x: number; y: number }[] = [];
@@ -14,7 +16,6 @@ export class LineElement extends Element {
   private strokeStyle: "solid" | "dashed" | "dotted" = "solid";
   private startArrow: string = "";
   private endArrow: string = "";
-  private flip?: { horizontal: boolean; vertical: boolean };
 
   constructor(id: string) {
     super(id, "line");
@@ -45,13 +46,6 @@ export class LineElement extends Element {
     this.endArrow = end;
   }
 
-  setFlip(flip: { horizontal: boolean; vertical: boolean }): void {
-    this.flip = flip;
-  }
-
-  getFlip(): { horizontal: boolean; vertical: boolean } | undefined {
-    return this.flip;
-  }
 
   toJSON(): any {
     const position = this.getPosition();
@@ -172,9 +166,21 @@ export class LineProcessor implements IElementProcessor<LineElement> {
           const x = this.xmlParser.getAttribute(offNode, "x");
           const y = this.xmlParser.getAttribute(offNode, "y");
           if (x && y) {
-            const posX = UnitConverter.emuToPoints(parseInt(x));
-            const posY = UnitConverter.emuToPoints(parseInt(y));
-            lineElement.setPosition({ x: posX, y: posY });
+            let posX = parseInt(x);
+            let posY = parseInt(y);
+
+            // Apply group transform if exists
+            const transformedCoords = GroupTransformUtils.applyGroupTransformIfExists(
+              posX,
+              posY,
+              context
+            );
+            posX = transformedCoords.x;
+            posY = transformedCoords.y;
+
+            const finalPosX = UnitConverter.emuToPoints(posX);
+            const finalPosY = UnitConverter.emuToPoints(posY);
+            lineElement.setPosition({ x: finalPosX, y: finalPosY });
             DebugHelper.log(context, `LineProcessor ${id}: Position - x: ${x} EMU (${posX} pt), y: ${y} EMU (${posY} pt)`, "info");
           }
         }
@@ -192,12 +198,15 @@ export class LineProcessor implements IElementProcessor<LineElement> {
           }
         }
 
-        // Flip attributes
-        const flipH = this.xmlParser.getAttribute(xfrmNode, "flipH") === "1";
-        const flipV = this.xmlParser.getAttribute(xfrmNode, "flipV") === "1";
-        if (flipH || flipV) {
-          lineElement.setFlip({ horizontal: flipH, vertical: flipV });
-          DebugHelper.log(context, `LineProcessor ${id}: Flip - horizontal: ${flipH}, vertical: ${flipV}`, "info");
+        // Flip attributes - 使用统一的翻转提取工具
+        const flip = FlipExtractor.extractFlip(this.xmlParser, xfrmNode);
+        if (flip) {
+          lineElement.setFlip(flip);
+          DebugHelper.log(
+            context,
+            `LineProcessor ${id}: ${FlipExtractor.getFlipDescription(this.xmlParser, xfrmNode)}`,
+            "info"
+          );
         }
       }
 

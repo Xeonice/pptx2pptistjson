@@ -7,6 +7,10 @@ import { IXmlParseService } from "../../interfaces/IXmlParseService";
 import { ProcessingContext } from "../../interfaces/ProcessingContext";
 import { UnitConverter } from "../../utils/UnitConverter";
 import { TextStyleExtractor } from "../../text/TextStyleExtractor";
+import { GroupTransformUtils } from "../../utils/GroupTransformUtils";
+import { RotationExtractor } from "../../utils/RotationExtractor";
+import { FlipExtractor } from "../../utils/FlipExtractor";
+import { DebugHelper } from "../../utils/DebugHelper";
 
 export class TextProcessor implements IElementProcessor<TextElement> {
   private textStyleExtractor: TextStyleExtractor;
@@ -66,9 +70,21 @@ export class TextProcessor implements IElementProcessor<TextElement> {
           const x = this.xmlParser.getAttribute(offNode, "x");
           const y = this.xmlParser.getAttribute(offNode, "y");
           if (x && y) {
+            let posX = parseInt(x);
+            let posY = parseInt(y);
+
+            // Apply group transform if exists
+            const transformedCoords = GroupTransformUtils.applyGroupTransformIfExists(
+              posX,
+              posY,
+              context
+            );
+            posX = transformedCoords.x;
+            posY = transformedCoords.y;
+
             textElement.setPosition({
-              x: UnitConverter.emuToPoints(parseInt(x)),
-              y: UnitConverter.emuToPoints(parseInt(y)),
+              x: UnitConverter.emuToPoints(posX),
+              y: UnitConverter.emuToPoints(posY),
             });
           }
         }
@@ -86,10 +102,21 @@ export class TextProcessor implements IElementProcessor<TextElement> {
           }
         }
 
-        // Rotation
-        const rot = this.xmlParser.getAttribute(xfrmNode, "rot");
-        if (rot) {
-          textElement.setRotation(parseInt(rot) / 60000); // Convert to degrees
+        // Rotation - 使用统一的旋转提取工具
+        const rotation = RotationExtractor.extractRotation(this.xmlParser, xfrmNode);
+        if (rotation !== 0) {
+          textElement.setRotation(rotation);
+        }
+
+        // Flip attributes - 使用统一的翻转提取工具
+        const flip = FlipExtractor.extractFlip(this.xmlParser, xfrmNode);
+        if (flip) {
+          textElement.setFlip(flip);
+          DebugHelper.log(
+            context,
+            `Text flip: ${FlipExtractor.getFlipDescription(this.xmlParser, xfrmNode)}`,
+            "info"
+          );
         }
       }
     }

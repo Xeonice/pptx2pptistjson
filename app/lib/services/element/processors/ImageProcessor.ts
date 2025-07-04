@@ -11,6 +11,9 @@ import { ImageDataService } from "../../images/ImageDataService";
 import { ImageProcessingService } from "../../images/ImageProcessingService";
 import { ImageOffsetAdjuster } from "./ImageOffsetAdjuster";
 import { DebugHelper } from "../../utils/DebugHelper";
+import { GroupTransformUtils } from "../../utils/GroupTransformUtils";
+import { RotationExtractor } from "../../utils/RotationExtractor";
+import { FlipExtractor } from "../../utils/FlipExtractor";
 
 export class ImageProcessor implements IElementProcessor<ImageElement> {
   private imageProcessingService?: ImageProcessingService;
@@ -109,8 +112,18 @@ export class ImageProcessor implements IElementProcessor<ImageElement> {
           const x = this.xmlParser.getAttribute(offNode, "x");
           const y = this.xmlParser.getAttribute(offNode, "y");
           if (x && y) {
-            const originalX = parseInt(x);
-            const originalY = parseInt(y);
+            let originalX = parseInt(x);
+            let originalY = parseInt(y);
+
+            // Apply group transform if exists
+            const transformedCoords = GroupTransformUtils.applyGroupTransformIfExists(
+              originalX,
+              originalY,
+              context
+            );
+            originalX = transformedCoords.x;
+            originalY = transformedCoords.y;
+
             const convertedX = UnitConverter.emuToPoints(originalX);
             const convertedY = UnitConverter.emuToPoints(originalY);
 
@@ -220,10 +233,26 @@ export class ImageProcessor implements IElementProcessor<ImageElement> {
           }
         }
 
-        // Rotation
-        const rot = this.xmlParser.getAttribute(xfrmNode, "rot");
-        if (rot) {
-          imageElement.setRotation(parseInt(rot) / 60000); // Convert to degrees
+        // Rotation - 使用统一的旋转提取工具
+        const rotation = RotationExtractor.extractRotation(this.xmlParser, xfrmNode);
+        if (rotation !== 0) {
+          imageElement.setRotation(rotation);
+          DebugHelper.log(
+            context,
+            `Image rotation: ${rotation} degrees`,
+            "info"
+          );
+        }
+
+        // Flip attributes - 使用统一的翻转提取工具
+        const flip = FlipExtractor.extractFlip(this.xmlParser, xfrmNode);
+        if (flip) {
+          imageElement.setFlip(flip);
+          DebugHelper.log(
+            context,
+            `Image flip: ${FlipExtractor.getFlipDescription(this.xmlParser, xfrmNode)}`,
+            "info"
+          );
         }
       }
     }
