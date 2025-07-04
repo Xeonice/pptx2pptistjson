@@ -1,4 +1,4 @@
-import { Element } from "./Element";
+import { Element, Shadow } from "./Element";
 import { HtmlConverter } from "../../../services/utils/HtmlConverter";
 
 export class TextElement extends Element {
@@ -51,7 +51,7 @@ export class TextElement extends Element {
     // Convert text content to HTML format like the expected output
     const htmlContent = this.convertToHTML();
 
-    const result = {
+    const result: any = {
       type: this.type,
       id: this.id,
       left: this.position?.x || 0,
@@ -67,6 +67,19 @@ export class TextElement extends Element {
       enableShrink: true,
       lineHeight: this.getLineHeight(),
     };
+
+    // Add shadow if present
+    const shadow = this.getShadow();
+    if (shadow) {
+      result.shadow = {
+        type: shadow.type,
+        h: shadow.h,
+        v: shadow.v,
+        blur: shadow.blur,
+        color: shadow.color
+      };
+    }
+
     return result;
   }
 

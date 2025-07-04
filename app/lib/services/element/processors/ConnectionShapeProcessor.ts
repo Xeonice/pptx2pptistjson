@@ -16,6 +16,7 @@ import { GroupTransformUtils } from "../../utils/GroupTransformUtils";
 import { RotationExtractor } from "../../utils/RotationExtractor";
 import { OutlineExtractor } from "../../utils/OutlineExtractor";
 import { FlipExtractor } from "../../utils/FlipExtractor";
+import { ShadowExtractor } from "../../utils/ShadowExtractor";
 
 /**
  * Processor for PowerPoint connection shapes (p:cxnSp)
@@ -209,6 +210,19 @@ export class ConnectionShapeProcessor
         `ConnectionShapeProcessor ${id}: outline set - color: ${outline.color}, width: ${outline.width}, style: ${outline.style}`,
         "success"
       );
+    }
+
+    // Extract shadow properties using ShadowExtractor
+    if (spPrNode) {
+      const shadow = ShadowExtractor.extractShadow(spPrNode, this.xmlParser, context);
+      if (shadow) {
+        shapeElement.setShadow(shadow);
+        DebugHelper.log(
+          context,
+          `ConnectionShapeProcessor ${id}: shadow set - type: ${shadow.type}, h: ${shadow.h}, v: ${shadow.v}, blur: ${shadow.blur}, color: ${shadow.color}`,
+          "success"
+        );
+      }
     }
 
     // Extract stroke/border properties (important for connection shapes)

@@ -1,4 +1,4 @@
-import { Element } from "./Element";
+import { Element, Shadow } from "./Element";
 import { OutlineResult } from "../../../services/utils/OutlineExtractor";
 
 export class ShapeElement extends Element {
@@ -258,6 +258,18 @@ export class ShapeElement extends Element {
     // Add text content if present
     if (this.shapeText) {
       result.text = this.shapeText;
+    }
+
+    // Add shadow if present
+    const shadow = this.getShadow();
+    if (shadow) {
+      result.shadow = {
+        type: shadow.type,
+        h: shadow.h,
+        v: shadow.v,
+        blur: shadow.blur,
+        color: shadow.color
+      };
     }
 
     return result;

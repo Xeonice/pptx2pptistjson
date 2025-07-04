@@ -9,6 +9,7 @@ import { GroupTransformUtils } from "../../utils/GroupTransformUtils";
 import { RotationExtractor } from "../../utils/RotationExtractor";
 import { FlipExtractor } from "../../utils/FlipExtractor";
 import { DebugHelper } from "../../utils/DebugHelper";
+import { ShadowExtractor } from "../../utils/ShadowExtractor";
 
 export class TextProcessor implements IElementProcessor<TextElement> {
   private textStyleExtractor: TextStyleExtractor;
@@ -120,6 +121,17 @@ export class TextProcessor implements IElementProcessor<TextElement> {
             "info"
           );
         }
+      }
+
+      // Extract shadow properties using ShadowExtractor
+      const shadow = ShadowExtractor.extractShadow(spPrNode, this.xmlParser, context);
+      if (shadow) {
+        textElement.setShadow(shadow);
+        DebugHelper.log(
+          context,
+          `Text shadow set - type: ${shadow.type}, h: ${shadow.h}, v: ${shadow.v}, blur: ${shadow.blur}, color: ${shadow.color}`,
+          "success"
+        );
       }
     }
 

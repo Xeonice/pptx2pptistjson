@@ -1,4 +1,4 @@
-import { Element } from "./Element";
+import { Element, Shadow } from "./Element";
 
 export class ImageElement extends Element {
   private src: string;
@@ -153,7 +153,7 @@ export class ImageElement extends Element {
   }
 
   toJSON(): any {
-    const baseOutput = {
+    const baseOutput: any = {
       type: this.type,
       id: this.id,
       width: this.size?.width || 0,
@@ -205,6 +205,18 @@ export class ImageElement extends Element {
           }
         : undefined,
     };
+
+    // Add shadow if present
+    const shadow = this.getShadow();
+    if (shadow) {
+      baseOutput.shadow = {
+        type: shadow.type,
+        h: shadow.h,
+        v: shadow.v,
+        blur: shadow.blur,
+        color: shadow.color
+      };
+    }
 
     // 根据是否有图片数据决定输出格式
     if (this.hasImageData()) {
