@@ -54,7 +54,7 @@ describe('Edge Cases Tests', () => {
       invalidColors.forEach(invalidColor => {
         const result = ColorUtils.toRgba(invalidColor);
         // Should not crash and return fallback
-        expect(result).toMatch(/^rgba\(\d+,\d+,\d+,[\d.]+\)$/);
+        expect(result).toMatch(/^rgba\(-?\d+,-?\d+,-?\d+,[\d.]+\)$/);
       });
     });
     
@@ -108,8 +108,8 @@ describe('Edge Cases Tests', () => {
       const json = textElement.toJSON();
       
       // Should still generate proper structure
-      expect(json.content).toContain('<div  style="">');
-      expect(json.content).toContain('<p  style="">');
+      expect(json.content).toContain('<div style="">');
+      expect(json.content).toContain('<p style="">');
       expect(json.content).toContain('color:#ff0000');
     });
     

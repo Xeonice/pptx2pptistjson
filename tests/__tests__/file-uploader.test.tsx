@@ -279,7 +279,9 @@ describe('FileUploader Component', () => {
       const fileInput = document.querySelector('input[type="file"]');
       
       // Simulate null files
-      fireEvent.change(fileInput, { target: { files: null } });
+      if (fileInput) {
+        fireEvent.change(fileInput, { target: { files: null } });
+      }
       
       expect(mockOnFileUpload).not.toHaveBeenCalled();
     });

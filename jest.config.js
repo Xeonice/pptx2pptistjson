@@ -1,6 +1,11 @@
 module.exports = {
   preset: 'ts-jest',
   testEnvironment: 'jsdom',
+  testEnvironmentOptions: {
+    html: '<html><body></body></html>',
+    url: 'http://localhost',
+    userAgent: 'node.js'
+  },
   roots: ['<rootDir>/app', '<rootDir>/tests', '<rootDir>/components'],
   testMatch: [
     '**/__tests__/**/*.+(ts|tsx|js)',
@@ -29,6 +34,7 @@ module.exports = {
   moduleNameMapper: {
     '^@/components/(.*)$': '<rootDir>/components/$1',
     '^@/(.*)$': '<rootDir>/app/$1',
-    '^monaco-editor$': '<rootDir>/tests/__mocks__/monaco-editor.js'
+    '^monaco-editor$': '<rootDir>/tests/__mocks__/monaco-editor.js',
+    '^@monaco-editor/react$': '<rootDir>/tests/__mocks__/@monaco-editor/react.js'
   }
 };

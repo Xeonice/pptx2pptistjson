@@ -24,7 +24,7 @@ export class HtmlConverter {
     });
 
     if (options.wrapInDiv !== false) {
-      const divStyle = options.divStyle ? ` style="${options.divStyle}"` : '  style=""';
+      const divStyle = options.divStyle ? ` style="${options.divStyle}"` : ' style=""';
       return `<div${divStyle}>${pElements.join("")}</div>`;
     }
 
@@ -45,7 +45,7 @@ export class HtmlConverter {
     const pElement = `<p${paragraphStyle}>${spanElements}</p>`;
 
     if (options.wrapInDiv !== false) {
-      const divStyle = options.divStyle ? ` style="${options.divStyle}"` : '  style=""';
+      const divStyle = options.divStyle ? ` style="${options.divStyle}"` : ' style=""';
       return `<div${divStyle}>${pElement}</div>`;
     }
 
@@ -71,10 +71,10 @@ export class HtmlConverter {
     let span = "<span";
     
     if (styles.length > 0) {
-      span += `  style="${styles.join(";")}"`;
+      span += ` style="${styles.join(";")}"`;
     } else {
       // Always add style attribute even if empty for consistency with old format
-      span += '  style=""';
+      span += ' style=""';
     }
     
     if (dataAttributes.length > 0) {
@@ -264,7 +264,7 @@ export class HtmlConverter {
       styles.push(options.paragraphStyle);
     }
 
-    return styles.length > 0 ? `  style="${styles.join(";")}"` : '  style=""';
+    return styles.length > 0 ? ` style="${styles.join(";")}"` : ' style=""';
   }
 
   /**

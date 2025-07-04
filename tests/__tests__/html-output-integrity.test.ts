@@ -36,11 +36,11 @@ describe('HTML Output Integrity Tests', () => {
       const json = textElement.toJSON();
       
       // Expected format from output.json
-      const expectedPattern = '<div  style=""><p  style=""><span  style="color:#5b9bd5ff;font-size:54px;font-weight:bold;--colortype:accent1;">党建宣传策略实战方法论</span></p></div>';
+      const expectedPattern = '<div style=""><p style=""><span style="color:#5b9bd5ff;font-size:54px;font-weight:bold;--colortype:accent1;">党建宣传策略实战方法论</span></p></div>';
       
       // Check key components
-      expect(json.content).toContain('<div  style="">');
-      expect(json.content).toContain('<p  style="">');
+      expect(json.content).toContain('<div style="">');
+      expect(json.content).toContain('<p style="">');
       expect(json.content).toContain('党建宣传策略实战方法论');
       expect(json.content).toContain('</span></p></div>');
     });
@@ -55,8 +55,8 @@ describe('HTML Output Integrity Tests', () => {
       const json = textElement.toJSON();
       
       // Should still generate structure for empty content
-      expect(json.content).toContain('<div  style="">');
-      expect(json.content).toContain('<p  style="">');
+      expect(json.content).toContain('<div style="">');
+      expect(json.content).toContain('<p style="">');
       expect(json.content).toContain('<span');
       expect(json.content).toContain('</span></p></div>');
     });
@@ -266,7 +266,7 @@ describe('HTML Output Integrity Tests', () => {
       const json = textElement.toJSON();
       
       // Should have proper paragraph structure
-      expect(json.content).toContain('<p  style="">');
+      expect(json.content).toContain('<p style="">');
       expect(json.content).toContain('</p>');
       
       // Paragraph should contain span with formatting
@@ -374,8 +374,8 @@ describe('HTML Output Integrity Tests', () => {
       const json = textElement.toJSON();
       
       // Key format requirements from output.json
-      expect(json.content).toContain('<div  style="">'); // Note: double space
-      expect(json.content).toContain('<p  style="">'); // Note: double space
+      expect(json.content).toContain('<div style="">'); // Note: fixed space
+      expect(json.content).toContain('<p style="">'); // Note: fixed space
       expect(json.content).toContain('color:#5b9bd5ff;font-size:54px;font-weight:bold;--colortype:accent1');
     });
     

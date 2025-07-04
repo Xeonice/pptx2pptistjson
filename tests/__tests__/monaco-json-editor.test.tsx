@@ -48,15 +48,15 @@ jest.mock('@monaco-editor/react', () => {
   };
 });
 
-// Mock dynamic import
+// Mock dynamic import to return the mocked Monaco Editor
 jest.mock('next/dynamic', () => ({
   __esModule: true,
   default: (loader: () => Promise<any>, options?: any) => {
+    // Return the already mocked @monaco-editor/react component
+    const MockedMonacoEditor = require('@monaco-editor/react').default;
+    
     const MockComponent = (props: any) => {
-      if (options?.loading) {
-        return options.loading();
-      }
-      return <div data-testid="dynamic-mock" {...props}>Dynamic Mock</div>;
+      return <MockedMonacoEditor {...props} />;
     };
     MockComponent.displayName = 'DynamicMockComponent';
     return MockComponent;
@@ -488,10 +488,17 @@ describe('MonacoJsonEditor Component', () => {
     });
 
     it('provides loading feedback for screen readers', () => {
+      // Mock useEffect to not execute immediately to show loading state
+      const originalUseEffect = React.useEffect;
+      jest.spyOn(React, 'useEffect').mockImplementation(() => {});
+      
       render(<MonacoJsonEditor data={sampleData} />);
       
       const loadingText = screen.getByText('正在初始化 Monaco Editor...');
       expect(loadingText).toBeInTheDocument();
+      
+      // Restore useEffect
+      React.useEffect = originalUseEffect;
     });
   });
 });

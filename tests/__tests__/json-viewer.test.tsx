@@ -12,9 +12,12 @@ import { JsonViewer } from '../../components/JsonViewer';
 jest.mock('next/dynamic', () => ({
   __esModule: true,
   default: (loader: () => Promise<any>, options?: any) => {
-    // Return a mock component that renders the actual component
+    // Import the already mocked MonacoJsonEditor
+    const { MonacoJsonEditor } = require('../../components/MonacoJsonEditor');
+    
+    // Return the mocked component directly
     const MockComponent = (props: any) => {
-      return <div data-testid="monaco-editor-mock" {...props}>Monaco Editor Mock</div>;
+      return <MonacoJsonEditor {...props} />;
     };
     MockComponent.displayName = 'DynamicMockComponent';
     return MockComponent;

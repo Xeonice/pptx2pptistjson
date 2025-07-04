@@ -14,9 +14,29 @@ export class ColorUtils {
     }
 
     try {
-      // Handle hex format
+      // Handle hex format (with or without #)
       if (color.startsWith("#")) {
         return this.hexToRgba(color);
+      }
+
+      // Handle hex format without # prefix - only if it's clearly a hex color
+      if (/^[0-9A-Fa-f]{6}$/.test(color) || /^[0-9A-Fa-f]{8}$/.test(color)) {
+        return this.hexToRgba("#" + color);
+      }
+      
+      // Handle 3-digit hex colors only if they contain at least one letter (A-F)
+      if (/^[0-9A-Fa-f]{3}$/.test(color) && /[A-Fa-f]/.test(color)) {
+        return this.hexToRgba("#" + color);
+      }
+
+      // Handle rgb with alpha (malformed) - check first before normal rgb
+      if (color.startsWith("rgb(") && color.includes(",") && color.split(",").length >= 4) {
+        const parts = color.match(/rgb\(\s*(-?\d+)\s*,\s*(-?\d+)\s*,\s*(-?\d+)\s*,\s*([\d.]+)\s*\)/);
+        if (parts) {
+          const [, r, g, b, a] = parts;
+          const alpha = parseFloat(a) === 1 ? "1" : parseFloat(a).toFixed(3).replace(/\.?0+$/, "");
+          return `rgba(${r},${g},${b},${alpha})`;
+        }
       }
 
       // Handle rgb format
@@ -45,16 +65,6 @@ export class ColorUtils {
           return `rgba(${r},${g},${b},${alpha})`;
         }
       }
-
-      // Handle rgb with alpha (malformed)
-      if (color.startsWith("rgb(") && color.includes(",") && color.split(",").length >= 4) {
-        const parts = color.match(/rgb\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*,\s*([\d.]+)\s*\)/);
-        if (parts) {
-          const [, r, g, b, a] = parts;
-          const alpha = parseFloat(a) === 1 ? "1" : parseFloat(a).toFixed(3).replace(/\.?0+$/, "");
-          return `rgba(${r},${g},${b},${alpha})`;
-        }
-      }
     } catch (e) {
       // Fall through to default
     }
@@ -71,7 +81,7 @@ export class ColorUtils {
     hex = hex.replace("#", "");
 
     // Validate hex characters
-    if (!/^[0-9A-Fa-f]{3}([0-9A-Fa-f]{3})?([0-9A-Fa-f]{2})?$/.test(hex)) {
+    if (!/^[0-9A-Fa-f]{3}$|^[0-9A-Fa-f]{6}$|^[0-9A-Fa-f]{8}$/.test(hex)) {
       throw new Error("Invalid hex color");
     }
 
@@ -99,7 +109,8 @@ export class ColorUtils {
    * Converts rgb format to rgba format
    */
   private static rgbToRgba(rgb: string): string {
-    const match = rgb.match(/rgb\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*\)/);
+    // Support negative numbers and out-of-range values
+    const match = rgb.match(/rgb\(\s*(-?\d+)\s*,\s*(-?\d+)\s*,\s*(-?\d+)\s*\)/);
     if (match) {
       const [, r, g, b] = match;
       return `rgba(${r},${g},${b},1)`;
@@ -234,6 +245,7 @@ export class ColorUtils {
       b = hue2rgb(p, q, h - 1/3);
     }
 
+    // Use Math.round for better precision alignment
     return {
       r: Math.round(r * 255),
       g: Math.round(g * 255),
@@ -373,6 +385,7 @@ export class ColorUtils {
       'medSpringGreen': '#00FA9A',
       'medTurquoise': '#48D1CC',
       'medVioletRed': '#C71585',
+      'mediumVioletRed': '#C71585',
       'midnightBlue': '#191970',
       'mintCream': '#F5FFFA',
       'mistyRose': '#FFE4E1',
@@ -433,7 +446,13 @@ export class ColorUtils {
    * Applies shade transformation (darker) - corrected implementation
    */
   static applyShade(color: string, factor: number): string {
-    const rgba = this.parseRgba(this.toRgba(color));
+    // If toRgba returns the original color unchanged, it means it's invalid
+    const normalizedColor = this.toRgba(color);
+    if (normalizedColor === 'rgba(0,0,0,1)' && color !== 'rgba(0,0,0,1)' && color !== 'black' && color !== '#000000' && color !== '#000') {
+      return color; // Return original if invalid
+    }
+    
+    const rgba = this.parseRgba(normalizedColor);
     if (!rgba) return color;
 
     // Clamp factor to reasonable range (0 = no change, 1 = black)
@@ -453,7 +472,13 @@ export class ColorUtils {
    * Applies tint transformation (lighter) - corrected implementation
    */
   static applyTint(color: string, factor: number): string {
-    const rgba = this.parseRgba(this.toRgba(color));
+    // If toRgba returns the original color unchanged, it means it's invalid
+    const normalizedColor = this.toRgba(color);
+    if (normalizedColor === 'rgba(0,0,0,1)' && color !== 'rgba(0,0,0,1)' && color !== 'black' && color !== '#000000' && color !== '#000') {
+      return color; // Return original if invalid
+    }
+    
+    const rgba = this.parseRgba(normalizedColor);
     if (!rgba) return color;
 
     // Clamp factor to reasonable range (0 = no change, 1 = white)
@@ -515,7 +540,13 @@ export class ColorUtils {
    * Applies alpha transparency
    */
   static applyAlpha(color: string, alpha: number): string {
-    const rgba = this.parseRgba(this.toRgba(color));
+    // If toRgba returns the original color unchanged, it means it's invalid
+    const normalizedColor = this.toRgba(color);
+    if (normalizedColor === 'rgba(0,0,0,1)' && color !== 'rgba(0,0,0,1)' && color !== 'black' && color !== '#000000' && color !== '#000') {
+      return color; // Return original if invalid
+    }
+    
+    const rgba = this.parseRgba(normalizedColor);
     if (!rgba) return color;
 
     // Clamp alpha to valid range [0, 1]

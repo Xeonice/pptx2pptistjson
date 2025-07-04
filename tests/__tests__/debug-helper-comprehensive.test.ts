@@ -1,162 +1,311 @@
 /**
- * DebugHelper 调试系统综合测试用例
- * 测试调试功能完整性、配置管理和文件保存
+ * DebugHelper 综合测试套件
+ * 测试调试配置管理、日志记录、性能计时和调试功能开关
  */
 
-import { DebugHelper } from "../../app/lib/services/utils/DebugHelper";
-import * as fs from "fs";
-import * as path from "path";
+import { DebugHelper } from '../../app/lib/services/utils/DebugHelper';
+import { ParseOptions } from '../../app/lib/models/dto/ParseOptions';
+import { ProcessingContext } from '../../app/lib/services/interfaces/ProcessingContext';
 
-// Mock context for testing
-const createMockContext = (debug = false, slideId = "1") => ({
-  slideId,
-  resources: {},
-  options: {
-    enableDebugMode: debug,
-    debugOptions: {
-      saveDebugImages: true,
-      enableConsoleLogging: true,
-      enableTimingLogs: true,
-      logLevel: "info" as const,
-    },
-  },
-});
+describe('DebugHelper - Comprehensive Test Suite', () => {
+  let mockContext: ProcessingContext;
+  let mockOptions: ParseOptions;
+  
+  // Mock console to capture log output
+  let consoleSpy: jest.SpyInstance;
+  let loggedMessages: string[];
 
-describe("DebugHelper 调试系统综合测试", () => {
-  describe("调试功能完整性测试", () => {
-    it("应该在调试模式下正确识别调试状态", () => {
-      const context = createMockContext(true);
-      
-      // 测试调试模式检测
-      const isDebugEnabled = DebugHelper.isDebugEnabled(context as any);
-      expect(isDebugEnabled).toBe(true);
+  beforeEach(() => {
+    // Reset mock context and options
+    mockContext = {
+      options: {
+        enableDebugMode: false,
+        debugOptions: {}
+      }
+    } as ProcessingContext;
 
-      // 测试调试图片保存检测
-      const shouldSave = DebugHelper.shouldSaveDebugImages(context as any);
-      expect(shouldSave).toBe(true);
-    });
+    mockOptions = {
+      enableDebugMode: false,
+      debugOptions: {}
+    };
 
-    it("应该在非调试模式下正确识别状态", () => {
-      const context = createMockContext(false);
-      
-      // 测试调试模式检测
-      const isDebugEnabled = DebugHelper.isDebugEnabled(context as any);
-      expect(isDebugEnabled).toBe(false);
-
-      // 测试调试图片保存检测
-      const shouldSave = DebugHelper.shouldSaveDebugImages(context as any);
-      expect(shouldSave).toBe(false);
-    });
-
-    it("应该从ParseOptions直接检测调试模式", () => {
-      const enabledOptions = { enableDebugMode: true };
-      const disabledOptions = { enableDebugMode: false };
-      const undefinedOptions = undefined;
-
-      expect(DebugHelper.isDebugEnabledFromOptions(enabledOptions)).toBe(true);
-      expect(DebugHelper.isDebugEnabledFromOptions(disabledOptions)).toBe(false);
-      expect(DebugHelper.isDebugEnabledFromOptions(undefinedOptions)).toBe(false);
+    // Mock console.log to capture output
+    loggedMessages = [];
+    consoleSpy = jest.spyOn(console, 'log').mockImplementation((...args) => {
+      loggedMessages.push(args.join(' '));
     });
   });
 
-  describe("调试配置测试", () => {
-    it("应该处理缺失的调试配置", () => {
-      const contextWithoutDebugOptions = {
-        slideId: "1",
-        resources: {},
-        options: {
-          enableDebugMode: true,
-          // 缺少 debugOptions
-        },
-      };
+  afterEach(() => {
+    consoleSpy.mockRestore();
+  });
 
-      // 应该使用默认配置，不抛出异常
-      expect(() => DebugHelper.isDebugEnabled(contextWithoutDebugOptions as any)).not.toThrow();
-      expect(() => DebugHelper.shouldSaveDebugImages(contextWithoutDebugOptions as any)).not.toThrow();
+  describe('Debug Mode Detection', () => {
+    describe('isDebugEnabled', () => {
+      it('should return false when debug mode is disabled', () => {
+        expect(DebugHelper.isDebugEnabled(mockContext)).toBe(false);
+      });
+
+      it('should return true when debug mode is enabled', () => {
+        mockContext.options!.enableDebugMode = true;
+        expect(DebugHelper.isDebugEnabled(mockContext)).toBe(true);
+      });
+
+      it('should return false when options are undefined', () => {
+        mockContext.options = {} as ParseOptions;
+        mockContext.options.enableDebugMode = undefined;
+        expect(DebugHelper.isDebugEnabled(mockContext)).toBe(false);
+      });
+
+      it('should return false when context is empty', () => {
+        const emptyContext = {} as ProcessingContext;
+        expect(DebugHelper.isDebugEnabled(emptyContext)).toBe(false);
+      });
     });
 
-    it("应该处理完全缺失的options配置", () => {
-      const contextWithoutOptions = {
-        slideId: "1",
-        resources: {},
-        // 缺少 options
-      };
+    describe('isDebugEnabledFromOptions', () => {
+      it('should return false when debug mode is disabled', () => {
+        expect(DebugHelper.isDebugEnabledFromOptions(mockOptions)).toBe(false);
+      });
 
-      // 应该使用默认配置，不抛出异常
-      expect(() => DebugHelper.isDebugEnabled(contextWithoutOptions as any)).not.toThrow();
-      expect(() => DebugHelper.shouldSaveDebugImages(contextWithoutOptions as any)).not.toThrow();
+      it('should return true when debug mode is enabled', () => {
+        mockOptions.enableDebugMode = true;
+        expect(DebugHelper.isDebugEnabledFromOptions(mockOptions)).toBe(true);
+      });
+
+      it('should return false when options are undefined', () => {
+        expect(DebugHelper.isDebugEnabledFromOptions(undefined)).toBe(false);
+      });
+
+      it('should return false when options are null', () => {
+        expect(DebugHelper.isDebugEnabledFromOptions(null as any)).toBe(false);
+      });
+    });
+  });
+
+  describe('Debug Feature Detection', () => {
+    beforeEach(() => {
+      mockContext.options!.enableDebugMode = true;
+      mockOptions.enableDebugMode = true;
+    });
+
+    describe('shouldSaveDebugImages', () => {
+      it('should return false when debug images are disabled', () => {
+        expect(DebugHelper.shouldSaveDebugImages(mockContext)).toBe(false);
+      });
+
+      it('should return true when debug images are enabled', () => {
+        mockContext.options!.debugOptions!.saveDebugImages = true;
+        expect(DebugHelper.shouldSaveDebugImages(mockContext)).toBe(true);
+      });
+
+      it('should return false when debug mode is disabled even if saveDebugImages is true', () => {
+        mockContext.options!.enableDebugMode = false;
+        mockContext.options!.debugOptions!.saveDebugImages = true;
+        expect(DebugHelper.shouldSaveDebugImages(mockContext)).toBe(false);
+      });
+
+      it('should return false when debugOptions is undefined', () => {
+        mockContext.options!.debugOptions = undefined;
+        expect(DebugHelper.shouldSaveDebugImages(mockContext)).toBe(false);
+      });
+    });
+
+    describe('shouldLogProcessingDetails', () => {
+      it('should return false when logging is disabled', () => {
+        expect(DebugHelper.shouldLogProcessingDetails(mockContext)).toBe(false);
+      });
+
+      it('should return true when logging is enabled', () => {
+        mockContext.options!.debugOptions!.logProcessingDetails = true;
+        expect(DebugHelper.shouldLogProcessingDetails(mockContext)).toBe(true);
+      });
+
+      it('should return false when debug mode is disabled', () => {
+        mockContext.options!.enableDebugMode = false;
+        mockContext.options!.debugOptions!.logProcessingDetails = true;
+        expect(DebugHelper.shouldLogProcessingDetails(mockContext)).toBe(false);
+      });
+    });
+
+    describe('shouldIncludeTimingInfo', () => {
+      it('should return false when timing info is disabled', () => {
+        expect(DebugHelper.shouldIncludeTimingInfo(mockContext)).toBe(false);
+      });
+
+      it('should return true when timing info is enabled', () => {
+        mockContext.options!.debugOptions!.includeTimingInfo = true;
+        expect(DebugHelper.shouldIncludeTimingInfo(mockContext)).toBe(true);
+      });
+    });
+  });
+
+  describe('Debug Prefix Generation', () => {
+    it('should generate correct prefixes for different log types', () => {
+      expect(DebugHelper.getDebugPrefix('info')).toBe('🐛 [DEBUG]');
+      expect(DebugHelper.getDebugPrefix('warn')).toBe('⚠️ [DEBUG]');
+      expect(DebugHelper.getDebugPrefix('error')).toBe('❌ [DEBUG]');
+      expect(DebugHelper.getDebugPrefix('success')).toBe('✅ [DEBUG]');
+    });
+
+    it('should default to info prefix', () => {
+      expect(DebugHelper.getDebugPrefix()).toBe('🐛 [DEBUG]');
+    });
+  });
+
+  describe('Debug Logging', () => {
+    beforeEach(() => {
+      mockContext.options!.enableDebugMode = true;
+      mockContext.options!.debugOptions!.logProcessingDetails = true;
+      mockOptions.enableDebugMode = true;
+      mockOptions.debugOptions!.logProcessingDetails = true;
+    });
+
+    describe('log method', () => {
+      it('should log messages when debug logging is enabled', () => {
+        DebugHelper.log(mockContext, 'Test message');
+        expect(loggedMessages).toHaveLength(1);
+        expect(loggedMessages[0]).toContain('🐛 [DEBUG] Test message');
+      });
+
+      it('should not log messages when debug logging is disabled', () => {
+        mockContext.options!.debugOptions!.logProcessingDetails = false;
+        DebugHelper.log(mockContext, 'Test message');
+        expect(loggedMessages).toHaveLength(0);
+      });
+
+      it('should log with different types', () => {
+        DebugHelper.log(mockContext, 'Info message', 'info');
+        DebugHelper.log(mockContext, 'Warning message', 'warn');
+        DebugHelper.log(mockContext, 'Error message', 'error');
+        DebugHelper.log(mockContext, 'Success message', 'success');
+
+        expect(loggedMessages).toHaveLength(4);
+        expect(loggedMessages[0]).toContain('🐛 [DEBUG] Info message');
+        expect(loggedMessages[1]).toContain('⚠️ [DEBUG] Warning message');
+        expect(loggedMessages[2]).toContain('❌ [DEBUG] Error message');
+        expect(loggedMessages[3]).toContain('✅ [DEBUG] Success message');
+      });
+    });
+
+    describe('logFromOptions method', () => {
+      it('should log messages when debug logging is enabled', () => {
+        DebugHelper.logFromOptions(mockOptions, 'Test message from options');
+        expect(loggedMessages).toHaveLength(1);
+        expect(loggedMessages[0]).toContain('🐛 [DEBUG] Test message from options');
+      });
+
+      it('should not log messages when debug logging is disabled', () => {
+        mockOptions.debugOptions!.logProcessingDetails = false;
+        DebugHelper.logFromOptions(mockOptions, 'Test message');
+        expect(loggedMessages).toHaveLength(0);
+      });
+
+      it('should handle undefined options', () => {
+        DebugHelper.logFromOptions(undefined, 'Test message');
+        expect(loggedMessages).toHaveLength(0);
+      });
+    });
+  });
+
+  describe('Timing Wrapper', () => {
+    beforeEach(() => {
+      mockContext.options!.enableDebugMode = true;
+      mockContext.options!.debugOptions!.includeTimingInfo = true;
+      mockContext.options!.debugOptions!.logProcessingDetails = true;
+    });
+
+    it('should execute function and log timing when timing is enabled', async () => {
+      const testFunction = jest.fn().mockResolvedValue('test result');
       
-      expect(DebugHelper.isDebugEnabled(contextWithoutOptions as any)).toBe(false);
-      expect(DebugHelper.shouldSaveDebugImages(contextWithoutOptions as any)).toBe(false);
+      const result = await DebugHelper.withTiming(mockContext, 'test operation', testFunction);
+      
+      expect(result).toBe('test result');
+      expect(testFunction).toHaveBeenCalled();
+      expect(loggedMessages.length).toBeGreaterThanOrEqual(2);
+      expect(loggedMessages[0]).toContain('Starting test operation...');
+      expect(loggedMessages[1]).toContain('Completed test operation in');
+      expect(loggedMessages[1]).toContain('ms');
+    });
+
+    it('should execute function without timing when timing is disabled', async () => {
+      mockContext.options!.debugOptions!.includeTimingInfo = false;
+      const testFunction = jest.fn().mockResolvedValue('test result');
+      
+      const result = await DebugHelper.withTiming(mockContext, 'test operation', testFunction);
+      
+      expect(result).toBe('test result');
+      expect(testFunction).toHaveBeenCalled();
+      expect(loggedMessages).toHaveLength(0);
+    });
+
+    it('should handle and log errors in timing wrapper', async () => {
+      const error = new Error('Test error');
+      const testFunction = jest.fn().mockRejectedValue(error);
+      
+      await expect(DebugHelper.withTiming(mockContext, 'failing operation', testFunction)).rejects.toThrow('Test error');
+      
+      expect(testFunction).toHaveBeenCalled();
+      expect(loggedMessages.length).toBeGreaterThanOrEqual(2);
+      expect(loggedMessages[0]).toContain('Starting failing operation...');
+      expect(loggedMessages[1]).toContain('Failed failing operation after');
+      expect(loggedMessages[1]).toContain('ms');
     });
   });
 
-  describe("边界情况测试", () => {
-    it("应该处理null和undefined的context", () => {
-      // 实际的DebugHelper可能不处理null/undefined，所以我们测试它会抛出异常
-      expect(() => DebugHelper.isDebugEnabled(null as any)).toThrow();
-      expect(() => DebugHelper.isDebugEnabled(undefined as any)).toThrow();
-      expect(() => DebugHelper.shouldSaveDebugImages(null as any)).toThrow();
-      expect(() => DebugHelper.shouldSaveDebugImages(undefined as any)).toThrow();
+  describe('Debug Summary Generation', () => {
+    it('should return disabled message when debug is off', () => {
+      const summary = DebugHelper.getDebugSummary(mockContext);
+      expect(summary).toBe('Debug: disabled');
     });
 
-    it("应该处理部分缺失的debugOptions", () => {
-      const partialContext = {
-        slideId: "1",
-        resources: {},
-        options: {
-          enableDebugMode: true,
-          debugOptions: {
-            saveDebugImages: true,
-            // 缺少其他选项
-          },
-        },
-      };
+    it('should return enabled message with no features when debug is on but no features enabled', () => {
+      mockContext.options!.enableDebugMode = true;
+      const summary = DebugHelper.getDebugSummary(mockContext);
+      expect(summary).toBe('Debug: enabled ()');
+    });
 
-      expect(DebugHelper.isDebugEnabled(partialContext as any)).toBe(true);
-      expect(DebugHelper.shouldSaveDebugImages(partialContext as any)).toBe(true);
+    it('should list enabled features in summary', () => {
+      mockContext.options!.enableDebugMode = true;
+      mockContext.options!.debugOptions = {
+        saveDebugImages: true,
+        logProcessingDetails: true,
+        includeTimingInfo: true
+      };
+      
+      const summary = DebugHelper.getDebugSummary(mockContext);
+      expect(summary).toContain('Debug: enabled');
+      expect(summary).toContain('images');
+      expect(summary).toContain('logging');
+      expect(summary).toContain('timing');
     });
   });
 
-  describe("实际使用场景测试", () => {
-    it("应该在真实场景下正确工作", () => {
-      // 模拟真实的context结构
-      const realContext = {
-        slideId: "slide-1",
-        resources: { images: {}, themes: {} },
-        options: {
-          enableDebugMode: true,
-          outputFormat: "base64",
-          debugOptions: {
-            saveDebugImages: true,
-            enableConsoleLogging: true,
-            enableTimingLogs: false,
-          },
-        },
-      };
+  describe('Error Handling and Edge Cases', () => {
+    it('should handle malformed context objects', () => {
+      const malformedContexts = [
+        {} as ProcessingContext,
+        { options: null } as any,
+        { options: {} } as ProcessingContext
+      ];
 
-      expect(DebugHelper.isDebugEnabled(realContext as any)).toBe(true);
-      expect(DebugHelper.shouldSaveDebugImages(realContext as any)).toBe(true);
+      malformedContexts.forEach(context => {
+        expect(() => DebugHelper.isDebugEnabled(context)).not.toThrow();
+        expect(() => DebugHelper.shouldSaveDebugImages(context)).not.toThrow();
+        expect(() => DebugHelper.shouldLogProcessingDetails(context)).not.toThrow();
+        expect(() => DebugHelper.getDebugSummary(context)).not.toThrow();
+      });
     });
 
-    it("应该在生产环境配置下正确工作", () => {
-      // 模拟生产环境的context
-      const prodContext = {
-        slideId: "slide-prod",
-        resources: { images: {}, themes: {} },
-        options: {
-          enableDebugMode: false,
-          outputFormat: "url",
-          debugOptions: {
-            saveDebugImages: false,
-            enableConsoleLogging: false,
-            enableTimingLogs: false,
-          },
-        },
-      };
+    it('should handle very long log messages', () => {
+      mockContext.options!.enableDebugMode = true;
+      mockContext.options!.debugOptions!.logProcessingDetails = true;
 
-      expect(DebugHelper.isDebugEnabled(prodContext as any)).toBe(false);
-      expect(DebugHelper.shouldSaveDebugImages(prodContext as any)).toBe(false);
+      const longMessage = 'A'.repeat(1000);
+      DebugHelper.log(mockContext, longMessage, 'info');
+      
+      expect(loggedMessages).toHaveLength(1);
+      expect(loggedMessages[0]).toContain(longMessage);
     });
   });
 });
