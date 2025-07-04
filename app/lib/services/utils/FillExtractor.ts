@@ -7,7 +7,7 @@ export class FillExtractor {
   private static getTextByPathList(obj: any, pathList: string[]): any {
     let current = obj;
     for (const path of pathList) {
-      if (current && typeof current === 'object' && path in current) {
+      if (current && typeof current === "object" && path in current) {
         current = current[path];
       } else {
         return undefined;
@@ -37,25 +37,31 @@ export class FillExtractor {
     } else if (solidFill["a:schemeClr"]) {
       // Theme color reference
       clrNode = solidFill["a:schemeClr"];
-      const schemeClr = "a:" + (this.getTextByPathList(clrNode, ["attrs", "val"]) || "");
-      color = this.getSchemeColorFromTheme(schemeClr, warpObj, clrMap, phClr) || "";
+      const schemeClr =
+        "a:" + (this.getTextByPathList(clrNode, ["attrs", "val"]) || "");
+      color =
+        this.getSchemeColorFromTheme(schemeClr, warpObj, clrMap, phClr) || "";
     } else if (solidFill["a:scrgbClr"]) {
       // Percentage RGB color
       clrNode = solidFill["a:scrgbClr"];
       const defBultColorVals = clrNode["attrs"];
-      const red = defBultColorVals["r"].indexOf("%") !== -1 
-        ? defBultColorVals["r"].split("%").shift() 
-        : defBultColorVals["r"];
-      const green = defBultColorVals["g"].indexOf("%") !== -1 
-        ? defBultColorVals["g"].split("%").shift() 
-        : defBultColorVals["g"];
-      const blue = defBultColorVals["b"].indexOf("%") !== -1 
-        ? defBultColorVals["b"].split("%").shift() 
-        : defBultColorVals["b"];
-      
-      color = ColorUtils.toHex(255 * (Number(red) / 100)) + 
-              ColorUtils.toHex(255 * (Number(green) / 100)) + 
-              ColorUtils.toHex(255 * (Number(blue) / 100));
+      const red =
+        defBultColorVals["r"].indexOf("%") !== -1
+          ? defBultColorVals["r"].split("%").shift()
+          : defBultColorVals["r"];
+      const green =
+        defBultColorVals["g"].indexOf("%") !== -1
+          ? defBultColorVals["g"].split("%").shift()
+          : defBultColorVals["g"];
+      const blue =
+        defBultColorVals["b"].indexOf("%") !== -1
+          ? defBultColorVals["b"].split("%").shift()
+          : defBultColorVals["b"];
+
+      color =
+        ColorUtils.toHex(255 * (Number(red) / 100)) +
+        ColorUtils.toHex(255 * (Number(green) / 100)) +
+        ColorUtils.toHex(255 * (Number(blue) / 100));
     } else if (solidFill["a:prstClr"]) {
       // Preset color
       clrNode = solidFill["a:prstClr"];
@@ -66,19 +72,24 @@ export class FillExtractor {
       clrNode = solidFill["a:hslClr"];
       const defBultColorVals = clrNode["attrs"];
       const hue = Number(defBultColorVals["hue"]) / 100000;
-      const sat = Number(
-        defBultColorVals["sat"].indexOf("%") !== -1 
-          ? defBultColorVals["sat"].split("%").shift() 
-          : defBultColorVals["sat"]
-      ) / 100;
-      const lum = Number(
-        defBultColorVals["lum"].indexOf("%") !== -1 
-          ? defBultColorVals["lum"].split("%").shift() 
-          : defBultColorVals["lum"]
-      ) / 100;
-      
+      const sat =
+        Number(
+          defBultColorVals["sat"].indexOf("%") !== -1
+            ? defBultColorVals["sat"].split("%").shift()
+            : defBultColorVals["sat"]
+        ) / 100;
+      const lum =
+        Number(
+          defBultColorVals["lum"].indexOf("%") !== -1
+            ? defBultColorVals["lum"].split("%").shift()
+            : defBultColorVals["lum"]
+        ) / 100;
+
       const rgb = ColorUtils.hslToRgb(hue, sat, lum);
-      color = ColorUtils.toHex(rgb.r) + ColorUtils.toHex(rgb.g) + ColorUtils.toHex(rgb.b);
+      color =
+        ColorUtils.toHex(rgb.r) +
+        ColorUtils.toHex(rgb.g) +
+        ColorUtils.toHex(rgb.b);
     } else if (solidFill["a:sysClr"]) {
       // System color
       clrNode = solidFill["a:sysClr"];
@@ -97,7 +108,7 @@ export class FillExtractor {
     // Check if we need to apply color transformations
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const hasTransformations = clrNode && this.hasColorTransformations(clrNode);
-    
+
     // Always convert to rgba for consistency
     let rgbaColor = ColorUtils.toRgba(color);
 
@@ -105,9 +116,13 @@ export class FillExtractor {
     if (clrNode) {
       // Check if we need to return alpha format
       let isAlpha = false;
-      
+
       // Alpha (check first to determine output format)
-      const alphaVal = this.getTextByPathList(clrNode, ["a:alpha", "attrs", "val"]);
+      const alphaVal = this.getTextByPathList(clrNode, [
+        "a:alpha",
+        "attrs",
+        "val",
+      ]);
       if (alphaVal) {
         const alpha = parseInt(alphaVal) / 100000;
         if (!isNaN(alpha)) {
@@ -118,7 +133,11 @@ export class FillExtractor {
       }
 
       // Hue modification
-      const hueModVal = this.getTextByPathList(clrNode, ["a:hueMod", "attrs", "val"]);
+      const hueModVal = this.getTextByPathList(clrNode, [
+        "a:hueMod",
+        "attrs",
+        "val",
+      ]);
       if (hueModVal) {
         const hueMod = parseInt(hueModVal) / 100000;
         if (!isNaN(hueMod)) {
@@ -127,7 +146,11 @@ export class FillExtractor {
       }
 
       // Luminance modification
-      const lumModVal = this.getTextByPathList(clrNode, ["a:lumMod", "attrs", "val"]);
+      const lumModVal = this.getTextByPathList(clrNode, [
+        "a:lumMod",
+        "attrs",
+        "val",
+      ]);
       if (lumModVal) {
         const lumMod = parseInt(lumModVal) / 100000;
         if (!isNaN(lumMod)) {
@@ -136,7 +159,11 @@ export class FillExtractor {
       }
 
       // Luminance offset
-      const lumOffVal = this.getTextByPathList(clrNode, ["a:lumOff", "attrs", "val"]);
+      const lumOffVal = this.getTextByPathList(clrNode, [
+        "a:lumOff",
+        "attrs",
+        "val",
+      ]);
       if (lumOffVal) {
         const lumOff = parseInt(lumOffVal) / 100000;
         if (!isNaN(lumOff)) {
@@ -145,7 +172,11 @@ export class FillExtractor {
       }
 
       // Saturation modification
-      const satModVal = this.getTextByPathList(clrNode, ["a:satMod", "attrs", "val"]);
+      const satModVal = this.getTextByPathList(clrNode, [
+        "a:satMod",
+        "attrs",
+        "val",
+      ]);
       if (satModVal) {
         const satMod = parseInt(satModVal) / 100000;
         if (!isNaN(satMod)) {
@@ -154,7 +185,11 @@ export class FillExtractor {
       }
 
       // Shade
-      const shadeVal = this.getTextByPathList(clrNode, ["a:shade", "attrs", "val"]);
+      const shadeVal = this.getTextByPathList(clrNode, [
+        "a:shade",
+        "attrs",
+        "val",
+      ]);
       if (shadeVal) {
         const shade = parseInt(shadeVal) / 100000;
         if (!isNaN(shade)) {
@@ -163,14 +198,18 @@ export class FillExtractor {
       }
 
       // Tint
-      const tintVal = this.getTextByPathList(clrNode, ["a:tint", "attrs", "val"]);
+      const tintVal = this.getTextByPathList(clrNode, [
+        "a:tint",
+        "attrs",
+        "val",
+      ]);
       if (tintVal) {
         const tint = parseInt(tintVal) / 100000;
         if (!isNaN(tint)) {
           rgbaColor = ColorUtils.applyTint(rgbaColor, tint);
         }
       }
-      
+
       // Always return rgba format for consistency
       // (Removing hex conversion to ensure consistent rgba output)
     }
@@ -189,47 +228,62 @@ export class FillExtractor {
   ): string | null {
     let color: string | null = null;
     let slideLayoutClrOverride: any;
-    
+
     // Determine color mapping override
     if (clrMap) {
       slideLayoutClrOverride = clrMap;
     } else {
       // Check slide color map override
-      let sldClrMapOvr = this.getTextByPathList(warpObj?.slideContent, ['p:sld', 'p:clrMapOvr', 'a:overrideClrMapping', 'attrs']);
+      let sldClrMapOvr = this.getTextByPathList(warpObj?.slideContent, [
+        "p:sld",
+        "p:clrMapOvr",
+        "a:overrideClrMapping",
+        "attrs",
+      ]);
       if (sldClrMapOvr) {
         slideLayoutClrOverride = sldClrMapOvr;
       } else {
         // Check slide layout color map override
-        sldClrMapOvr = this.getTextByPathList(warpObj?.slideLayoutContent, ['p:sldLayout', 'p:clrMapOvr', 'a:overrideClrMapping', 'attrs']);
+        sldClrMapOvr = this.getTextByPathList(warpObj?.slideLayoutContent, [
+          "p:sldLayout",
+          "p:clrMapOvr",
+          "a:overrideClrMapping",
+          "attrs",
+        ]);
         if (sldClrMapOvr) {
           slideLayoutClrOverride = sldClrMapOvr;
         } else {
           // Use slide master color map
-          slideLayoutClrOverride = this.getTextByPathList(warpObj?.slideMasterContent, ['p:sldMaster', 'p:clrMap', 'attrs']);
+          slideLayoutClrOverride = this.getTextByPathList(
+            warpObj?.slideMasterContent,
+            ["p:sldMaster", "p:clrMap", "attrs"]
+          );
         }
       }
     }
-    
+
     // Extract scheme color name (remove 'a:' prefix)
-    const schmClrName = schemeClr.startsWith('a:') ? schemeClr.substring(2) : schemeClr;
-    
+    const schmClrName = schemeClr.startsWith("a:")
+      ? schemeClr.substring(2)
+      : schemeClr;
+
     // Handle placeholder color
-    if (schmClrName === 'phClr' && phClr) {
+    if (schmClrName === "phClr" && phClr) {
       return phClr;
     }
-    
+
     let resolvedSchemeClr = schemeClr;
-    
+
     // Apply color mapping overrides
     if (slideLayoutClrOverride) {
       switch (schmClrName) {
-        case 'tx1':
-        case 'tx2':
-        case 'bg1':
-        case 'bg2':
+        case "tx1":
+        case "tx2":
+        case "bg1":
+        case "bg2":
           const mappedColor = slideLayoutClrOverride[schmClrName];
           if (mappedColor) {
-            resolvedSchemeClr = 'a:' + mappedColor;
+            resolvedSchemeClr = "a:" + mappedColor;
           }
           break;
         default:
@@ -238,25 +292,26 @@ export class FillExtractor {
     } else {
       // Apply default color mappings
       switch (schmClrName) {
-        case 'tx1':
-          resolvedSchemeClr = 'a:dk1';
+        case "tx1":
+          resolvedSchemeClr = "a:dk1";
           break;
-        case 'tx2':
-          resolvedSchemeClr = 'a:dk2';
+        case "tx2":
+          resolvedSchemeClr = "a:dk2";
           break;
-        case 'bg1':
-          resolvedSchemeClr = 'a:lt1';
+        case "bg1":
+          resolvedSchemeClr = "a:lt1";
           break;
-        case 'bg2':
-          resolvedSchemeClr = 'a:lt2';
+        case "bg2":
+          resolvedSchemeClr = "a:lt2";
           break;
         default:
           break;
       }
     }
-    
+
     // Get theme colors
-    const themeColors = warpObj?.themeContent?.["a:theme"]?.["a:themeElements"]?.["a:clrScheme"];
+    const themeColors =
+      warpObj?.themeContent?.["a:theme"]?.["a:themeElements"]?.["a:clrScheme"];
     if (!themeColors) return null;
 
     // Get color node from theme
@@ -265,9 +320,13 @@ export class FillExtractor {
 
     // Extract color value
     if (colorNode["a:srgbClr"]) {
-      color = this.getTextByPathList(colorNode["a:srgbClr"], ["attrs", "val"]) || null;
+      color =
+        this.getTextByPathList(colorNode["a:srgbClr"], ["attrs", "val"]) ||
+        null;
     } else if (colorNode["a:sysClr"]) {
-      color = this.getTextByPathList(colorNode["a:sysClr"], ["attrs", "lastClr"]) || null;
+      color =
+        this.getTextByPathList(colorNode["a:sysClr"], ["attrs", "lastClr"]) ||
+        null;
     }
 
     return color;
@@ -276,7 +335,12 @@ export class FillExtractor {
   /**
    * Gets fill color from shape properties
    */
-  static getFillColor(spPr: any, clrMap?: any, phClr?: string, warpObj?: any): string {
+  static getFillColor(
+    spPr: any,
+    clrMap?: any,
+    phClr?: string,
+    warpObj?: any
+  ): string {
     // Check for solid fill
     const solidFill = spPr?.["a:solidFill"];
     if (solidFill) {
@@ -298,14 +362,19 @@ export class FillExtractor {
    */
   private static hasColorTransformations(clrNode: any): boolean {
     if (!clrNode) return false;
-    
+
     // Check for various color transformation attributes
     const transformations = [
-      "a:alpha", "a:hueMod", "a:lumMod", "a:lumOff", 
-      "a:satMod", "a:shade", "a:tint"
+      "a:alpha",
+      "a:hueMod",
+      "a:lumMod",
+      "a:lumOff",
+      "a:satMod",
+      "a:shade",
+      "a:tint",
     ];
-    
-    return transformations.some(transform => {
+
+    return transformations.some((transform) => {
       const val = this.getTextByPathList(clrNode, [transform, "attrs", "val"]);
       return val !== undefined && val !== null;
     });
@@ -314,7 +383,9 @@ export class FillExtractor {
   /**
    * Adds missing parseRgba method for ColorUtils compatibility
    */
-  private static parseRgba(color: string): { r: number; g: number; b: number; a: number } | null {
+  private static parseRgba(
+    color: string
+  ): { r: number; g: number; b: number; a: number } | null {
     const match = color.match(/rgba\((\d+),(\d+),(\d+),([\d.]+)\)/);
     if (match) {
       const [, r, g, b, a] = match;
@@ -332,7 +403,12 @@ export class FillExtractor {
    * Gets gradient fill (placeholder for future implementation)
    */
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  static getGradientFill(gradFill: any, clrMap?: any, phClr?: string, warpObj?: any): any {
+  static getGradientFill(
+    gradFill: any,
+    clrMap?: any,
+    phClr?: string,
+    warpObj?: any
+  ): any {
     // TODO: Implement gradient fill extraction
     return null;
   }

@@ -480,27 +480,13 @@ export class ShapeProcessor implements IElementProcessor<ShapeElement> {
       return "rgba(0,0,0,0)"; // Transparent
     }
 
-    // NEW: Check for style references first (fillRef from p:style)
-    if (shapeStyleNode) {
-      DebugHelper.log(context, "Processing shape style references", "info");
-      const styleColor = this.extractColorFromStyleRef(shapeStyleNode, context);
-      if (styleColor) {
-        DebugHelper.log(
-          context,
-          `Style reference resolved to: ${styleColor}`,
-          "success"
-        );
-        return styleColor;
-      }
-    }
-
     // Check for direct solidFill in spPr (but only direct children of spPr, not in a:ln)
     const solidFillNode = this.findDirectChildNode(spPrNode, "solidFill");
     if (solidFillNode) {
       const solidFillObj = this.xmlNodeToObject(solidFillNode);
 
       // Only require theme if this solidFill contains scheme color references
-      const hasSchemeColor = solidFillObj["a:schemeClr"];
+      const hasSchemeColor = solidFillObj["schemeClr"];
       if (hasSchemeColor && !context.theme) {
         throw new Error(
           "ShapeProcessor: ProcessingContext.theme is null/undefined - cannot process scheme colors. Found schemeClr reference but no theme available."
@@ -508,10 +494,7 @@ export class ShapeProcessor implements IElementProcessor<ShapeElement> {
       }
 
       const warpObj = {
-        themeContent:
-          context.theme && hasSchemeColor
-            ? this.createThemeContent(context.theme)
-            : undefined,
+        themeContent: this.createThemeContent(context.theme),
       };
 
       const color = FillExtractor.getSolidFill(
@@ -526,6 +509,20 @@ export class ShapeProcessor implements IElementProcessor<ShapeElement> {
       }
 
       return color && color !== "" ? color : undefined;
+    }
+
+    // NEW: Check for style references first (fillRef from p:style)
+    if (shapeStyleNode) {
+      DebugHelper.log(context, "Processing shape style references", "info");
+      const styleColor = this.extractColorFromStyleRef(shapeStyleNode, context);
+      if (styleColor) {
+        DebugHelper.log(
+          context,
+          `Style reference resolved to: ${styleColor}`,
+          "success"
+        );
+        return styleColor;
+      }
     }
 
     // Use the general fill extraction method from FillExtractor as fallback
