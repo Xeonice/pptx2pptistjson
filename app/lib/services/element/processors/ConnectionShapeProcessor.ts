@@ -12,6 +12,10 @@ import { DebugHelper } from "../../utils/DebugHelper";
 import { TextStyleExtractor } from "../../text/TextStyleExtractor";
 import { TextContent } from "../../../models/domain/elements/TextElement";
 import { HtmlConverter } from "../../utils/HtmlConverter";
+import { GroupTransformUtils } from "../../utils/GroupTransformUtils";
+import { RotationExtractor } from "../../utils/RotationExtractor";
+import { OutlineExtractor } from "../../utils/OutlineExtractor";
+import { FlipExtractor } from "../../utils/FlipExtractor";
 
 /**
  * Processor for PowerPoint connection shapes (p:cxnSp)
@@ -127,9 +131,21 @@ export class ConnectionShapeProcessor
           const x = this.xmlParser.getAttribute(offNode, "x");
           const y = this.xmlParser.getAttribute(offNode, "y");
           if (x && y) {
+            let posX = parseInt(x);
+            let posY = parseInt(y);
+
+            // Apply group transform if exists
+            const transformedCoords = GroupTransformUtils.applyGroupTransformIfExists(
+              posX,
+              posY,
+              context
+            );
+            posX = transformedCoords.x;
+            posY = transformedCoords.y;
+
             shapeElement.setPosition({
-              x: UnitConverter.emuToPointsPrecise(parseInt(x)),
-              y: UnitConverter.emuToPointsPrecise(parseInt(y)),
+              x: UnitConverter.emuToPointsPrecise(posX),
+              y: UnitConverter.emuToPointsPrecise(posY),
             });
           }
         }
@@ -149,18 +165,26 @@ export class ConnectionShapeProcessor
           }
         }
 
-        // Rotation
-        const rot = this.xmlParser.getAttribute(xfrmNode, "rot");
-        if (rot) {
-          const rotation = UnitConverter.angleToDegreesFromEmu(parseInt(rot));
+        // Rotation - 使用统一的旋转提取工具
+        const rotation = RotationExtractor.extractRotation(this.xmlParser, xfrmNode);
+        if (rotation !== 0) {
           shapeElement.setRotation(rotation);
+          DebugHelper.log(
+            context,
+            `Connection shape rotation: ${rotation} degrees`,
+            "info"
+          );
         }
 
-        // Flip attributes
-        const flipH = this.xmlParser.getAttribute(xfrmNode, "flipH") === "1";
-        const flipV = this.xmlParser.getAttribute(xfrmNode, "flipV") === "1";
-        if (flipH || flipV) {
-          shapeElement.setFlip({ horizontal: flipH, vertical: flipV });
+        // Flip attributes - 使用统一的翻转提取工具
+        const flip = FlipExtractor.extractFlip(this.xmlParser, xfrmNode);
+        if (flip) {
+          shapeElement.setFlip(flip);
+          DebugHelper.log(
+            context,
+            `Connection shape flip: ${FlipExtractor.getFlipDescription(this.xmlParser, xfrmNode)}`,
+            "info"
+          );
         }
       }
     }
@@ -174,6 +198,17 @@ export class ConnectionShapeProcessor
         "info"
       );
       shapeElement.setFill({ color: fillColor });
+    }
+
+    // Extract outline properties using OutlineExtractor
+    const outline = OutlineExtractor.extractOutline(xmlNode, this.xmlParser, context);
+    if (outline) {
+      shapeElement.setOutline(outline);
+      DebugHelper.log(
+        context,
+        `ConnectionShapeProcessor ${id}: outline set - color: ${outline.color}, width: ${outline.width}, style: ${outline.style}`,
+        "success"
+      );
     }
 
     // Extract stroke/border properties (important for connection shapes)

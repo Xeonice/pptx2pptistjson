@@ -1,4 +1,5 @@
 import { Element } from "./Element";
+import { OutlineResult } from "../../../services/utils/OutlineExtractor";
 
 export class ShapeElement extends Element {
   private shapeType: ShapeType;
@@ -11,7 +12,7 @@ export class ShapeElement extends Element {
   private fill?: { color: string };
   private gradient?: GradientFill;
   private stroke?: StrokeProperties;
-  private flip?: { horizontal: boolean; vertical: boolean };
+  private outline?: OutlineResult;
   private connectionInfo?: ConnectionInfo;
   private adjustmentValues?: Record<string, number>;
 
@@ -147,13 +148,14 @@ export class ShapeElement extends Element {
     return this.stroke;
   }
 
-  setFlip(flip: { horizontal: boolean; vertical: boolean }): void {
-    this.flip = flip;
+  setOutline(outline: OutlineResult): void {
+    this.outline = outline;
   }
 
-  getFlip(): { horizontal: boolean; vertical: boolean } | undefined {
-    return this.flip;
+  getOutline(): OutlineResult | undefined {
+    return this.outline;
   }
+
 
   setConnectionInfo(connectionInfo: ConnectionInfo): void {
     this.connectionInfo = connectionInfo;
@@ -174,7 +176,7 @@ export class ShapeElement extends Element {
   toJSON(): any {
     const width = this.size?.width || 0;
     const height = this.size?.height || 0;
-    
+
     const result: any = {
       type: this.type,
       id: this.id,
@@ -183,10 +185,12 @@ export class ShapeElement extends Element {
       left: this.position?.x || 0,
       top: this.position?.y || 0,
       // Use actual dimensions for viewBox if available, otherwise use preset viewBox or default 200x200
-      viewBox: this.viewBox || (width > 0 && height > 0 ? [width, height] : [200, 200]),
+      viewBox:
+        this.viewBox ||
+        (width > 0 && height > 0 ? [width, height] : [200, 200]),
       path: this.path || this.getShapePathInternal(),
       fixedRatio: false,
-      rotate: this.rotation || 0,
+      rotate: this.getRotation() || 0,
     };
 
     // Add gradient if present, otherwise add fill
@@ -209,20 +213,37 @@ export class ShapeElement extends Element {
       result.pathFormula = this.pathFormula;
     }
 
-    // Only add legacy properties if they contain meaningful data
-    if (this.stroke && (this.stroke.width && this.stroke.width > 0 || this.stroke.color !== "#000000")) {
+    // Add special property if present
+    if (this.special) {
+      result.special = this.special;
+    }
+
+    // Add outline if present (prioritize new outline property over legacy stroke)
+    if (this.outline) {
+      result.outline = {
+        color: this.outline.color,
+        width: this.outline.width,
+        style: this.outline.style,
+      };
+    } else if (
+      this.stroke &&
+      ((this.stroke.width && this.stroke.width > 0) ||
+        this.stroke.color !== "#000000")
+    ) {
+      // Fallback to legacy stroke properties for backward compatibility
       result.outline = {
         color: this.stroke.color || "#000000",
         width: this.stroke.width || 0,
-        style: this.stroke.dashType || "solid"
+        style: this.stroke.dashType || "solid",
       };
     }
 
     // Only add flip properties if they are true
-    if (this.flip?.horizontal) {
+    const flip = this.getFlip();
+    if (flip?.horizontal) {
       result.flipH = true;
     }
-    if (this.flip?.vertical) {
+    if (flip?.vertical) {
       result.flipV = true;
     }
 

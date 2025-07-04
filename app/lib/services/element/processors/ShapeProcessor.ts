@@ -1,5 +1,6 @@
 import { IElementProcessor } from "../../interfaces/IElementProcessor";
 import { ProcessingContext } from "../../interfaces/ProcessingContext";
+import { GroupTransformUtils } from "../../utils/GroupTransformUtils";
 import {
   ShapeElement,
   ShapeType,
@@ -9,15 +10,14 @@ import { XmlNode } from "../../../models/xml/XmlNode";
 import { IXmlParseService } from "../../interfaces/IXmlParseService";
 import { UnitConverter } from "../../utils/UnitConverter";
 import { FillExtractor } from "../../utils/FillExtractor";
-import {
-  SHAPE_LIST,
-  SHAPE_PATH_FORMULAS,
-  ShapePoolItem,
-} from "../../../utils";
+import { SHAPE_LIST, SHAPE_PATH_FORMULAS, ShapePoolItem } from "../../../utils";
 import { TextContent } from "../../../models/domain/elements/TextElement";
 import { DebugHelper } from "../../utils/DebugHelper";
 import { HtmlConverter } from "../../utils/HtmlConverter";
 import { TextStyleExtractor } from "../../text/TextStyleExtractor";
+import { RotationExtractor } from "../../utils/RotationExtractor";
+import { OutlineExtractor } from "../../utils/OutlineExtractor";
+import { FlipExtractor } from "../../utils/FlipExtractor";
 
 export class ShapeProcessor implements IElementProcessor<ShapeElement> {
   private textStyleExtractor: TextStyleExtractor;
@@ -26,6 +26,7 @@ export class ShapeProcessor implements IElementProcessor<ShapeElement> {
   constructor(private xmlParser: IXmlParseService) {
     this.textStyleExtractor = new TextStyleExtractor(xmlParser);
   }
+
 
   canProcess(xmlNode: XmlNode): boolean {
     // Skip if it's explicitly a text box
@@ -125,9 +126,6 @@ export class ShapeProcessor implements IElementProcessor<ShapeElement> {
     if (spPrNode) {
       const xfrmNode = this.xmlParser.findNode(spPrNode, "xfrm");
       if (xfrmNode) {
-        // Get group transform from context
-        const groupTransform = context.groupTransform;
-
         // Position
         const offNode = this.xmlParser.findNode(xfrmNode, "off");
         if (offNode) {
@@ -137,39 +135,14 @@ export class ShapeProcessor implements IElementProcessor<ShapeElement> {
             let posX = parseInt(x);
             let posY = parseInt(y);
 
-            // Apply group transform if exists - using the correct 4-step formula
-            if (
-              groupTransform &&
-              groupTransform.offset &&
-              groupTransform.childOffset
-            ) {
-              // 步骤1: 缩放比例已在 groupTransform 中计算
-              const scaleX = groupTransform.scaleX;
-              const scaleY = groupTransform.scaleY;
-
-              // 步骤2: 计算形状相对于子空间原点的位置
-              const relativeX = posX - groupTransform.childOffset.x;
-              const relativeY = posY - groupTransform.childOffset.y;
-
-              // 步骤3: 应用缩放变换
-              const scaledX = relativeX * scaleX;
-              const scaledY = relativeY * scaleY;
-
-              // 步骤4: 加上组合在幻灯片中的位置
-              const finalX = scaledX + groupTransform.offset.x;
-              const finalY = scaledY + groupTransform.offset.y;
-
-              posX = finalX;
-              posY = finalY;
-
-              DebugHelper.log(
-                context,
-                `Applied group transform: relative(${relativeX}, ${relativeY}) -> scaled(${scaledX.toFixed(
-                  2
-                )}, ${scaledY.toFixed(2)}) -> final(${finalX}, ${finalY})`,
-                "info"
-              );
-            }
+            // Apply group transform if exists
+            const transformedCoords = GroupTransformUtils.applyGroupTransformIfExists(
+              posX,
+              posY,
+              context
+            );
+            posX = transformedCoords.x;
+            posY = transformedCoords.y;
 
             const finalPosX = UnitConverter.emuToPointsPrecise(posX);
             const finalPosY = UnitConverter.emuToPointsPrecise(posY);
@@ -215,10 +188,26 @@ export class ShapeProcessor implements IElementProcessor<ShapeElement> {
           }
         }
 
-        // Rotation
-        const rot = this.xmlParser.getAttribute(xfrmNode, "rot");
-        if (rot) {
-          shapeElement.setRotation(parseInt(rot) / 60000); // Convert to degrees
+        // Rotation - 使用统一的旋转提取工具
+        const rotation = RotationExtractor.extractRotation(this.xmlParser, xfrmNode);
+        if (rotation !== 0) {
+          shapeElement.setRotation(rotation);
+          DebugHelper.log(
+            context,
+            `Shape rotation: ${rotation} degrees`,
+            "info"
+          );
+        }
+
+        // Flip attributes - 使用统一的翻转提取工具
+        const flip = FlipExtractor.extractFlip(this.xmlParser, xfrmNode);
+        if (flip) {
+          shapeElement.setFlip(flip);
+          DebugHelper.log(
+            context,
+            `Shape flip: ${FlipExtractor.getFlipDescription(this.xmlParser, xfrmNode)}`,
+            "info"
+          );
         }
       }
 
@@ -227,7 +216,8 @@ export class ShapeProcessor implements IElementProcessor<ShapeElement> {
       if (custGeomNode) {
         // Handle custom geometry
         const svgPath = this.extractSvgPath(custGeomNode, width, height);
-        if (svgPath && svgPath.trim().length > 10) { // Check for meaningful path content
+        if (svgPath && svgPath.trim().length > 10) {
+          // Check for meaningful path content
           shapeElement.setPath(svgPath);
           // For custom geometry, calculate viewBox from path range
           if (svgPath.indexOf("NaN") === -1) {
@@ -236,13 +226,18 @@ export class ShapeProcessor implements IElementProcessor<ShapeElement> {
           }
         } else {
           // Custom geometry failed, fall back to detected shape type or rect
-          const fallbackShapeType = shapeType !== "custom" ? shapeType.toString() : "rect";
+          const fallbackShapeType =
+            shapeType !== "custom" ? shapeType.toString() : "rect";
           DebugHelper.log(
             context,
             `Custom geometry extraction failed, falling back to detected shape type: ${fallbackShapeType}`,
             "warn"
           );
-          const fallbackPath = this.getShapePath(fallbackShapeType, width, height);
+          const fallbackPath = this.getShapePath(
+            fallbackShapeType,
+            width,
+            height
+          );
           if (fallbackPath) {
             shapeElement.setPath(fallbackPath);
             shapeElement.setViewBox([width, height]);
@@ -364,6 +359,17 @@ export class ShapeProcessor implements IElementProcessor<ShapeElement> {
       }
     }
 
+    // Extract outline properties using OutlineExtractor
+    const outline = OutlineExtractor.extractOutline(xmlNode, this.xmlParser, context);
+    if (outline) {
+      shapeElement.setOutline(outline);
+      DebugHelper.log(
+        context,
+        `Shape outline set - color: ${outline.color}, width: ${outline.width}, style: ${outline.style}`,
+        "success"
+      );
+    }
+
     // Extract style node for text style inheritance
     const styleNode = this.xmlParser.findNode(xmlNode, "style");
 
@@ -401,7 +407,6 @@ export class ShapeProcessor implements IElementProcessor<ShapeElement> {
     const blipFillNode = this.xmlParser.findNode(spPrNode, "blipFill");
     return !!blipFillNode;
   }
-
 
   private hasVisibleShapeBackground(xmlNode: XmlNode): boolean {
     // Check if shape has visible background fill
@@ -1027,9 +1032,6 @@ export class ShapeProcessor implements IElementProcessor<ShapeElement> {
     // Clean up extra spaces
     return optimized.replace(/\s+/g, " ").trim();
   }
-
-
-
 
   /**
    * Generate SVG path for preset geometric shapes

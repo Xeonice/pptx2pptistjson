@@ -268,12 +268,18 @@ export class SlideParser {
       const groupElements: Element[] = [];
 
       // Extract group transform information
-      const groupTransform = this.extractGroupTransformInfo(node);
+      const currentGroupTransform = this.extractGroupTransformInfo(node);
 
-      // Create enhanced context with group transform
+      // Accumulate group transforms if we're inside a nested group
+      const accumulatedGroupTransform = this.accumulateGroupTransforms(
+        context.groupTransform,
+        currentGroupTransform
+      );
+
+      // Create enhanced context with accumulated group transform
       const enhancedContext = {
         ...context,
-        groupTransform,
+        groupTransform: accumulatedGroupTransform,
       };
 
       for (const child of node.children) {
@@ -288,8 +294,8 @@ export class SlideParser {
       }
 
       // Apply group transforms to all child elements
-      if (groupTransform && groupElements.length > 0) {
-        this.applyGroupTransformToElements(groupElements, groupTransform);
+      if (accumulatedGroupTransform && groupElements.length > 0) {
+        this.applyGroupTransformToElements(groupElements, accumulatedGroupTransform);
       }
 
       return groupElements.length > 0 ? groupElements : undefined;
@@ -403,6 +409,66 @@ export class SlideParser {
       },
       flip: undefined,
       rotation: undefined
+    };
+  }
+
+  /**
+   * Accumulate group transforms for nested groups
+   * @param parentTransform - Parent group transform (if any)
+   * @param currentTransform - Current group transform
+   * @returns Accumulated transform
+   */
+  private accumulateGroupTransforms(
+    parentTransform: GroupTransform | undefined,
+    currentTransform: GroupTransform | undefined
+  ): GroupTransform | undefined {
+    if (!currentTransform) return parentTransform;
+    if (!parentTransform) return currentTransform;
+
+    // Accumulate scale factors (multiply)
+    const scaleX = parentTransform.scaleX * currentTransform.scaleX;
+    const scaleY = parentTransform.scaleY * currentTransform.scaleY;
+
+    // Calculate accumulated offsets
+    // Current group's position in parent's coordinate system
+    const currentOffsetX = currentTransform.offset?.x || 0;
+    const currentOffsetY = currentTransform.offset?.y || 0;
+    
+    // Transform current group's position by parent's scale and offset
+    const parentOffsetX = parentTransform.offset?.x || 0;
+    const parentOffsetY = parentTransform.offset?.y || 0;
+    const parentChildOffsetX = parentTransform.childOffset?.x || 0;
+    const parentChildOffsetY = parentTransform.childOffset?.y || 0;
+
+    // Apply parent's transformation to current group's position
+    const transformedOffsetX = 
+      (currentOffsetX - parentChildOffsetX) * parentTransform.scaleX + parentOffsetX;
+    const transformedOffsetY = 
+      (currentOffsetY - parentChildOffsetY) * parentTransform.scaleY + parentOffsetY;
+
+    // Calculate accumulated child offset
+    const currentChildOffsetX = currentTransform.childOffset?.x || 0;
+    const currentChildOffsetY = currentTransform.childOffset?.y || 0;
+    
+    // Transform current group's child offset by parent's scale
+    const accumulatedChildOffsetX = 
+      (currentChildOffsetX - parentChildOffsetX) * parentTransform.scaleX + parentChildOffsetX;
+    const accumulatedChildOffsetY = 
+      (currentChildOffsetY - parentChildOffsetY) * parentTransform.scaleY + parentChildOffsetY;
+
+    return {
+      scaleX,
+      scaleY,
+      offset: {
+        x: transformedOffsetX,
+        y: transformedOffsetY
+      },
+      childOffset: {
+        x: accumulatedChildOffsetX,
+        y: accumulatedChildOffsetY
+      },
+      flip: currentTransform.flip || parentTransform.flip,
+      rotation: (currentTransform.rotation || 0) + (parentTransform.rotation || 0)
     };
   }
 

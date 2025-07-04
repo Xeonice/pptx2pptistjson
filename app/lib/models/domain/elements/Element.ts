@@ -8,6 +8,7 @@ export abstract class Element {
   protected size?: Size;
   protected rotation?: number;
   protected style?: ElementStyle;
+  protected flip?: FlipTransform;
 
   constructor(id: string, type: ElementType) {
     this.id = id;
@@ -52,6 +53,14 @@ export abstract class Element {
 
   getStyle(): ElementStyle | undefined {
     return this.style;
+  }
+
+  setFlip(flip: FlipTransform): void {
+    this.flip = flip;
+  }
+
+  getFlip(): FlipTransform | undefined {
+    return this.flip;
   }
 
   abstract toJSON(): any;
@@ -110,4 +119,9 @@ export interface Shadow {
   blur: number;
   offsetX: number;
   offsetY: number;
+}
+
+export interface FlipTransform {
+  horizontal: boolean;
+  vertical: boolean;
 }
