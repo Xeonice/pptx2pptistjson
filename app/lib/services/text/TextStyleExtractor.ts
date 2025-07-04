@@ -136,7 +136,7 @@ export class TextStyleExtractor {
       }
     }
 
-    // Color - check run properties first, then inherit from list style
+    // Color - check run properties first, then inherit from list style, then shape style
     const solidFillNode = rPrNode
       ? this.xmlParser.findNode(rPrNode, "solidFill")
       : undefined;
@@ -173,6 +173,20 @@ export class TextStyleExtractor {
             "info"
           );
         }
+      }
+    } else if (shapeStyleNode) {
+      // Last resort: inherit color from shape style (fontRef)
+      const fontRefColor = this.extractColorFromShapeStyle(shapeStyleNode, context);
+      if (fontRefColor) {
+        style.color = fontRefColor.color;
+        if (fontRefColor.themeColorType) {
+          style.themeColorType = fontRefColor.themeColorType;
+        }
+        DebugHelper.log(
+          context,
+          `TextStyleExtractor: Color inherited from shape style (fontRef): ${style.color} (theme: ${fontRefColor.themeColorType})`,
+          "info"
+        );
       }
     }
 
@@ -609,6 +623,61 @@ export class TextStyleExtractor {
     }
 
     return inheritedStyle;
+  }
+
+  /**
+   * Extract color from shape style fontRef - specifically for text color inheritance
+   * This handles the case where text color comes from shape-level fontRef references
+   */
+  private extractColorFromShapeStyle(
+    shapeStyleNode: XmlNode,
+    context: ProcessingContext
+  ): { color: string; themeColorType?: string } | undefined {
+    // Check for fontRef in shape style
+    const fontRefNode = this.xmlParser.findNode(shapeStyleNode, "fontRef");
+    if (!fontRefNode) {
+      return undefined;
+    }
+
+    // Look for schemeClr inside fontRef
+    const schemeClrNode = this.xmlParser.findNode(fontRefNode, "schemeClr");
+    if (!schemeClrNode) {
+      return undefined;
+    }
+
+    const val = this.xmlParser.getAttribute(schemeClrNode, "val");
+    if (!val) {
+      return undefined;
+    }
+
+    // Convert schemeClr node to object for FillExtractor
+    const solidFillObj = {
+      "a:schemeClr": this.xmlNodeToObject(schemeClrNode)
+    };
+
+    // Create warpObj with theme content
+    const warpObj = {
+      themeContent: context.theme
+        ? this.createThemeContent(context.theme)
+        : undefined,
+    };
+
+    // Use FillExtractor to resolve the theme color
+    const color = FillExtractor.getSolidFill(
+      solidFillObj,
+      undefined,
+      undefined,
+      warpObj
+    );
+
+    if (color) {
+      return {
+        color,
+        themeColorType: val
+      };
+    }
+
+    return undefined;
   }
 
   /**
