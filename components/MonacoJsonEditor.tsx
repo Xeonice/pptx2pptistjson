@@ -388,8 +388,20 @@ export function MonacoJsonEditor({
         <span>
           尺寸: {data?.size ? `${data.size.width} × ${data.size.height}` : '未知'}
         </span>
-        <span>字符数: {JSON.stringify(data).length.toLocaleString()}</span>
-        <span>大小: {(JSON.stringify(data).length / 1024).toFixed(1)} KB</span>
+        <span>字符数: {(() => {
+          try {
+            return JSON.stringify(data).length.toLocaleString();
+          } catch (error) {
+            return '无法计算';
+          }
+        })()}</span>
+        <span>大小: {(() => {
+          try {
+            return (JSON.stringify(data).length / 1024).toFixed(1) + ' KB';
+          } catch (error) {
+            return '无法计算';
+          }
+        })()}</span>
       </div>
     </div>
   );

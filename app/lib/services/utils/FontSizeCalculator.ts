@@ -56,7 +56,10 @@ export class FontSizeCalculator {
    * @param size - 要验证的值
    * @returns 是否有效
    */
-  static isValidSize(size: string | number): boolean {
+  static isValidSize(size: string | number | null): boolean {
+    if (size === null || size === undefined) {
+      return false;
+    }
     try {
       const value = new Decimal(size);
       return value.isFinite() && value.greaterThan(0);

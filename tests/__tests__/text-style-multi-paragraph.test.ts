@@ -266,7 +266,7 @@ describe("TextStyleExtractor - Multi-paragraph handling", () => {
     const json = textElement.toJSON();
 
     // 验证生成的 HTML 包含多个 p 标签
-    expect(json.content).toContain('<div  style="">');
+    expect(json.content).toContain('<div style="">');
     expect(json.content).toMatch(/<p[^>]*>.*智子云.*<\/p>/);
     expect(json.content).toMatch(/<p[^>]*>.*数据驱动未来.*<\/p>/);
     

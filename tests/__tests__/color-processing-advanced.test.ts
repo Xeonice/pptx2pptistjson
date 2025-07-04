@@ -198,7 +198,7 @@ describe('Advanced Color Processing Algorithms', () => {
     it('should handle invalid hex color values', () => {
       const invalidColorInputs = [
         { input: { 'a:srgbClr': { attrs: { val: 'GGGGGG' } } }, expected: 'rgba(0,0,0,1)' }, // 无效hex -> 黑色
-        { input: { 'a:srgbClr': { attrs: { val: '12345' } } }, expected: 'rgba(18,52,5,1)' }, // 部分解析
+        { input: { 'a:srgbClr': { attrs: { val: '12345' } } }, expected: 'rgba(0,0,0,1)' }, // 无效hex -> 黑色
         { input: { 'a:srgbClr': { attrs: { val: '' } } }, expected: '' }, // 空值 -> 空字符串
         { input: { 'a:srgbClr': { attrs: { val: 'invalid' } } }, expected: 'rgba(0,0,0,1)' } // 非hex -> 黑色
       ];

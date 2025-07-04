@@ -26,7 +26,32 @@ global.ResizeObserver = jest.fn().mockImplementation(() => ({
   json: () => Promise.resolve(JSON.parse(body || '{}')),
 }));
 
-// Global test utilities
-global.beforeEach(() => {
+// Ensure DOM elements are properly created for React 18
+beforeEach(() => {
+  // Clear all mocks
   jest.clearAllMocks();
+  
+  // Ensure document has proper structure
+  if (typeof document !== 'undefined') {
+    // Make sure documentElement exists
+    if (!document.documentElement) {
+      const html = document.createElement('html');
+      document.appendChild(html);
+    }
+    
+    // Make sure head exists
+    if (!document.head) {
+      const head = document.createElement('head');
+      document.documentElement.appendChild(head);
+    }
+    
+    // Make sure body exists and is properly attached
+    if (!document.body) {
+      const body = document.createElement('body');
+      document.documentElement.appendChild(body);
+    }
+    
+    // Clear any existing content
+    document.body.innerHTML = '';
+  }
 });

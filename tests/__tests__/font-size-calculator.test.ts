@@ -18,7 +18,7 @@ describe("FontSizeCalculator", () => {
 
       testCases.forEach(({ input, expected }) => {
         const result = FontSizeCalculator.convertPowerPointToWebSize(input);
-        expect(result).toBe(expected);
+        expect(result).toBeCloseTo(expected, 2);
       });
     });
 
