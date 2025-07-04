@@ -14,7 +14,8 @@ describe('HtmlConverter - Comprehensive Test Suite', () => {
       ];
       
       const html = HtmlConverter.convertSingleParagraphToHtml(content);
-      expect(html).toBe('<div style=""><p style=""><span style="">Hello World</span></p></div>');
+      // 现在 HtmlConverter 始终包含默认字体大小 (23.99px)
+      expect(html).toBe('<div style=""><p style=""><span style="font-size:23.99px">Hello World</span></p></div>');
     });
 
     it('should handle text with basic styling', () => {
@@ -77,9 +78,10 @@ describe('HtmlConverter - Comprehensive Test Suite', () => {
       ];
       
       const html = HtmlConverter.convertSingleParagraphToHtml(content);
-      expect(html).toContain('<span style="">Normal </span>');
-      expect(html).toContain('<span style="font-weight:bold">Bold </span>');
-      expect(html).toContain('<span style="font-style:italic">Italic</span>');
+      // 每个 span 都包含默认字体大小
+      expect(html).toContain('<span style="font-size:23.99px">Normal </span>');
+      expect(html).toContain('<span style="font-size:23.99px;font-weight:bold">Bold </span>');
+      expect(html).toContain('<span style="font-size:23.99px;font-style:italic">Italic</span>');
     });
 
     it('should handle options without wrapping div', () => {
@@ -89,7 +91,8 @@ describe('HtmlConverter - Comprehensive Test Suite', () => {
       
       const options: HtmlConversionOptions = { wrapInDiv: false };
       const html = HtmlConverter.convertSingleParagraphToHtml(content, options);
-      expect(html).toBe('<p style=""><span style="">No Wrapper</span></p>');
+      // 即使不包含 div wrapper，也有默认字体大小
+      expect(html).toBe('<p style=""><span style="font-size:23.99px">No Wrapper</span></p>');
     });
 
     it('should handle custom div style', () => {
@@ -100,6 +103,8 @@ describe('HtmlConverter - Comprehensive Test Suite', () => {
       const options: HtmlConversionOptions = { divStyle: 'margin: 10px; padding: 5px' };
       const html = HtmlConverter.convertSingleParagraphToHtml(content, options);
       expect(html).toContain('style="margin: 10px; padding: 5px"');
+      // 也应该包含默认字体大小
+      expect(html).toContain('font-size:23.99px');
     });
 
     it('should handle custom paragraph style', () => {
@@ -141,9 +146,10 @@ describe('HtmlConverter - Comprehensive Test Suite', () => {
       ];
       
       const html = HtmlConverter.convertParagraphsToHtml(paragraphs);
-      expect(html).toContain('<p style=""><span style="">First paragraph</span></p>');
-      expect(html).toContain('<p style=""><span style="">Second paragraph</span></p>');
-      expect(html).toContain('<p style=""><span style="">Third paragraph</span></p>');
+      // 多段落转换中每个 span 都应包含默认字体大小
+      expect(html).toContain('<p style=""><span style="font-size:23.99px">First paragraph</span></p>');
+      expect(html).toContain('<p style=""><span style="font-size:23.99px">Second paragraph</span></p>');
+      expect(html).toContain('<p style=""><span style="font-size:23.99px">Third paragraph</span></p>');
     });
 
     it('should handle mixed paragraph styles', () => {
@@ -154,9 +160,10 @@ describe('HtmlConverter - Comprehensive Test Suite', () => {
       ];
       
       const html = HtmlConverter.convertParagraphsToHtml(paragraphs);
-      expect(html).toContain('<span style="">Normal</span>');
-      expect(html).toContain('<span style="font-weight:bold">Bold</span>');
-      expect(html).toContain('<span style="font-style:italic">Italic</span>');
+      // 样式现在包含默认字体大小
+      expect(html).toContain('<span style="font-size:23.99px">Normal</span>');
+      expect(html).toContain('<span style="font-size:23.99px;font-weight:bold">Bold</span>');
+      expect(html).toContain('<span style="font-size:23.99px;font-style:italic">Italic</span>');
     });
 
     it('should handle complex multi-run paragraphs', () => {
@@ -193,7 +200,8 @@ describe('HtmlConverter - Comprehensive Test Suite', () => {
       
       const options: HtmlConversionOptions = { wrapInDiv: false };
       const html = HtmlConverter.convertParagraphsToHtml(paragraphs, options);
-      expect(html).toBe('<p style=""><span style="">Para 1</span></p><p style=""><span style="">Para 2</span></p>');
+      // 无 wrapper 的多段落也包含默认字体大小
+      expect(html).toBe('<p style=""><span style="font-size:23.99px">Para 1</span></p><p style=""><span style="font-size:23.99px">Para 2</span></p>');
     });
   });
 
@@ -307,7 +315,8 @@ describe('HtmlConverter - Comprehensive Test Suite', () => {
       
       const options: HtmlConversionOptions = { escapeHtml: true };
       const html = HtmlConverter.convertSingleParagraphToHtml(content, options);
-      expect(html).toContain('<span style=""></span>');
+      // 即使文本为 null，也应包含默认字体大小
+      expect(html).toContain('<span style="font-size:23.99px"></span>');
     });
   });
 
@@ -336,8 +345,9 @@ describe('HtmlConverter - Comprehensive Test Suite', () => {
       const styleContent = html.match(/style="([^"]+)"/)?.[1] || '';
       const styles = styleContent.split(';');
       
-      expect(styles[0]).toContain('color:');
-      expect(styles[1]).toContain('font-size:');
+      // 样式顺序：font-size 现在总是首先出现（因为默认值），然后是其他样式
+      expect(styles[0]).toContain('font-size:');
+      expect(styles[1]).toContain('color:');
       expect(styles[2]).toContain('font-weight:');
       expect(styles[3]).toContain('font-style:');
       expect(styles[4]).toContain('text-decoration:');
@@ -369,7 +379,8 @@ describe('HtmlConverter - Comprehensive Test Suite', () => {
       ];
       
       const html = HtmlConverter.convertSingleParagraphToHtml(content);
-      expect(html).toContain('style=""');
+      // "空"样式现在包含默认字体大小
+      expect(html).toContain('style="font-size:23.99px"');
     });
 
     it('should handle undefined styles', () => {
@@ -378,7 +389,8 @@ describe('HtmlConverter - Comprehensive Test Suite', () => {
       ];
       
       const html = HtmlConverter.convertSingleParagraphToHtml(content);
-      expect(html).toContain('style=""');
+      // undefined 样式也会有默认字体大小
+      expect(html).toContain('style="font-size:23.99px"');
     });
   });
 
@@ -447,7 +459,8 @@ describe('HtmlConverter - Comprehensive Test Suite', () => {
       ];
       
       const html = HtmlConverter.convertSingleParagraphToHtml(content);
-      expect(html).toBe('<div style=""><p style=""><span style=""></span></p></div>');
+      // 空文本内容也会有默认字体大小
+      expect(html).toBe('<div style=""><p style=""><span style="font-size:23.99px"></span></p></div>');
     });
 
     it('should handle content with only whitespace', () => {
@@ -456,7 +469,8 @@ describe('HtmlConverter - Comprehensive Test Suite', () => {
       ];
       
       const html = HtmlConverter.convertSingleParagraphToHtml(content);
-      expect(html).toContain('<span style="">   </span>');
+      // 仅包含空格的内容也有默认字体大小
+      expect(html).toContain('<span style="font-size:23.99px">   </span>');
     });
 
     it('should handle very long text content', () => {

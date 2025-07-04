@@ -383,8 +383,9 @@ describe("HTML Output Integrity Tests", () => {
       // Key format requirements from output.json
       expect(json.content).toContain('<div style="">'); // Note: fixed space
       expect(json.content).toContain('<p style="">'); // Note: fixed space
+      // 样式顺序已更改：font-size 现在总是首先出现（包含默认值）
       expect(json.content).toContain(
-        "color:#5b9bd5ff;font-size:54px;font-weight:bold;--colortype:accent1"
+        "font-size:54px;color:#5b9bd5ff;font-weight:bold;--colortype:accent1"
       );
     });
 
