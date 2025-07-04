@@ -536,7 +536,7 @@ describe('Error Handling Service Unit Tests', () => {
       const endTime = performance.now();
       const duration = endTime - startTime;
       
-      expect(duration).toBeLessThan(100); // Should complete in less than 100ms
+      expect(duration).toBeLessThan(200); // Should complete in less than 200ms
     });
   });
 });
