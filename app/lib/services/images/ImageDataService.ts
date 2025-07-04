@@ -26,6 +26,7 @@ export type ImageFormat =
   | "bmp"
   | "webp"
   | "tiff"
+  | "emf"
   | "unknown";
 
 export class ImageDataService {
@@ -332,6 +333,17 @@ export class ImageDataService {
       return "webp";
     }
 
+    // EMF (需要检查前44个字节，EMF签名在第40-43字节)
+    if (
+      buffer.length >= 44 &&
+      buffer[40] === 0x20 && // 空格
+      buffer[41] === 0x45 && // E
+      buffer[42] === 0x4d && // M
+      buffer[43] === 0x46    // F
+    ) {
+      return "emf";
+    }
+
     return "unknown";
   }
 
@@ -346,6 +358,7 @@ export class ImageDataService {
       bmp: "image/bmp",
       webp: "image/webp",
       tiff: "image/tiff",
+      emf: "image/emf",
       unknown: "application/octet-stream",
     };
 

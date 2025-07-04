@@ -535,16 +535,16 @@ export class ShapeProcessor implements IElementProcessor<ShapeElement> {
       const solidFillObj = this.xmlNodeToObject(solidFillNode);
 
       // Only require theme if this solidFill contains scheme color references
-      const hasSchemeColor = solidFillObj["schemeClr"];
+      const hasSchemeColor = solidFillObj["a:schemeClr"];
       if (hasSchemeColor && !context.theme) {
         throw new Error(
           "ShapeProcessor: ProcessingContext.theme is null/undefined - cannot process scheme colors. Found schemeClr reference but no theme available."
         );
       }
 
-      const warpObj = {
+      const warpObj = hasSchemeColor ? {
         themeContent: this.createThemeContent(context.theme),
-      };
+      } : undefined;
 
       const color = FillExtractor.getSolidFill(
         solidFillObj,
@@ -733,7 +733,7 @@ export class ShapeProcessor implements IElementProcessor<ShapeElement> {
   private createThemeContent(theme: any): any {
     if (!theme) {
       throw new Error(
-        "ShapeProcessor: theme is null or undefined when trying to process scheme colors"
+        "ShapeProcessor: ProcessingContext.theme is null/undefined - cannot process scheme colors. Found schemeClr reference but no theme available."
       );
     }
 

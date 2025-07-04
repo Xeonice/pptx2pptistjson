@@ -17,6 +17,7 @@ const mockXmlParseService: jest.Mocked<IXmlParseService> = {
   findNodes: jest.fn(),
   findNode: jest.fn(),
   getChildNodes: jest.fn(),
+  getChildNode: jest.fn(),
   getAttribute: jest.fn(),
   getTextContent: jest.fn(),
   stringify: jest.fn(),
