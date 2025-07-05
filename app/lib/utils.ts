@@ -1123,9 +1123,10 @@ export const SHAPE_PATH_FORMULAS: {
     relative: ["left"],
     getBaseSize: [(width) => width],
     formula: (width, height, values) => {
-      const point = width * values![0];
-      return `M ${point} 0 L ${
-        width - point
+      const topWidth = width * values![0];
+      const sideInset = (width - topWidth) / 2;
+      return `M ${sideInset} 0 L ${
+        sideInset + topWidth
       } 0 L ${width} ${height} L 0 ${height} Z`;
     },
   },
