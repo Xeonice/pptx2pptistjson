@@ -235,35 +235,6 @@ export class SlideParser {
       );
     }
 
-    // Single processor handling - let each processor handle the complete node
-    const processors = Array.from(this.elementProcessors.values());
-
-    for (const processor of processors) {
-      if (processor.canProcess(node)) {
-        try {
-          const result = await processor.process(node, context);
-          console.log(
-            `[Slide ${
-              context.slideNumber
-            }] Processed as ${processor.getElementType()}`
-          );
-          return result;
-        } catch (error) {
-          console.error(
-            `处理器 ${processor.getElementType()} 处理 ${node.name} 失败:`,
-            error
-          );
-          context.warnings.push({
-            level: "error",
-            message: `Failed to process ${node.name}: ${
-              (error as Error).message
-            }`,
-            slideNumber: context.slideNumber,
-          });
-        }
-      }
-    }
-
     // Handle group nodes recursively with transform calculation
     if (node.name.endsWith("grpSp") && node.children) {
       const groupElements: Element[] = [];
@@ -307,6 +278,35 @@ export class SlideParser {
       }
 
       return groupElements.length > 0 ? groupElements : undefined;
+    }
+
+    // Single processor handling - let each processor handle the complete node
+    const processors = Array.from(this.elementProcessors.values());
+
+    for (const processor of processors) {
+      if (processor.canProcess(node)) {
+        try {
+          const result = await processor.process(node, context);
+          console.log(
+            `[Slide ${
+              context.slideNumber
+            }] Processed as ${processor.getElementType()}`
+          );
+          return result;
+        } catch (error) {
+          console.error(
+            `处理器 ${processor.getElementType()} 处理 ${node.name} 失败:`,
+            error
+          );
+          context.warnings.push({
+            level: "error",
+            message: `Failed to process ${node.name}: ${
+              (error as Error).message
+            }`,
+            slideNumber: context.slideNumber,
+          });
+        }
+      }
     }
 
     return undefined;
@@ -416,7 +416,9 @@ export class SlideParser {
 
     // Validate scale factors
     if (!isFinite(scaleX) || !isFinite(scaleY) || scaleX <= 0 || scaleY <= 0) {
-      console.warn(`Invalid group scale factors: scaleX=${scaleX}, scaleY=${scaleY}`);
+      console.warn(
+        `Invalid group scale factors: scaleX=${scaleX}, scaleY=${scaleY}`
+      );
       return undefined;
     }
 
@@ -429,7 +431,11 @@ export class SlideParser {
     const flipV = this.xmlParser.getAttribute(xfrmNode, "flipV") === "1";
 
     // Debug logging
-    console.log(`[Group Transform] scaleX: ${scaleX.toFixed(4)}, scaleY: ${scaleY.toFixed(4)}, rotation: ${rotation || 0}°`);
+    console.log(
+      `[Group Transform] scaleX: ${scaleX.toFixed(4)}, scaleY: ${scaleY.toFixed(
+        4
+      )}, rotation: ${rotation || 0}°`
+    );
 
     return {
       scaleX,
@@ -458,7 +464,10 @@ export class SlideParser {
     currentTransform: GroupTransform | undefined
   ): GroupTransform | undefined {
     // Use advanced transform calculator for precise accumulation
-    return GroupTransformCalculator.accumulateTransforms(parentTransform, currentTransform);
+    return GroupTransformCalculator.accumulateTransforms(
+      parentTransform,
+      currentTransform
+    );
   }
 
   /**
@@ -472,39 +481,67 @@ export class SlideParser {
     elements: Element[],
     groupTransform: GroupTransform
   ): void {
-    console.log(`[Apply Group Transform] Processing ${elements.length} elements with scale: ${groupTransform.scaleX.toFixed(4)}x${groupTransform.scaleY.toFixed(4)}`);
-    
+    console.log(
+      `[Apply Group Transform] Processing ${
+        elements.length
+      } elements with scale: ${groupTransform.scaleX.toFixed(
+        4
+      )}x${groupTransform.scaleY.toFixed(4)}`
+    );
+
     for (const element of elements) {
       // Apply size scaling to all elements that have size properties
       // Use duck typing to check for size methods
-      if ('getSize' in element && 'setSize' in element && typeof element.getSize === 'function' && typeof element.setSize === 'function') {
+      if (
+        "getSize" in element &&
+        "setSize" in element &&
+        typeof element.getSize === "function" &&
+        typeof element.setSize === "function"
+      ) {
         const currentSize = (element as any).getSize();
         if (currentSize) {
           const newWidth = currentSize.width * groupTransform.scaleX;
           const newHeight = currentSize.height * groupTransform.scaleY;
-          
-          console.log(`[Apply Transform] Element size: ${currentSize.width}x${currentSize.height} -> ${newWidth.toFixed(2)}x${newHeight.toFixed(2)}`);
-          
+
+          console.log(
+            `[Apply Transform] Element size: ${currentSize.width}x${
+              currentSize.height
+            } -> ${newWidth.toFixed(2)}x${newHeight.toFixed(2)}`
+          );
+
           (element as any).setSize({
             width: newWidth,
             height: newHeight,
           });
         }
       }
-      
+
       // Apply rotation if element supports it
-      if (groupTransform.rotation && 'getRotation' in element && 'setRotation' in element && 
-          typeof element.getRotation === 'function' && typeof element.setRotation === 'function') {
+      if (
+        groupTransform.rotation &&
+        "getRotation" in element &&
+        "setRotation" in element &&
+        typeof element.getRotation === "function" &&
+        typeof element.setRotation === "function"
+      ) {
         const currentRotation = (element as any).getRotation() || 0;
         const newRotation = currentRotation + groupTransform.rotation;
         (element as any).setRotation(newRotation);
-        console.log(`[Apply Transform] Element rotation: ${currentRotation}° -> ${newRotation}°`);
+        console.log(
+          `[Apply Transform] Element rotation: ${currentRotation}° -> ${newRotation}°`
+        );
       }
-      
+
       // Apply flip if element supports it and group has flip
-      if (groupTransform.flip && 'setFlip' in element && typeof element.setFlip === 'function') {
+      if (
+        groupTransform.flip &&
+        "setFlip" in element &&
+        typeof element.setFlip === "function"
+      ) {
         (element as any).setFlip(groupTransform.flip);
-        console.log(`[Apply Transform] Element flip: horizontal=${groupTransform.flip.horizontal}, vertical=${groupTransform.flip.vertical}`);
+        console.log(
+          `[Apply Transform] Element flip: horizontal=${groupTransform.flip.horizontal}, vertical=${groupTransform.flip.vertical}`
+        );
       }
     }
   }
@@ -543,15 +580,20 @@ export class SlideParser {
           // Use FillExtractor for theme color resolution
           const solidFillObj = {
             "a:schemeClr": {
-              attrs: { val: val }
-            }
-          };
-          
-          const warpObj = {
-            themeContent: this.createThemeContent(context.theme)
+              attrs: { val: val },
+            },
           };
 
-          return FillExtractor.getSolidFill(solidFillObj, undefined, undefined, warpObj);
+          const warpObj = {
+            themeContent: this.createThemeContent(context.theme),
+          };
+
+          return FillExtractor.getSolidFill(
+            solidFillObj,
+            undefined,
+            undefined,
+            warpObj
+          );
         }
       }
     }
@@ -563,8 +605,9 @@ export class SlideParser {
       const gsLstNode = this.xmlParser.findNode(gradFillNode, "gsLst");
       if (gsLstNode && gsLstNode.children && gsLstNode.children.length > 0) {
         const firstGsNode = gsLstNode.children[0];
-        const colorNode = this.xmlParser.findNode(firstGsNode, "srgbClr") || 
-                         this.xmlParser.findNode(firstGsNode, "schemeClr");
+        const colorNode =
+          this.xmlParser.findNode(firstGsNode, "srgbClr") ||
+          this.xmlParser.findNode(firstGsNode, "schemeClr");
         if (colorNode) {
           return this.extractColor(firstGsNode);
         }
@@ -582,9 +625,9 @@ export class SlideParser {
       return {
         "a:theme": {
           "a:themeElements": {
-            "a:clrScheme": {}
-          }
-        }
+            "a:clrScheme": {},
+          },
+        },
       };
     }
 
@@ -596,90 +639,116 @@ export class SlideParser {
             "a:dk1": {
               "a:srgbClr": {
                 attrs: {
-                  val: colorScheme.dk1?.replace("#", "").replace(/ff$/, "") || "000000"
-                }
-              }
+                  val:
+                    colorScheme.dk1?.replace("#", "").replace(/ff$/, "") ||
+                    "000000",
+                },
+              },
             },
             "a:lt1": {
               "a:srgbClr": {
                 attrs: {
-                  val: colorScheme.lt1?.replace("#", "").replace(/ff$/, "") || "FFFFFF"
-                }
-              }
+                  val:
+                    colorScheme.lt1?.replace("#", "").replace(/ff$/, "") ||
+                    "FFFFFF",
+                },
+              },
             },
             "a:dk2": {
               "a:srgbClr": {
                 attrs: {
-                  val: colorScheme.dk2?.replace("#", "").replace(/ff$/, "") || "1F497D"
-                }
-              }
+                  val:
+                    colorScheme.dk2?.replace("#", "").replace(/ff$/, "") ||
+                    "1F497D",
+                },
+              },
             },
             "a:lt2": {
               "a:srgbClr": {
                 attrs: {
-                  val: colorScheme.lt2?.replace("#", "").replace(/ff$/, "") || "EEECE1"
-                }
-              }
+                  val:
+                    colorScheme.lt2?.replace("#", "").replace(/ff$/, "") ||
+                    "EEECE1",
+                },
+              },
             },
             "a:accent1": {
               "a:srgbClr": {
                 attrs: {
-                  val: colorScheme.accent1?.replace("#", "").replace(/ff$/, "") || "4F81BD"
-                }
-              }
+                  val:
+                    colorScheme.accent1?.replace("#", "").replace(/ff$/, "") ||
+                    "4F81BD",
+                },
+              },
             },
             "a:accent2": {
               "a:srgbClr": {
                 attrs: {
-                  val: colorScheme.accent2?.replace("#", "").replace(/ff$/, "") || "F79646"
-                }
-              }
+                  val:
+                    colorScheme.accent2?.replace("#", "").replace(/ff$/, "") ||
+                    "F79646",
+                },
+              },
             },
             "a:accent3": {
               "a:srgbClr": {
                 attrs: {
-                  val: colorScheme.accent3?.replace("#", "").replace(/ff$/, "") || "9BBB59"
-                }
-              }
+                  val:
+                    colorScheme.accent3?.replace("#", "").replace(/ff$/, "") ||
+                    "9BBB59",
+                },
+              },
             },
             "a:accent4": {
               "a:srgbClr": {
                 attrs: {
-                  val: colorScheme.accent4?.replace("#", "").replace(/ff$/, "") || "8064A2"
-                }
-              }
+                  val:
+                    colorScheme.accent4?.replace("#", "").replace(/ff$/, "") ||
+                    "8064A2",
+                },
+              },
             },
             "a:accent5": {
               "a:srgbClr": {
                 attrs: {
-                  val: colorScheme.accent5?.replace("#", "").replace(/ff$/, "") || "4BACC6"
-                }
-              }
+                  val:
+                    colorScheme.accent5?.replace("#", "").replace(/ff$/, "") ||
+                    "4BACC6",
+                },
+              },
             },
             "a:accent6": {
               "a:srgbClr": {
                 attrs: {
-                  val: colorScheme.accent6?.replace("#", "").replace(/ff$/, "") || "F366A7"
-                }
-              }
+                  val:
+                    colorScheme.accent6?.replace("#", "").replace(/ff$/, "") ||
+                    "F366A7",
+                },
+              },
             },
             "a:hlink": {
               "a:srgbClr": {
                 attrs: {
-                  val: colorScheme.hyperlink?.replace("#", "").replace(/ff$/, "") || "0000FF"
-                }
-              }
+                  val:
+                    colorScheme.hyperlink
+                      ?.replace("#", "")
+                      .replace(/ff$/, "") || "0000FF",
+                },
+              },
             },
             "a:folHlink": {
               "a:srgbClr": {
                 attrs: {
-                  val: colorScheme.followedHyperlink?.replace("#", "").replace(/ff$/, "") || "800080"
-                }
-              }
-            }
-          }
-        }
-      }
+                  val:
+                    colorScheme.followedHyperlink
+                      ?.replace("#", "")
+                      .replace(/ff$/, "") || "800080",
+                },
+              },
+            },
+          },
+        },
+      },
     };
   }
 }

@@ -19,6 +19,9 @@ export class TextProcessor implements IElementProcessor<TextElement> {
   }
 
   canProcess(xmlNode: XmlNode): boolean {
+    if (xmlNode.name.endsWith("grpSp")) {
+      return false;
+    }
     // Check if this is a text box
     const nvSpPrNode = this.xmlParser.findNode(xmlNode, "nvSpPr");
     const cNvSpPrNode = nvSpPrNode
@@ -77,11 +80,12 @@ export class TextProcessor implements IElementProcessor<TextElement> {
             let posY = parseInt(y);
 
             // Apply group transform if exists
-            const transformedCoords = GroupTransformUtils.applyGroupTransformIfExists(
-              posX,
-              posY,
-              context
-            );
+            const transformedCoords =
+              GroupTransformUtils.applyGroupTransformIfExists(
+                posX,
+                posY,
+                context
+              );
             posX = transformedCoords.x;
             posY = transformedCoords.y;
 
@@ -106,7 +110,10 @@ export class TextProcessor implements IElementProcessor<TextElement> {
         }
 
         // Rotation - 使用统一的旋转提取工具
-        const rotation = RotationExtractor.extractRotation(this.xmlParser, xfrmNode);
+        const rotation = RotationExtractor.extractRotation(
+          this.xmlParser,
+          xfrmNode
+        );
         if (rotation !== 0) {
           textElement.setRotation(rotation);
         }
@@ -117,14 +124,21 @@ export class TextProcessor implements IElementProcessor<TextElement> {
           textElement.setFlip(flip);
           DebugHelper.log(
             context,
-            `Text flip: ${FlipExtractor.getFlipDescription(this.xmlParser, xfrmNode)}`,
+            `Text flip: ${FlipExtractor.getFlipDescription(
+              this.xmlParser,
+              xfrmNode
+            )}`,
             "info"
           );
         }
       }
 
       // Extract shadow properties using ShadowExtractor
-      const shadow = ShadowExtractor.extractShadow(spPrNode, this.xmlParser, context);
+      const shadow = ShadowExtractor.extractShadow(
+        spPrNode,
+        this.xmlParser,
+        context
+      );
       if (shadow) {
         textElement.setShadow(shadow);
         DebugHelper.log(
